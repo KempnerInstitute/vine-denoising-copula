@@ -1,0 +1,66 @@
+# Training configuration
+defaults:
+  - _self_
+
+# Training parameters
+max_steps: 400000
+batch_size: 128
+gradient_accumulation_steps: 1
+
+# Optimizer
+optimizer:
+  name: adamw
+  lr: 3.0e-4
+  betas: [0.9, 0.999]
+  eps: 1.0e-8
+  weight_decay: 1.0e-5
+
+# Learning rate schedule
+lr_scheduler:
+  name: cosine_with_warmup
+  warmup_steps: 5000
+  min_lr: 1.0e-6
+
+# Loss weights
+loss:
+  nll_weight: 1.0
+  ise_weight: 0.1
+  marginal_penalty_weight: 0.01
+  tail_weight: 2.0  # Upweight corners
+
+# Noise schedule (diffusion-style training)
+noise:
+  min_t: 0.0
+  max_t: 1.0
+  schedule: uniform  # or cosine
+
+# Checkpointing
+checkpoint:
+  save_every_n_steps: 10000
+  keep_last_n: 5
+  save_dir: checkpoints
+
+# Logging
+logging:
+  log_every_n_steps: 100
+  eval_every_n_steps: 5000
+  log_images_every_n_steps: 5000
+  tensorboard_dir: logs/tensorboard
+  
+# Evaluation during training
+eval:
+  n_samples: 1000
+  compute_metrics: true
+
+# Distributed training
+distributed:
+  backend: nccl
+  find_unused_parameters: false
+
+# Mixed precision
+use_amp: true
+amp_dtype: float16
+
+# Reproducibility
+seed: 42
+deterministic: false

@@ -1,0 +1,128 @@
+# Advanced Training Configuration
+# 
+# This config includes all three enhancements:
+# 1. Mixture copula training data
+# 2. Copula property preservation
+# 3. Sample-size agnostic learning
+
+# Model architecture
+model:
+  m: 64
+  in_channels: 1
+  base_channels: 128
+  num_res_blocks: 3
+  attention_resolutions:
+    - 16
+    - 8
+  dropout: 0.1
+
+# Data configuration with advanced features
+data:
+  # Multiple data sources
+  train_roots:
+    - "/path/to/single_family/train"  # UPDATE THIS
+    - "/path/to/mixtures"              # UPDATE THIS
+  weights: [0.6, 0.4]  # 60% single-family, 40% mixtures
+  
+  val_root: "/path/to/val/data"  # UPDATE THIS
+  
+  batch_size: 64
+  val_batch_size: 128
+  num_workers: 8
+  train_frac: 0.85
+  val_frac: 0.10
+  seed: 42
+  
+  # Sample-size augmentation
+  n_range: [100, 10000]        # Variable n during training
+  n_distribution: 'log-uniform' # More small n, fewer large n
+  augment_n: true              # Enable n augmentation
+  
+  # Histogram normalization (critical for n-invariance)
+  hist_normalization: 'sum'    # Normalize to sum=1
+  adaptive_smoothing: true     # More smoothing for small n
+  
+  # Standard augmentation
+  reflect: true
+  augment: true                # Rotation, reflection
+  shuffle_buffer_size: 2000
+  cache_size: 500
+  infinite: true
+
+# Optimizer
+optimizer:
+  type: "adamw"
+  lr: 3.0e-4
+  betas: [0.9, 0.999]
+  weight_decay: 0.01
+  eps: 1.0e-8
+
+# Learning rate scheduler
+scheduler:
+  type: "warmup_cosine"
+  warmup_steps: 10000
+  total_steps: 500000
+
+# Training configuration with copula-aware diffusion
+training:
+  max_steps: 500000
+  grad_accum_steps: 2
+  use_amp: true
+  max_grad_norm: 1.0
+  
+  # Copula-aware diffusion process
+  diffusion:
+    timesteps: 1000
+    beta_schedule: 'cosine'      # Cosine schedule for stable training
+    use_projection: true         # IPFP projection after forward pass
+  
+  # Loss weights (adjusted for copula preservation)
+  loss_weights:
+    nll: 1.0                     # Negative log-likelihood
+    ise: 1.0                     # Integrated squared error
+    marginal: 0.15               # ← HIGHER: Enforce uniform marginals
+    tail: 0.5                    # Tail dependence weighting
+  
+  # IPFP/Sinkhorn projection parameters
+  projection_iters: 20           # More iterations = stricter constraints
+  projection_tolerance: 1e-6     # Convergence tolerance
+  
+  # Logging and checkpointing
+  log_every: 100
+  val_every: 5000
+  save_every: 10000
+  num_val_batches: 200
+
+# Checkpointing
+checkpoint_dir: "checkpoints/advanced"
+log_dir: "logs/advanced"
+auto_resume: true
+
+# Weights & Biases logging
+use_wandb: true
+wandb:
+  project: "vine-copula-advanced"
+  run_name: null
+  run_id: null
+  watch_model: false
+  
+  # Log additional metrics
+  log_marginal_stats: true       # Track marginal uniformity
+  log_density_stats: true        # Track density properties
+  log_sample_size_robustness: true  # Test across different n
+
+# Validation specific settings
+validation:
+  # Test on different sample sizes
+  test_n_values: [100, 500, 1000, 5000, 10000]
+  
+  # Test on mixture copulas specifically
+  test_mixtures: true
+  
+  # Verify copula properties
+  check_marginals: true
+  marginal_tolerance: 0.05  # Max deviation from uniform
+  
+  # Generate samples for visual inspection
+  generate_samples: true
+  n_samples_to_generate: 1000

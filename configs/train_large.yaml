@@ -1,0 +1,82 @@
+# Large-scale training configuration for diffusion copula networks
+# This config is designed for training on millions of copula pairs
+
+# Model architecture
+model:
+  m: 64                    # Grid resolution (64x64)
+  in_channels: 1           # Input histogram channels
+  base_channels: 128       # Base number of channels (increased for capacity)
+  num_res_blocks: 3        # Residual blocks per resolution
+  attention_resolutions:   # Resolutions with attention
+    - 16
+    - 8
+  dropout: 0.1             # Dropout rate
+
+# Data configuration
+data:
+  train_root: "/path/to/train/data"  # UPDATE THIS PATH
+  val_root: "/path/to/val/data"      # UPDATE THIS PATH
+  batch_size: 64           # Batch size per GPU
+  val_batch_size: 128      # Larger batch for validation
+  num_workers: 8           # Data loading workers per GPU
+  train_frac: 0.85         # Fraction for training
+  val_frac: 0.10           # Fraction for validation
+  seed: 42                 # Random seed
+  
+  # Data processing
+  reflect: true            # Use reflection padding for histograms
+  smooth_sigma: null       # Optional smoothing (null = no smoothing)
+  cache_size: 500          # Number of samples to cache per worker
+  augment: true            # Apply data augmentation
+  shuffle_buffer_size: 2000  # Shuffle buffer size
+  infinite: true           # Use infinite streaming
+
+# Optimizer
+optimizer:
+  type: "adamw"
+  lr: 3.0e-4               # Learning rate
+  betas: [0.9, 0.999]
+  weight_decay: 0.01
+  eps: 1.0e-8
+
+# Learning rate scheduler
+scheduler:
+  type: "warmup_cosine"    # Warmup + cosine decay
+  warmup_steps: 10000      # Warmup for 10k steps
+  total_steps: 500000      # Total training steps
+
+# Training configuration
+training:
+  max_steps: 500000        # Maximum training steps
+  grad_accum_steps: 2      # Gradient accumulation (effective batch = batch_size * grad_accum * num_gpus)
+  use_amp: true            # Mixed precision training
+  max_grad_norm: 1.0       # Gradient clipping
+  
+  # Loss weights
+  loss_weights:
+    nll: 1.0               # Negative log-likelihood
+    ise: 1.0               # Integrated squared error
+    marginal: 0.1          # Marginal penalty
+    tail: 0.5              # Tail weighting
+  
+  # Projection
+  projection_iters: 20     # IPFP/Sinkhorn iterations
+  
+  # Logging and checkpointing
+  log_every: 100           # Log metrics every N steps
+  val_every: 5000          # Validate every N steps
+  save_every: 10000        # Save checkpoint every N steps
+  num_val_batches: 200     # Number of validation batches
+
+# Checkpointing
+checkpoint_dir: "checkpoints/large_scale"
+log_dir: "logs/large_scale"
+auto_resume: true          # Automatically resume from latest checkpoint
+
+# Weights & Biases logging
+use_wandb: true
+wandb:
+  project: "vine-copula-large"
+  run_name: null           # Auto-generated if null
+  run_id: null             # For resumption
+  watch_model: false       # Log gradients (expensive)

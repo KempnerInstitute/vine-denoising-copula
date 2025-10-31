@@ -1,0 +1,37 @@
+# Model configuration
+defaults:
+  - _self_
+
+name: grid_unet
+
+# Grid resolution
+m: 64
+
+# U-Net architecture
+unet:
+  in_channels: 1
+  out_channels: 1
+  base_channels: 64
+  channel_mult: [1, 2, 4, 8]
+  num_res_blocks: 2
+  attention_resolutions: [16, 8]
+  dropout: 0.1
+  use_scale_shift_norm: true
+  
+# Time embedding
+time_embed_dim: 256
+
+# Conditioning (optional)
+condition_on_stats: false  # If true, condition on n, tau, etc.
+stats_embed_dim: 64
+
+# Projection (IPFP/Sinkhorn)
+projection:
+  method: sinkhorn  # or ipfp
+  iterations: 30
+  eps: 1.0e-8
+  
+# h-functions
+hfunc:
+  interpolation: bilinear  # or cubic
+  monotone_clamp: true

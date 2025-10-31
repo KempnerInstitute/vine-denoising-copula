@@ -1,0 +1,76 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vine-diffusion-copula"
+version = "0.1.0"
+description = "High-dimensional vine-copula modeling with diffusion-based bivariate copula estimation"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "Kempner Institute", email = "hsafaai@fas.harvard.edu"}
+]
+
+dependencies = [
+    "torch>=2.0.0",
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+    "matplotlib>=3.7.0",
+    "hydra-core>=1.3.0",
+    "tqdm>=4.65.0",
+    "h5py>=3.8.0",
+    "pandas>=2.0.0",
+    "seaborn>=0.12.0",
+    "scikit-learn>=1.2.0",
+    "pyvinecopulib>=0.6.0",
+    "diffusers>=0.21.0",
+    "typer>=0.9.0",
+    "rich>=13.0.0",
+    "tensorboard>=2.13.0",
+    "pytest>=7.3.0",
+    "hypothesis>=6.75.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.0.270",
+    "black>=23.3.0",
+    "mypy>=1.3.0",
+    "pytest-cov>=4.1.0",
+    "ipython>=8.12.0",
+    "jupyter>=1.0.0",
+]
+
+r-baselines = [
+    "rpy2>=3.5.0",
+]
+
+[project.scripts]
+vdc = "vdc.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["vdc*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py39", "py310", "py311"]
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "I", "N", "W"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short --strict-markers"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "baseline: marks tests that require R/external tools",
+]
