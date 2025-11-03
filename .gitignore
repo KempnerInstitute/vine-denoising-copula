@@ -1,6 +1,6 @@
 # Ignore drafts folder (separate git repo)
 drafts/
-
+*.md
 # Python
 __pycache__/
 *.py[cod]

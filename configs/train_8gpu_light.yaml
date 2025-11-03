@@ -1,0 +1,181 @@
+# Light Training Configuration - 8 GPU H100
+# Expected Duration: 2-3 hours
+# Purpose: Quick training run for testing and validation
+
+model:
+  type: "grid_unet"
+  m: 64                          # Grid resolution
+  base_channels: 96              # Reduced from 128 for faster training
+  channel_mults: [1, 2, 3, 4]    # Standard U-Net structure
+  num_res_blocks: 2
+  attention_resolutions: [16, 8]
+  dropout: 0.1
+  use_scale_shift_norm: true
+
+diffusion:
+  timesteps: 1000
+  noise_schedule: "cosine"
+  loss_type: "l2"
+  
+data:
+  mode: "online_generation"       # Generate on-the-fly (no storage needed)
+  m: 64                           # Grid resolution
+  n_samples_per_copula: 1000      # Samples per copula for histogram
+  batch_size: 128                 # Per GPU (total 8 × 128 = 1024)
+  num_workers: 8                  # CPU workers per GPU
+  prefetch_factor: 4              # Prefetch batches
+  
+  # Light sampling distribution (focus on key families)
+  copula_families:
+    single:
+      gaussian: 0.20
+      clayton: 0.15
+      gumbel: 0.15
+      frank: 0.10
+      joe: 0.10
+      student: 0.10
+      bb1: 0.05
+      bb6: 0.05
+      bb7: 0.05
+      bb8: 0.05
+    
+    mixture:
+      enabled: true
+      prob: 0.20                  # 20% of batches are mixtures
+      n_components: [2, 3]        # 2 or 3 component mixtures
+      
+  # Parameter ranges
+  param_ranges:
+    gaussian_rho: [-0.95, 0.95]
+    student_rho: [-0.95, 0.95]
+    student_nu: [3.0, 30.0]
+    clayton_theta: [0.5, 10.0]
+    gumbel_theta: [1.2, 10.0]
+    frank_theta: [-10.0, 10.0]
+    joe_theta: [1.2, 10.0]
+  
+  # Rotations
+  rotation_prob: 0.3              # 30% of copulas get rotated
+  rotations: [0, 90, 180, 270]
+
+training:
+  max_steps: 20000                # ~2.5 hours @ 2.5 steps/sec
+  learning_rate: 2.0e-4
+  weight_decay: 0.01
+  lr_scheduler: "cosine"
+  warmup_steps: 1000
+  gradient_clip: 1.0
+  
+  # Mixed precision
+  use_amp: true
+  use_gradient_checkpointing: true  # Required for batch=128
+  
+  # Logging
+  log_every: 50                   # Every 50 steps
+  save_every: 2000                # Save checkpoint every 2k steps
+  validate_every: 1000            # Validate every 1k steps
+  
+  # EMA
+  use_ema: true
+  ema_decay: 0.9999
+
+validation:
+  enabled: true
+  n_batches: 20                   # 20 batches = 2560 samples
+  
+  # Test on specific copulas with ground truth
+  test_copulas:
+    - family: "gaussian"
+      params: {rho: 0.7}
+      name: "Gaussian(0.7)"
+    
+    - family: "clayton"
+      params: {theta: 3.0}
+      name: "Clayton(3.0)"
+    
+    - family: "gumbel"
+      params: {theta: 2.5}
+      name: "Gumbel(2.5)"
+    
+    - family: "frank"
+      params: {theta: 5.0}
+      name: "Frank(5.0)"
+    
+    - family: "gaussian"
+      params: {rho: -0.7}
+      rotation: 0
+      name: "Gaussian(-0.7)"
+    
+    - family: "clayton"
+      params: {theta: 5.0}
+      rotation: 90
+      name: "Clayton(5.0)_90deg"
+  
+  # Metrics to track
+  metrics:
+    - "nll"                       # Negative log-likelihood
+    - "ise"                       # Integrated squared error
+    - "mass_error"                # Total mass error
+    - "marginal_error"            # Marginal uniformity error
+    - "kendall_tau_error"         # Kendall's tau error
+
+checkpointing:
+  save_dir: "checkpoints/light_8gpu"
+  keep_last_n: 5                  # Keep last 5 checkpoints
+  save_optimizer: true
+
+logging:
+  use_wandb: true
+  wandb_project: "vine-diffusion-copula"
+  wandb_run_name: "light_8gpu_h100"
+  log_images: true
+  log_images_every: 1000          # Log visualizations every 1k steps
+  n_log_images: 6                 # Log 6 example predictions
+
+resources:
+  # Hardware
+  n_gpus: 8
+  n_nodes: 1
+  gpu_type: "H100"
+  gpu_memory: "80GB"
+  
+  # Expected performance
+  batch_size_total: 1024          # 8 × 128
+  steps_per_sec: 2.5              # Expected throughput
+  training_time_hours: 2.5        # 20k steps / (2.5 steps/sec × 3600 sec/hr)
+  
+  # Memory
+  memory_per_gpu_gb: 25           # Expected memory usage
+  cpu_cores: 128                  # 8 workers × 8 GPUs × 2
+  storage_gb: 10                  # Just checkpoints (no pre-generated data)
+
+optimization:
+  # On-the-fly generation performance
+  generation_time_ms: 352         # 128 workers × 16 samples × 22ms / 128
+  training_time_ms: 400           # Forward + backward + optimizer
+  generation_overhead: 0.88       # 352/400 - generation is faster!
+  
+notes: |
+  Light training configuration for 8 H100 GPUs (single node).
+  
+  Key Features:
+  - On-the-fly data generation (no storage needed)
+  - Reduced model size (96 channels vs 128) for faster training
+  - 20k steps = ~2.5 hours training time
+  - Comprehensive validation on 6 known copula families
+  - Professional visualizations logged to W&B
+  - Checkpoints saved every 2k steps
+  
+  Expected Results:
+  - ISE < 0.05 for standard families (Gaussian, Clayton, Gumbel)
+  - ISE < 0.10 for complex families (BB, Student)
+  - Kendall's tau error < 0.05
+  - Mass conservation error < 1%
+  
+  Launch Command:
+  salloc --partition=kempner_h100 --nodes=1 --gres=gpu:8 --cpus-per-task=128 \
+         --mem=375G --time=00-03:00:00
+  
+  Then run:
+  torchrun --nproc_per_node=8 scripts/train_large_scale.py \
+           --config configs/train_8gpu_light.yaml
