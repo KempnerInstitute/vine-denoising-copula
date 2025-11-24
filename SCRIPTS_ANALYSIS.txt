@@ -1,0 +1,52 @@
+SCRIPTS FOLDER ANALYSIS
+=======================
+
+KEEP (Active & Necessary):
+---------------------------
+1. train_unified.py                      - ✓ NEW thin CLI wrapper (KEEP)
+2. visualize_diffusion_offline.py        - ✓ Offline visualization (KEEP)
+3. test_diffusion_copula_bivariate.py    - ✓ Standardized testing (KEEP)
+4. evaluate_model.py                     - ✓ Model evaluation (KEEP - if still used)
+
+ARCHIVE (Legacy Training Scripts - Now Replaced by train_unified.py):
+----------------------------------------------------------------------
+- train_cnn_distributed.py               (23K) → Replaced by train_unified.py
+- train_denoiser.py                      (19K) → Replaced by train_unified.py
+- train_distributed_production.py       (17K) → Replaced by train_unified.py
+- train_distributed_simple.py           (6.0K) → Replaced by train_unified.py
+- train_large_scale.py                   (22K) → Replaced by train_unified.py
+- train_onthefly_distributed.py          (18K) → Replaced by train_unified.py
+- train_onthefly.py                      (22K) → Replaced by train_unified.py
+- train_softmax_mass.py                  (22K) → Replaced by train_unified.py
+- quick_train.py                         (7.0K) → Replaced by train_unified.py
+
+ARCHIVE (Utility Scripts - No Longer Needed):
+----------------------------------------------
+- compare_baselines.py                   (7.4K) → Old comparison script
+- compare_probit_impact.py               (8.7K) → Old comparison script
+- find_optimal_batch_size.py             (7.1K) → One-off utility
+- generate_comprehensive_data.py         (13K) → Legacy data generation
+- monitor_training.py                    (8.0K) → Can use logs directly
+- plot_loss_trajectory.py                (4.5K) → Included in train_unified.py now
+
+ARCHIVE (Old Testing Scripts):
+-------------------------------
+- test_diffusion.py                      (4.7K) → Replaced by test_diffusion_copula_bivariate.py
+- test_mixture.py                        (2.2K) → Old test
+- test_on_known_copulas.py               (7.9K) → Old test
+- test_probit_smoothing.py               (4.0K) → Old test
+
+ARCHIVE (Shell Scripts & Configs):
+-----------------------------------
+- configure_account.sh                   → Old setup
+- launch_denoiser_CE.sh                  → Old launcher
+- train_grid_ddp.sh                      → Old job script
+- train_local_multi_gpu.sh               → Old job script
+- train_local.sh                         → Old job script
+- scripts/slurm/* (entire directory)     → Old SLURM jobs
+
+DELETE (Cached Files):
+----------------------
+- __pycache__/                           → Python cache
+- scripts/archive/                       → Already archived
+- scripts/slurm/logs/                    → Old logs

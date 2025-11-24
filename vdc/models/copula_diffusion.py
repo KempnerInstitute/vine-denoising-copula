@@ -126,23 +126,26 @@ class CopulaAwareDiffusion(nn.Module):
             pred_x0 = self.project_to_copula(pred_x0)
         
         # Compute x_{t-1}
-        if t[0] > 0:
-            # Use posterior mean
-            alpha_prev = self.alphas_cumprod[t - 1].view(-1, 1, 1, 1)
+        nonzero_mask = (t > 0).view(-1, 1, 1, 1)
+        x_prev = pred_x0
+
+        if nonzero_mask.any():
+            t_prev = torch.clamp(t - 1, min=0)
+            alpha_prev_lookup = self.alphas_cumprod[t_prev].view(-1, 1, 1, 1)
+            alpha_prev = torch.where(nonzero_mask, alpha_prev_lookup, torch.ones_like(alpha_prev_lookup))
             beta_t = self.betas[t].view(-1, 1, 1, 1)
-            
-            # Posterior mean: μ_θ(x_t, t)
-            coef1 = torch.sqrt(alpha_prev) * beta_t / (1 - alpha_t)
-            coef2 = torch.sqrt(self.alphas[t].view(-1, 1, 1, 1)) * (1 - alpha_prev) / (1 - alpha_t)
-            
+            alpha_step = self.alphas[t].view(-1, 1, 1, 1)
+
+            denom = (1 - alpha_t).clamp_min(1e-12)
+            coef1 = torch.sqrt(alpha_prev) * beta_t / denom
+            coef2 = torch.sqrt(alpha_step) * (1 - alpha_prev) / denom
+
             mean = coef1 * pred_x0 + coef2 * x_t
-            
-            # Add noise (except at t=0)
-            variance = beta_t * (1 - alpha_prev) / (1 - alpha_t)
+
+            variance = (beta_t * (1 - alpha_prev) / denom).clamp_min(0.0)
             noise = torch.randn_like(x_t)
-            x_prev = mean + torch.sqrt(variance) * noise
-        else:
-            x_prev = pred_x0
+            sample = mean + torch.sqrt(variance) * noise
+            x_prev = torch.where(nonzero_mask, sample, pred_x0)
         
         return x_prev
     

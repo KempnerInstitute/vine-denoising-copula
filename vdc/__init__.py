@@ -10,11 +10,5 @@ This package provides tools for:
 
 __version__ = "0.1.0"
 
-from vdc.models.api import DiffusionCopulaEstimator, load_trained_estimator
-from vdc.vine.api import DiffusionVine
-
-__all__ = [
-    "DiffusionCopulaEstimator",
-    "DiffusionVine",
-    "load_trained_estimator",
-]
+# Lazy imports to avoid circular dependencies and missing modules
+__all__ = []

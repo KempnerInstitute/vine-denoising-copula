@@ -4,11 +4,52 @@ Copula projection using Sinkhorn/IPFP algorithm.
 This module enforces copula constraints (uniform marginals, unit integral)
 on a positive density grid using iterative proportional fitting (IPFP)
 or Sinkhorn matrix balancing.
+
+NEW: Added ipfp_mass() for mass-space projection (cleaner numerics, no scale drift).
 """
 
 import torch
 import torch.nn.functional as F
 from typing import Optional
+
+
+def ipfp_mass(
+    mass_grid: torch.Tensor,
+    iters: int = 20,
+    eps: float = 1e-12,
+) -> torch.Tensor:
+    """
+    IPFP on probability mass grids (softmax mass head path).
+    
+    Args:
+        mass_grid: (B, 1, m, m) nonnegative, sums to 1 per sample
+        iters: Number of IPFP iterations
+        eps: Small value for numerical stability
+        
+    Returns:
+        (B, 1, m, m) projected mass with uniform marginals (row/col sums = 1/m)
+    
+    This is numerically cleaner than density-space IPFP because:
+    - All values stay in [0, 1]
+    - No scale degree of freedom
+    - Smaller IPFP adjustments when model learns near-feasible masses
+    """
+    B, C, m, _ = mass_grid.shape
+    assert C == 1, "Expected single-channel mass input"
+    
+    target = 1.0 / m
+    M = mass_grid.clone()
+    
+    for _ in range(iters):
+        # Normalize rows: sum_j M[i,j] = 1/m for all i
+        row_sums = M.sum(dim=-1, keepdim=True).clamp_min(eps)  # (B, 1, m, 1)
+        M = M / row_sums * target
+        
+        # Normalize cols: sum_i M[i,j] = 1/m for all j
+        col_sums = M.sum(dim=-2, keepdim=True).clamp_min(eps)  # (B, 1, 1, m)
+        M = M / col_sums * target
+    
+    return M
 
 
 def sinkhorn_project_density(
@@ -17,6 +58,8 @@ def sinkhorn_project_density(
     eps: float = 1e-8,
     check_convergence: bool = False,
     tol: float = 1e-4,
+    row_target: Optional[torch.Tensor] = None,
+    col_target: Optional[torch.Tensor] = None,
 ) -> torch.Tensor:
     """
     Project a positive density grid to a valid copula density using Sinkhorn/IPFP.
@@ -45,16 +88,30 @@ def sinkhorn_project_density(
     B, C, m, _ = density_grid.shape
     assert C == 1, "Expected single-channel input"
     
-    # Grid spacing
-    du = dv = 1.0 / m
+    device = density_grid.device
+    dtype = density_grid.dtype
+    
+    # Grid spacing (possibly non-uniform)
+    if row_target is None:
+        du_vec = torch.full((m,), 1.0 / m, device=device, dtype=dtype)
+    else:
+        du_vec = row_target.to(device=device, dtype=dtype).view(m)
+    if col_target is None:
+        dv_vec = torch.full((m,), 1.0 / m, device=device, dtype=dtype)
+    else:
+        dv_vec = col_target.to(device=device, dtype=dtype).view(m)
+    
+    target_row = du_vec.view(1, m, 1).expand(B, -1, -1)
+    target_col = dv_vec.view(1, 1, m).expand(B, -1, -1)
+    cell_areas = target_row * target_col  # (B, m, m)
+    
+    # 0) Normalize D_raw by its mean to avoid scale drift
+    mean_raw = density_grid.mean(dim=(-2, -1), keepdim=True).clamp_min(eps)
+    D_norm = density_grid / mean_raw
     
     # Convert density to cell masses
-    D = density_grid.squeeze(1)  # (B, m, m)
-    M = D * (du * dv)  # Cell masses
-    
-    # Target row and column sums
-    target_row = torch.full((B, m, 1), du, device=D.device, dtype=D.dtype)
-    target_col = torch.full((B, 1, m), dv, device=D.device, dtype=D.dtype)
+    D = D_norm.squeeze(1)  # (B, m, m)
+    M = D * cell_areas  # Cell masses
     
     # Sinkhorn iterations
     X = M.clamp_min(eps)
@@ -77,7 +134,7 @@ def sinkhorn_project_density(
                 break
     
     # Convert back to density
-    D_hat = X / (du * dv)
+    D_hat = X / cell_areas
     D_hat = D_hat.unsqueeze(1)  # (B, 1, m, m)
     
     return D_hat
@@ -88,6 +145,8 @@ def copula_project(
     iters: int = 30,
     eps: float = 1e-8,
     method: str = "sinkhorn",
+    row_target: Optional[torch.Tensor] = None,
+    col_target: Optional[torch.Tensor] = None,
 ) -> torch.Tensor:
     """
     Main interface for copula projection.
@@ -102,7 +161,13 @@ def copula_project(
         (B, 1, m, m) projected copula density
     """
     if method == "sinkhorn":
-        return sinkhorn_project_density(density_grid, iters, eps)
+        return sinkhorn_project_density(
+            density_grid,
+            iters,
+            eps,
+            row_target=row_target,
+            col_target=col_target,
+        )
     else:
         raise ValueError(f"Unknown projection method: {method}")
 
@@ -111,6 +176,8 @@ def check_copula_constraints(
     density_grid: torch.Tensor,
     eps: float = 1e-8,
     verbose: bool = True,
+    row_target: Optional[torch.Tensor] = None,
+    col_target: Optional[torch.Tensor] = None,
 ) -> dict:
     """
     Check how well a density grid satisfies copula constraints.
@@ -126,22 +193,32 @@ def check_copula_constraints(
     B, C, m, _ = density_grid.shape
     D = density_grid.squeeze(1)  # (B, m, m)
     
-    du = dv = 1.0 / m
+    if row_target is None:
+        du_vec = torch.full((m,), 1.0 / m, device=D.device, dtype=D.dtype)
+    else:
+        du_vec = row_target.to(device=D.device, dtype=D.dtype).view(m)
+    if col_target is None:
+        dv_vec = torch.full((m,), 1.0 / m, device=D.device, dtype=D.dtype)
+    else:
+        dv_vec = col_target.to(device=D.device, dtype=D.dtype).view(m)
+    du = du_vec.view(1, m, 1)
+    dv = dv_vec.view(1, 1, m)
     
     # Check positivity
     min_density = D.min().item()
     
     # Check marginal integrals
     # ∫ c(u,v) dv should equal 1 for all u
-    marginal_u = (D * dv).sum(dim=2)  # (B, m), should be all 1s
-    # ∫ c(u,v) du should equal 1 for all v
-    marginal_v = (D * du).sum(dim=1)  # (B, m), should be all 1s
+    marginal_u = (D * dv).sum(dim=2)  # (B, m), should equal du_vec
+    marginal_v = (D * du).sum(dim=1)  # (B, m), should equal dv_vec
     
     # Compute errors
-    marginal_u_error = (marginal_u - 1.0).abs().max().item()
-    marginal_v_error = (marginal_v - 1.0).abs().max().item()
-    marginal_u_mean_error = (marginal_u - 1.0).abs().mean().item()
-    marginal_v_mean_error = (marginal_v - 1.0).abs().mean().item()
+    ones_u = torch.ones_like(marginal_u)
+    ones_v = torch.ones_like(marginal_v)
+    marginal_u_error = (marginal_u - ones_u).abs().max().item()
+    marginal_v_error = (marginal_v - ones_v).abs().max().item()
+    marginal_u_mean_error = (marginal_u - ones_u).abs().mean().item()
+    marginal_v_mean_error = (marginal_v - ones_v).abs().mean().item()
     
     # Check total mass
     total_mass = (D * du * dv).sum(dim=(1, 2))  # (B,), should be all 1s

@@ -1,0 +1,125 @@
+## Diffusion UNet with probit binning, based on validate_no_probit_diffusion_m128
+## Goal: keep the good behavior of the validation run, but:
+##   - use a probit (non-uniform) grid during training
+##   - train longer for a production-quality checkpoint
+
+model:
+  type: diffusion_unet
+  base_channels: 64
+  channel_mults: [1, 2, 3, 4]
+  num_res_blocks: 2
+  attention_resolutions: [32, 16, 8]
+  dropout: 0.1
+  use_coordinates: true
+  use_probit_coords: false        # stay in (u, v) copula space for coordinates
+  probit_coord_eps: 1.0e-4
+  adaptive_probit_coords: false
+  transform_to_probit_space: false
+  use_scale_shift_norm: true
+
+data:
+  m: 128
+  binning: probit                 # KEY CHANGE vs validation run (non-uniform grid)
+  n_samples_per_copula: 8000
+  num_workers: 8
+  copula_families:
+    gaussian: 0.18
+    clayton: 0.22
+    gumbel: 0.22
+    frank: 0.12
+    joe: 0.16
+    student: 0.10
+
+diffusion:
+  timesteps: 1000
+  noise_schedule: cosine
+  objective: pred_noise
+  loss_type: l2
+
+training:
+  batch_size: 24                  # per GPU (96 effective on 4 GPUs)
+  max_steps: 20000                # extended vs validation (5000) for production
+  learning_rate: 5.0e-5           # same as good validation run
+
+  # Copula projection during training
+  projection_iters: 15
+  detach_projection: true         # MATCH VALIDATION: gradients do NOT flow through projection
+  use_amp: false                  # keep deterministic and avoid AMP edge cases
+  gradient_clip: 2.0
+
+  log_interval: 50
+  save_interval: 5000
+
+  # Optimizer
+  optimizer: adamw
+  weight_decay: 0.01
+  adam_betas: [0.9, 0.999]
+
+  # Scheduler
+  lr_schedule: cosine_warmup
+  warmup_steps: 500
+  min_lr_ratio: 0.1
+
+  # Loss configuration (matches validation behavior)
+  loss:
+    ce_weight: 1.0
+    ise_weight: 0.25
+    tail_weight: 0.05
+    tail_alpha: 0.2
+
+  loss_weights:
+    ise: 0.25          # moderate pressure on density shape
+    tail: 0.05
+    marg_kl: 0.01      # gentle marginal uniformity regularization
+
+  # Gradient sanitation
+  grad_sanitation:
+    enable: true
+    max_grad_value: 1000.0
+    lr_skip_patience: 10
+    lr_decay_factor: 0.5
+    min_lr: 1.0e-7
+    verbose: true
+
+  # Early stopping (same structure as good validation config; metric is 'loss')
+  early_stopping:
+    enable: true
+    metric: loss
+    patience: 10000
+    min_delta: 0.001
+
+  # Projection ramp: gradually increase projection strength (as in validation)
+  projection_ramp:
+    enable: true
+    ramp_steps: 1000
+    min_iters: 5
+    max_iters: 20
+
+  # Tail curriculum: avoid early domination of tail loss
+  tail_curriculum:
+    enable: true
+    start_weight: 0.0
+    full_weight: 0.05
+    ramp_steps: 2000
+
+  # Uncertainty weighting (learned per-loss log-variances, as in good run)
+  uncertainty_weighting:
+    enable: true
+    init_log_vars: [0.0, -1.0, -2.0]
+
+  # Adaptive projection for display metrics (does not affect gradients when detach_projection=true)
+  adaptive_projection:
+    enable: true
+    fast_iters: 3
+    fast_tol: 0.01
+    min_iters: 5
+    max_iters: 20
+    marg_tol: 0.005
+
+checkpoint_dir: checkpoints/diffusion_probit_m128
+log_dir: logs
+use_wandb: false
+wandb_project: vine-copula-diffusion
+experiment_name: diffusion_probit_m128
+
+

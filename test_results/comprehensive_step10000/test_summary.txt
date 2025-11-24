@@ -1,0 +1,192 @@
+======================================================================
+COMPREHENSIVE TEST SUMMARY
+======================================================================
+
+Model Information:
+  base_channels: 256
+  num_blocks: 3
+  parameters: 3812609
+  checkpoint_step: 10000
+  m: 64
+
+======================================================================
+QUANTITATIVE METRICS (All Tests)
+======================================================================
+
+clayton_theta1.0:
+  Density MSE: 15257386.0471, MAE: 65.0917
+  H-function MSE: 3.902417 (u|v), 3.744116 (v|u)
+  Correlation: 0.0358
+
+clayton_theta2.0:
+  Density MSE: 68661498.6588, MAE: 133.3755
+  H-function MSE: 2.902584 (u|v), 2.689091 (v|u)
+  Correlation: 0.0320
+
+clayton_theta5.0:
+  Density MSE: 416297671.6763, MAE: 322.8540
+  H-function MSE: 2.272882 (u|v), 2.544801 (v|u)
+  Correlation: 0.0227
+
+edge_clayton_strong:
+  Density MSE: 1607292710.7211, MAE: 631.9114
+  H-function MSE: 6.663977 (u|v), 8.172681 (v|u)
+  Correlation: 0.0304
+
+edge_clayton_weak:
+  Density MSE: 2154157.4823, MAE: 26.6712
+  H-function MSE: 4.468491 (u|v), 4.359423 (v|u)
+  Correlation: 0.0045
+
+edge_frank_strong_negative:
+  Density MSE: 8.3814, MAE: 2.6789
+  H-function MSE: 2.242346 (u|v), 2.124300 (v|u)
+  Correlation: 0.5707
+
+edge_gumbel_weak:
+  Density MSE: 1937340.0027, MAE: 25.3435
+  H-function MSE: 601.624516 (u|v), 599.601410 (v|u)
+  Correlation: 0.0463
+
+edge_independence:
+  Density MSE: 13.2278, MAE: 3.5221
+  H-function MSE: 4.316860 (u|v), 4.334915 (v|u)
+  Correlation: -0.0001
+
+edge_strong_negative:
+  Density MSE: 5084640.7144, MAE: 53.3021
+  H-function MSE: 49944.071523 (u|v), 50022.301726 (v|u)
+  Correlation: 0.0417
+
+edge_strong_positive:
+  Density MSE: 5084732.1437, MAE: 53.5678
+  H-function MSE: 793.539694 (u|v), 796.074559 (v|u)
+  Correlation: 0.0349
+
+frank_theta-3.0:
+  Density MSE: 13.3483, MAE: 3.5497
+  H-function MSE: 4.394201 (u|v), 4.473315 (v|u)
+  Correlation: 0.4058
+
+frank_theta2.0:
+  Density MSE: 14.2191, MAE: 3.6538
+  H-function MSE: 4.702811 (u|v), 4.627251 (v|u)
+  Correlation: 0.2819
+
+frank_theta5.0:
+  Density MSE: 12.1982, MAE: 3.3484
+  H-function MSE: 3.767631 (u|v), 3.670792 (v|u)
+  Correlation: 0.4607
+
+gaussian_rho-0.5:
+  Density MSE: 2271.7651, MAE: 4.8028
+  H-function MSE: 28.922992 (u|v), 27.905258 (v|u)
+  Correlation: 0.0163
+
+gaussian_rho-0.7:
+  Density MSE: 115283.1488, MAE: 11.2747
+  H-function MSE: 1161.937444 (u|v), 1153.156370 (v|u)
+  Correlation: 0.0458
+
+gaussian_rho0.0:
+  Density MSE: 13.2278, MAE: 3.5221
+  H-function MSE: 4.316860 (u|v), 4.334915 (v|u)
+  Correlation: -0.0001
+
+gaussian_rho0.3:
+  Density MSE: 32.0221, MAE: 3.7530
+  H-function MSE: 4.713149 (u|v), 4.599979 (v|u)
+  Correlation: 0.0163
+
+gaussian_rho0.7:
+  Density MSE: 115286.5357, MAE: 11.2263
+  H-function MSE: 23.863973 (u|v), 24.124370 (v|u)
+  Correlation: 0.0438
+
+gumbel_theta1.5:
+  Density MSE: 9611469.4928, MAE: 52.2789
+  H-function MSE: 2961.870932 (u|v), 2962.055112 (v|u)
+  Correlation: 0.0330
+
+gumbel_theta2.0:
+  Density MSE: 30516840.2318, MAE: 90.5029
+  H-function MSE: 9365.230095 (u|v), 9369.783789 (v|u)
+  Correlation: 0.0230
+
+gumbel_theta4.0:
+  Density MSE: 194436442.2933, MAE: 228.6210
+  H-function MSE: 59400.935230 (u|v), 59407.419569 (v|u)
+  Correlation: 0.0347
+
+joe_theta2.0:
+  Density MSE: 30516023.5462, MAE: 90.2957
+  H-function MSE: 9371.165775 (u|v), 9376.390933 (v|u)
+  Correlation: 0.0216
+
+joe_theta3.0:
+  Density MSE: 96884538.5141, MAE: 157.6548
+  H-function MSE: 29662.462000 (u|v), 29671.591937 (v|u)
+  Correlation: 0.0212
+
+student_rho0.5_nu5:
+  Density MSE: 3117512.0736, MAE: 43.4445
+  H-function MSE: 524.593515 (u|v), 523.868373 (v|u)
+  Correlation: 0.0510
+
+student_rho0.7_nu10:
+  Density MSE: 2940058.1088, MAE: 41.5478
+  H-function MSE: 460.396554 (u|v), 461.270357 (v|u)
+  Correlation: 0.0544
+
+student_rho0.7_nu5:
+  Density MSE: 10943909.6020, MAE: 76.7981
+  H-function MSE: 1696.186095 (u|v), 1698.062273 (v|u)
+  Correlation: 0.0608
+
+
+======================================================================
+AGGREGATE STATISTICS
+======================================================================
+
+density_mse:
+  Mean: 96191149.207055
+  Std:  314423460.269776
+  Min:  8.381418
+  Max:  1607292710.721121
+
+density_mae:
+  Mean: 82.484337
+  Std:  133.274227
+  Min:  2.678867
+  Max:  631.911437
+
+h_u_v_mse:
+  Mean: 6386.364021
+  Std:  15231.953768
+  Min:  2.242346
+  Max:  59400.935230
+
+h_v_u_mse:
+  Mean: 6390.126216
+  Std:  15242.119738
+  Min:  2.124300
+  Max:  59407.419569
+
+kl_divergence:
+  Mean: nan
+  Std:  nan
+  Min:  nan
+  Max:  nan
+
+js_divergence:
+  Mean: inf
+  Std:  nan
+  Min:  inf
+  Max:  inf
+
+correlation:
+  Mean: 0.091895
+  Std:  0.150514
+  Min:  -0.000101
+  Max:  0.570748
+

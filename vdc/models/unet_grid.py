@@ -219,7 +219,11 @@ class UpBlock(nn.Module):
             self.upsample = None
     
     def forward(self, x: torch.Tensor, skip: torch.Tensor, t_emb: torch.Tensor):
-        # Concatenate skip connection
+        # Upsample BEFORE concatenating with skip
+        if self.upsample is not None:
+            x = self.upsample(x)
+        
+        # Now concatenate skip connection (both should have same spatial size)
         x = torch.cat([x, skip], dim=1)
         
         for block in self.res_blocks:
@@ -227,9 +231,6 @@ class UpBlock(nn.Module):
         
         if self.attn is not None:
             x = self.attn(x)
-        
-        if self.upsample is not None:
-            x = self.upsample(x)
         
         return x
 
@@ -357,7 +358,7 @@ class GridUNet(nn.Module):
         h = self.conv_in(x)
         
         # Downsampling with skip connections
-        skips = []
+        skips = [h]  # Include initial features
         for block in self.down_blocks:
             h, skip = block(h, t_emb)
             skips.append(skip)
@@ -367,9 +368,10 @@ class GridUNet(nn.Module):
         h = self.mid_attn(h)
         h = self.mid_block2(h, t_emb)
         
-        # Upsampling
-        for block in self.up_blocks:
-            skip = skips.pop()
+        # Upsampling - reverse skips and match properly
+        skips = skips[::-1]  # Reverse to match upsampling order
+        for i, block in enumerate(self.up_blocks):
+            skip = skips[i] if i < len(skips) else h
             h = block(h, skip, t_emb)
         
         # Output

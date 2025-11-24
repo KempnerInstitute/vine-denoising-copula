@@ -1,0 +1,940 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{algorithm,algorithmic}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage[margin=1in]{geometry}
+\usepackage{xcolor}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+
+\title{Deep Learning for Bivariate Copula Density Estimation:\\
+Why Full Diffusion Models Fail and What Actually Works for Vine Copulas}
+\author{}
+\date{November 2025}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We investigate the application of deep learning to bivariate copula density estimation for vine copula construction. Our primary goal is \emph{amortized pair-copula fitting}: given empirical data for each pair, rapidly produce valid copula densities and $h$-functions for vine recursion. We document a failed attempt using unconditional denoising diffusion probabilistic models (DDPMs) in log-density space, which catastrophically collapsed to uniform predictions (MAE $\approx 1.0$). Through careful analysis, we identify the root causes: (1) objective mismatch between log-space diffusion and density-space constraints, (2) incorrect likelihood formulation favoring uniform densities, and (3) post-hoc projection that flattens unstructured predictions. We propose a practical solution: a \textbf{noise-conditioned density denoiser} that treats diffusion as a training augmentation strategy rather than a generative sampling process. This approach provides single-pass inference with exact copula constraints via Sinkhorn projection, suitable for efficient vine construction. We also discuss full generative modeling approaches (latent diffusion, score-based models) as separate research directions for unconditional copula generation.
+\end{abstract}
+
+\section{Introduction}
+
+\subsection{Problem Statement}
+
+A bivariate copula is a function $C: [0,1]^2 \to [0,1]$ that satisfies:
+\begin{enumerate}
+    \item \textbf{Grounded margins}: $C(u, 0) = C(0, v) = 0$ for all $u,v \in [0,1]$
+    \item \textbf{Uniform margins}: $C(u, 1) = u$ and $C(1, v) = v$ for all $u,v \in [0,1]$
+    \item \textbf{2-increasing}: For all $u_1 \leq u_2$ and $v_1 \leq v_2$:
+    \begin{equation}
+    C(u_2, v_2) - C(u_2, v_1) - C(u_1, v_2) + C(u_1, v_1) \geq 0
+    \end{equation}
+\end{enumerate}
+
+The copula density $c(u,v) = \frac{\partial^2 C}{\partial u \partial v}$ must satisfy:
+\begin{align}
+c(u,v) &\geq 0 \quad \forall (u,v) \in [0,1]^2 \label{eq:positivity} \\
+\int_0^1 \int_0^1 c(u,v) \, du \, dv &= 1 \label{eq:normalization} \\
+\int_0^1 c(u,v) \, dv &= 1 \quad \forall u \in [0,1] \label{eq:uniform_u} \\
+\int_0^1 c(u,v) \, du &= 1 \quad \forall v \in [0,1] \label{eq:uniform_v}
+\end{align}
+
+The goal is to learn a generative model $p_\theta(c)$ that produces valid copula densities.
+
+\subsection{Motivation for Generative Modeling}
+
+Traditional parametric copula families (Gaussian, Clayton, Gumbel, etc.) are limited in expressiveness. Non-parametric methods (kernel density estimation, Bernstein copulas) require large sample sizes. Deep generative models offer a promising middle ground, potentially learning flexible copula families from data while maintaining structural constraints.
+
+\subsection{Two Distinct Use Cases}
+
+It is critical to distinguish two different objectives:
+
+\paragraph{Use Case 1: Unconditional Copula Generation}
+Learn a generative model $p_\theta(c)$ that can sample diverse, novel copula densities from a learned distribution. This is analogous to generative image modeling (GANs, diffusion models for images). Applications include:
+\begin{itemize}
+    \item Exploring the space of possible dependence structures
+    \item Simulation studies requiring synthetic copula families
+    \item Learning copula priors from large datasets
+\end{itemize}
+
+\paragraph{Use Case 2: Amortized Pair-Copula Estimation for Vines}
+Given empirical pseudo-observations $(u_i, v_i)$ for a specific pair of variables, rapidly produce:
+\begin{itemize}
+    \item A valid copula density $\hat{c}(u,v)$ fitting the data
+    \item The corresponding $h$-functions $h(u|v)$ and $h(v|u)$ for vine recursion
+\end{itemize}
+This is a \textbf{conditional density regression} problem, not unconditional generation. Requirements:
+\begin{itemize}
+    \item Fast single-pass inference (thousands of pairs in a vine)
+    \item Robust to varying sample sizes and noise
+    \item Exact satisfaction of copula constraints
+\end{itemize}
+
+\textbf{This paper primarily addresses Use Case 2.} We initially attempted a full diffusion approach (Use Case 1) and document why it failed for our needs. The recommended solution treats diffusion as a \emph{training augmentation technique}, not as a multi-step generative sampler.
+
+\section{Negative Result: Unconditional Log-Space DDPM}
+
+\subsection{Architecture Overview}
+
+The current implementation employs a denoising diffusion probabilistic model (DDPM) \cite{ho2020denoising} that operates on the \textbf{log-density} representation $\ell(u,v) = \log c(u,v)$.
+
+\subsubsection{Forward Diffusion Process}
+
+Given a copula density $c(u,v)$, we compute its log-density:
+\begin{equation}
+\ell_0(u,v) = \log c(u,v)
+\end{equation}
+clipped to the range $[-20, 20]$ to prevent numerical overflow.
+
+The forward process adds Gaussian noise over $T=400$ timesteps:
+\begin{equation}
+q(\ell_t | \ell_0) = \mathcal{N}(\ell_t; \sqrt{\bar{\alpha}_t} \ell_0, (1-\bar{\alpha}_t) \mathbf{I})
+\end{equation}
+where $\bar{\alpha}_t = \prod_{s=1}^t \alpha_s$ with a cosine noise schedule:
+\begin{equation}
+\bar{\alpha}_t = \cos^2\left(\frac{t/T + s}{1+s} \cdot \frac{\pi}{2}\right), \quad s = 0.008
+\end{equation}
+
+\subsubsection{Reverse Denoising Process}
+
+A U-Net model $\epsilon_\theta(\ell_t, t)$ predicts the noise added at timestep $t$:
+\begin{equation}
+\mathcal{L}_{\text{noise}} = \mathbb{E}_{t, \ell_0, \epsilon} \left[ \|\epsilon - \epsilon_\theta(\ell_t, t)\|^2 \right]
+\end{equation}
+
+To reconstruct the clean log-density:
+\begin{equation}
+\hat{\ell}_0 = \frac{\ell_t - \sqrt{1-\bar{\alpha}_t} \cdot \epsilon_\theta(\ell_t, t)}{\sqrt{\bar{\alpha}_t}}
+\end{equation}
+
+The density is recovered via:
+\begin{equation}
+\hat{c}(u,v) = \exp(\text{clip}(\hat{\ell}_0, -20, 20))
+\end{equation}
+
+\subsubsection{Copula Constraint Enforcement}
+
+To satisfy equations \eqref{eq:normalization}--\eqref{eq:uniform_v}, a Sinkhorn projection is applied:
+
+\begin{algorithm}[H]
+\caption{Sinkhorn Projection for Uniform Marginals}
+\begin{algorithmic}[1]
+\REQUIRE Density grid $c \in \mathbb{R}^{m \times m}$, iterations $K$
+\ENSURE Projected density $\tilde{c}$ with uniform marginals
+\STATE $\tilde{c} \gets c$
+\FOR{$k = 1$ to $K$}
+    \STATE $\tilde{c} \gets \tilde{c} \oslash (\text{rowsum}(\tilde{c}) \otimes \mathbf{1}^\top)$ \COMMENT{Normalize rows}
+    \STATE $\tilde{c} \gets \tilde{c} \oslash (\mathbf{1} \otimes \text{colsum}(\tilde{c})^\top)$ \COMMENT{Normalize columns}
+\ENDFOR
+\RETURN $\tilde{c}$
+\end{algorithmic}
+\end{algorithm}
+
+where $\oslash$ is elementwise division, $\otimes$ is outer product, and rowsum/colsum compute marginal sums.
+
+\subsubsection{Multi-Objective Loss Function}
+
+The total training loss combines multiple terms:
+\begin{equation}
+\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{noise}} + w_{\text{ISE}} \cdot \mathcal{L}_{\text{ISE}} + w_{\text{tail}} \cdot \mathcal{L}_{\text{tail}} + w_{\text{KL}} \cdot \mathcal{L}_{\text{marg-KL}}
+\end{equation}
+
+\paragraph{Integrated Squared Error (ISE) Loss:}
+\begin{equation}
+\mathcal{L}_{\text{ISE}} = \mathbb{E}\left[ \|\log \tilde{c}_\theta - \log c_{\text{target}}\|^2 \right]
+\end{equation}
+where $\tilde{c}_\theta$ is the projected reconstructed density.
+
+\paragraph{Tail Loss:}
+Samples points $(u_i, v_i)$ uniformly from corner regions $[0, \tau] \times [0, \tau]$ and $[1-\tau, 1] \times [1-\tau, 1]$:
+\begin{equation}
+\mathcal{L}_{\text{tail}} = -\mathbb{E}_{(u,v) \sim \text{corners}} \left[ \log \tilde{c}_\theta(u,v) \right]
+\end{equation}
+
+\paragraph{Marginal KL Regularization:}
+\begin{equation}
+\mathcal{L}_{\text{marg-KL}} = \text{KL}\left( \int \tilde{c}_\theta \, dv \,\|\, \text{Uniform}(0,1) \right) + \text{KL}\left( \int \tilde{c}_\theta \, du \,\|\, \text{Uniform}(0,1) \right)
+\end{equation}
+
+\subsection{Implementation Details}
+
+\begin{itemize}
+    \item \textbf{Model}: U-Net with base channels 48, channel multipliers $[1, 2, 2]$, attention at resolution 16
+    \item \textbf{Grid resolution}: $m = 64$ (discretized $[0,1]^2$)
+    \item \textbf{Optimizer}: Adam with learning rate $2 \times 10^{-4}$
+    \item \textbf{Batch size}: 8
+    \item \textbf{Training steps}: 5,000--10,000
+    \item \textbf{Projection iterations}: $K = 15$ (Sinkhorn)
+\end{itemize}
+
+\section{Empirical Results and Failure Analysis}
+
+\subsection{Catastrophic Model Collapse}
+
+Across all training runs, the model exhibits complete failure:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcccc}
+\hline
+\textbf{Run} & \textbf{Config} & \textbf{MAE} & \textbf{MSE} & \textbf{Marginal Dev} \\
+\hline
+46039309 & Baseline & 0.9997 & 2654 & 0.970 \\
+46126299 & Improved projection & 1.0000 & 2654 & 0.000 \\
+46127314 & Log-space ISE & 1.0000 & 2654 & 0.000 \\
+46128400 & Fixed data norm & 0.9998 & 2654 & 0.000 \\
+46149822 & Noise only & 0.9998 & 2447 & 0.000 \\
+46162978 & Scaled ISE & 0.9998 & 2447 & 0.000 \\
+\hline
+\end{tabular}
+\caption{Training results showing consistent collapse to uniform density. MAE $\approx 1.0$ indicates the model predicts approximately uniform density everywhere, while ground truth copulas have structured densities with mean value $\approx 1.0$ but large variance.}
+\end{table}
+
+\subsection{Loss Progression Analysis}
+
+\subsubsection{Noise-Only Training (Run 46149822)}
+
+Training with $\mathcal{L} = \mathcal{L}_{\text{noise}}$ only:
+\begin{itemize}
+    \item Noise loss decreases: $1.05 \to 0.02$--$0.10$
+    \item Model learns to denoise log-densities
+    \item But reconstruction after projection yields uniform density
+    \item \textbf{Conclusion}: Noise loss alone insufficient for copula structure
+\end{itemize}
+
+\subsubsection{Multi-Objective Training with Original Weights}
+
+Loss weights: $w_{\text{ISE}} = 0.3$, $w_{\text{tail}} = 2.0$
+
+Observed loss magnitudes:
+\begin{align}
+\mathcal{L}_{\text{noise}} &\approx 0.0001 \\
+\mathcal{L}_{\text{ISE}} &\approx 47\text{--}62 \\
+\mathcal{L}_{\text{tail}} &\approx 0.0002
+\end{align}
+
+Effective contributions:
+\begin{align}
+\text{Noise contribution} &= 1.0 \times 0.0001 = 0.0001 \\
+\text{ISE contribution} &= 0.3 \times 50 = 15 \\
+\text{Tail contribution} &= 2.0 \times 0.0002 = 0.0004
+\end{align}
+
+\textbf{ISE dominates by factor of $150{,}000\times$}, causing model to ignore diffusion objective.
+
+\subsubsection{Scaled Weights (Run 46162978)}
+
+Loss weights: $w_{\text{ISE}} = 0.0003$, $w_{\text{tail}} = 0.002$
+
+Observed:
+\begin{align}
+\mathcal{L}_{\text{noise}} &\approx 0.02\text{--}0.19 \\
+\mathcal{L}_{\text{ISE}} &\approx 77\text{--}130 \\
+\mathcal{L}_{\text{tail}} &\approx 13\text{--}14
+\end{align}
+
+Contributions:
+\begin{align}
+\text{Noise} &\approx 0.03 \\
+\text{ISE} &= 0.0003 \times 100 \approx 0.03 \\
+\text{Tail} &= 0.002 \times 13 \approx 0.026
+\end{align}
+
+Even with extreme scaling, ISE and tail losses remain comparable to noise. More importantly, \textbf{losses do not decrease} -- they oscillate without convergence.
+
+\section{Root Cause Analysis}
+
+\subsection{The Real Problem: Objective Mismatch and Projection}
+
+The catastrophic failure is not primarily due to mathematical impossibility of log-space diffusion, but rather a \textbf{practical incompatibility} arising from:
+
+\subsubsection{Incorrect Likelihood Formulation}
+
+The negative log-likelihood term used was:
+\begin{equation}
+\mathcal{L}_{\text{NLL}} = -\frac{1}{m^2} \sum_{i,j} \log(D_{\text{pred}}^{ij} + \epsilon)
+\end{equation}
+which treats all grid cells as equally likely samples. This is minimized (for fixed normalization) by the \emph{uniform density itself}. 
+
+\textbf{What's needed}: Either cross-entropy against analytical target masses $T_{ij}$, or sample-based NLL via bilinear interpolation on actual pseudo-observations $(u_i, v_i)$:
+\begin{equation}
+\mathcal{L}_{\text{NLL}} = -\frac{1}{N} \sum_{i=1}^N \log c_\theta(u_i, v_i)
+\end{equation}
+
+Without correct likelihood guidance, the model has no incentive to place mass in the right locations.
+
+\subsubsection{Projection as Attractor to Uniformity}
+
+Sinkhorn projection (IPFP) computes the KL-projection onto doubly stochastic matrices:
+\begin{equation}
+\tilde{c} = \arg\min_{c' \in \mathcal{C}} \text{KL}(c' \| c_{\text{pred}})
+\end{equation}
+where $\mathcal{C}$ is the set of densities with uniform marginals.
+
+If $c_{\text{pred}}$ has no stable mass structure (random or weakly structured), the closest doubly stochastic matrix may be nearly uniform. Combined with gradients flowing through IPFP, the path of least resistance becomes:
+\begin{enumerate}
+    \item Predict nearly constant log-density
+    \item IPFP enforces uniform marginals → near-uniform density
+    \item All losses (marginal KL, weak ISE) are satisfied with minimal structure
+\end{enumerate}
+
+\textbf{Key insight}: IPFP is an excellent final layer when the network learns densities "almost on the copula manifold," but a dangerous flattening operator when the network outputs unstructured predictions.
+
+\subsubsection{Generative Story vs. Training Story Mismatch}
+
+The diffusion model learns:
+\begin{equation}
+\text{"Given noisy } \ell_t \text{, predict noise } \epsilon"
+\end{equation}
+in log-space, but we \emph{never use this generatively}. Instead, we always:
+\begin{equation}
+\text{Reconstruct } \hat{\ell}_0 \to \text{exponentiate} \to \text{IPFP in density space}
+\end{equation}
+
+The gradients flow through the entire chain, but the diffusion objective (learn to reverse Gaussian noise in log-space) is disconnected from the constraint enforcement (IPFP in density space). The model learns "predict something IPFP likes" rather than "learn a rich generative model of log-densities."
+
+\subsection{Log-Space vs Density-Space: A Complication, Not an Impossibility}
+
+\begin{theorem}[Log-Space Diffusion Complicates Copula Constraints]
+Let $\ell(u,v) = \log c(u,v)$ be the log-density of a copula. The space of log-densities $\mathcal{L} = \{\ell : \exp(\ell) \text{ is a valid copula}\}$ has the following properties:
+\begin{enumerate}
+    \item Not closed under Gaussian perturbations
+    \item Does not form a linear subspace
+    \item Has constraints (uniform marginals) that are \emph{nonlinear} in $\ell$
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+\textbf{(1) Not closed:} Consider a valid copula density $c(u,v)$ with log-density $\ell_0$. Add Gaussian noise: $\ell_t = \ell_0 + \epsilon$, $\epsilon \sim \mathcal{N}(0, \sigma^2)$. Then $c_t = \exp(\ell_t) = c_0 \cdot \exp(\epsilon)$ has marginals:
+\begin{equation}
+\int_0^1 c_t(u,v) \, dv = \int_0^1 c_0(u,v) \exp(\epsilon(u,v)) \, dv
+\end{equation}
+which is \emph{not} generally equal to 1, violating \eqref{eq:uniform_u}.
+
+\textbf{(2) Not a subspace:} The uniform marginal constraint \eqref{eq:uniform_u} in log-space becomes:
+\begin{equation}
+\int_0^1 \exp(\ell(u,v)) \, dv = 1
+\end{equation}
+This constraint is \emph{not linear} in $\ell$.
+
+\textbf{(3) Nonlinear constraints:} For $\ell_1, \ell_2 \in \mathcal{L}$ and $\lambda \in (0,1)$:
+\begin{equation}
+\int_0^1 \exp(\lambda \ell_1 + (1-\lambda) \ell_2) \, dv \neq 1
+\end{equation}
+in general, so $\lambda \ell_1 + (1-\lambda) \ell_2 \notin \mathcal{L}$.
+\end{proof}
+
+\begin{remark}
+This is \emph{not unique to copulas}. In standard image diffusion, the forward process immediately leaves the natural image manifold; the score model learns to map back. The issue here is that we combine:
+\begin{itemize}
+    \item Noising in log-space (leaving copula manifold)
+    \item Constraint enforcement in density-space (IPFP)
+    \item Weak likelihood guidance (incorrect NLL)
+\end{itemize}
+This combination, not log-space diffusion per se, causes collapse.
+\end{remark}
+
+\subsection{Unbounded Log-Space Magnitudes}
+
+\begin{lemma}[Log-Space Loss Mismatch]
+The ISE loss in log-space measures relative errors:
+\begin{equation}
+(\log c_1 - \log c_2)^2 = \left(\log \frac{c_1}{c_2}\right)^2
+\end{equation}
+This over-penalizes relative errors in low-density regions and under-penalizes absolute errors in high-density regions. For copulas, what matters is correct marginal integrals and accurate mass placement, not uniform relative accuracy everywhere.
+\end{lemma}
+
+\textbf{Example}: Consider $c_{\text{pred}} = 0.01$ and $c_{\text{target}} = 1000$. Then:
+\begin{align}
+\text{Density-space error:} \quad &|c_{\text{pred}} - c_{\text{target}}| = 999.99 \\
+\text{Log-space error:} \quad &(\log 0.01 - \log 1000)^2 = (-4.6 - 6.9)^2 = 132.25
+\end{align}
+
+For $c_{\text{pred}} = 900$ and $c_{\text{target}} = 1000$:
+\begin{align}
+\text{Density-space error:} \quad &|c_{\text{pred}} - c_{\text{target}}| = 100 \\
+\text{Log-space error:} \quad &(\log 900 - \log 1000)^2 = (6.8 - 6.9)^2 = 0.01
+\end{align}
+
+\begin{remark}
+Log-space losses are useful as secondary stabilizers to prevent extreme values, but should not be the primary training objective for copula density estimation.
+\end{remark}
+
+\subsection{Summary of Failure Modes}
+
+The uniform collapse results from a perfect storm:
+\begin{enumerate}
+    \item \textbf{Wrong objective}: NLL formulation that favors uniform density
+    \item \textbf{Weak structure guidance}: No strong sample-based likelihood forcing specific mass placement
+    \item \textbf{Projection feedback loop}: IPFP + weak gradients → easiest solution is near-constant prediction
+    \item \textbf{Log-space complication}: Copula constraints are nonlinear in log-space, making joint optimization difficult
+    \item \textbf{Multi-step overhead}: Full DDPM sampling (50+ steps) inappropriate for per-pair fitting task
+\end{enumerate}
+
+\textbf{Conclusion}: The log-space DDPM is not suitable for amortized pair-copula estimation. We need a different approach.
+
+\section{Recommended Solution: Noise-Conditioned Density Denoiser}
+
+For the primary use case (fast pair-copula fitting for vines), we propose treating diffusion as a \textbf{training augmentation technique} rather than a generative sampling process.
+
+\subsection{Core Idea}
+
+\begin{itemize}
+    \item \textbf{Training}: Learn to denoise histograms of varying quality (augmented with controlled noise)
+    \item \textbf{Inference}: Single forward pass on clean histogram → valid copula density
+    \item \textbf{Constraint enforcement}: Always apply Sinkhorn projection (IPFP)
+    \item \textbf{Loss}: Direct cross-entropy or sample-based NLL against analytical targets
+\end{itemize}
+
+This is conceptually similar to denoising autoencoders, not iterative diffusion sampling.
+
+\subsection{Architecture}
+
+\subsubsection{Input Representation}
+
+Given empirical pseudo-observations $\{(u_i, v_i)\}_{i=1}^N$, construct:
+\begin{equation}
+H[i,j] = \text{count of samples in cell } (i,j), \quad \text{normalized to } \sum H = 1
+\end{equation}
+
+During training, add noise:
+\begin{equation}
+H_t = \sqrt{\bar{\alpha}_t} H + \sqrt{1-\bar{\alpha}_t} \cdot \eta, \quad \eta \sim \mathcal{N}(0, \mathbf{I})
+\end{equation}
+where $t \sim \text{Uniform}(0,1)$ and $\bar{\alpha}_t$ follows a cosine schedule.
+
+\textbf{Key difference from DDPM}: $t$ is just an input conditioning variable; we do \emph{not} iteratively denoise at inference time.
+
+\subsubsection{Network Architecture}
+
+2D U-Net taking $(H_t, t)$ as input:
+\begin{verbatim}
+Input: H_t (1, 64, 64), t (scalar), optional probit coordinates
+Architecture:
+  - Time embedding: t -> Sinusoidal(128)
+  - Coordinate embedding (optional): (u,v) -> (Φ^(-1)(u), Φ^(-1)(v))
+  - Encoder:
+      Conv(1, 64, 3, stride=1, padding=1) + Time -> GN -> SiLU
+      Conv(64, 128, 3, stride=2, padding=1) + Time -> GN -> SiLU  # 64->32
+      Conv(128, 256, 3, stride=2, padding=1) + Time -> GN -> SiLU # 32->16
+      Conv(256, 512, 3, stride=2, padding=1) + Time -> GN -> SiLU # 16->8
+  - Bottleneck:
+      Self-Attention(512)
+      ResBlock(512, 512) + Time -> GN -> SiLU
+  - Decoder:
+      ConvTranspose(512, 256, 4, stride=2, padding=1) + skip -> GN -> SiLU
+      ConvTranspose(256, 128, 4, stride=2, padding=1) + skip -> GN -> SiLU
+      ConvTranspose(128, 64, 4, stride=2, padding=1) + skip -> GN -> SiLU
+  - Output head:
+      Conv(64, 1, 3, stride=1, padding=1)
+      Softplus(·) + ε  # Ensure positivity
+\end{verbatim}
+
+Output: $D_{\text{raw}} \in \mathbb{R}^{m \times m}_+$
+
+\subsubsection{Sinkhorn Projection Layer}
+
+Always apply IPFP to enforce copula constraints:
+\begin{algorithm}[H]
+\caption{Sinkhorn Projection}
+\begin{algorithmic}[1]
+\REQUIRE $D_{\text{raw}} \in \mathbb{R}^{m \times m}_+$, iterations $K=15$
+\STATE $D \gets D_{\text{raw}} / \sum D_{\text{raw}}$ \COMMENT{Normalize to sum=1}
+\FOR{$k = 1$ to $K$}
+    \STATE $D \gets D \oslash (\text{rowsum}(D) \otimes \mathbf{1}^\top)$ \COMMENT{Uniform row marginals}
+    \STATE $D \gets D \oslash (\mathbf{1} \otimes \text{colsum}(D)^\top)$ \COMMENT{Uniform column marginals}
+\ENDFOR
+\RETURN $\hat{D} = D \cdot m$ \COMMENT{Scale so marginals integrate to 1}
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Training Procedure}
+
+\subsubsection{Data Generation}
+
+Synthetic copula zoo with analytical densities:
+\begin{itemize}
+    \item \textbf{Families}: Gaussian, Clayton, Gumbel, Frank, Joe, Student-$t$
+    \item \textbf{Parameters}: Wide range (e.g., $\rho \in [-0.95, 0.95]$, $\theta \in [0.5, 10]$)
+    \item \textbf{Mixtures}: Weighted combinations of base copulas
+    \item \textbf{Grid}: Compute $c(u,v)$ on $m \times m$ grid (e.g., $m=64$)
+\end{itemize}
+
+For each training sample:
+\begin{enumerate}
+    \item Generate target density $T(u,v)$ analytically
+    \item Simulate histogram: sample $N \sim \text{Poisson}(\lambda_N)$ points from $c$, bin into $H$
+    \item Add noise: $H_t = \sqrt{\bar{\alpha}_t} H + \sqrt{1-\bar{\alpha}_t} \eta$
+    \item Include noise level $t$ as model input
+\end{enumerate}
+
+\subsubsection{Loss Function}
+
+\textbf{Primary loss - Cross-Entropy on Grid}:
+\begin{equation}
+\mathcal{L}_{\text{CE}} = -\sum_{i,j} T_{ij} \log(\hat{D}_{ij} + \epsilon)
+\end{equation}
+where $T_{ij} = \frac{1}{m^2} c(u_i, v_j)$ and $\sum T_{ij} = 1$.
+
+\textbf{Alternative - Sample-based NLL}:
+If training with sampled points $(u_k, v_k) \sim c$:
+\begin{equation}
+\mathcal{L}_{\text{NLL}} = -\frac{1}{N} \sum_{k=1}^N \log \tilde{c}_\theta(u_k, v_k)
+\end{equation}
+where $\tilde{c}_\theta$ is obtained via bilinear interpolation on $\hat{D}$.
+
+\textbf{Secondary losses}:
+\begin{align}
+\mathcal{L}_{\text{ISE}} &= \|\hat{D} - T\|^2 \quad \text{(density-space MSE)} \\
+\mathcal{L}_{\text{log-ISE}} &= \alpha \|\log \hat{D} - \log T\|^2 \quad \text{(stabilizer, small } \alpha \text{)} \\
+\mathcal{L}_{\text{tail}} &= -\frac{1}{N_{\text{tail}}} \sum_{(u,v) \in \text{corners}} \log \hat{D}(u,v)
+\end{align}
+
+\textbf{Total loss}:
+\begin{equation}
+\mathcal{L} = \mathcal{L}_{\text{CE}} + \lambda_{\text{ISE}} \mathcal{L}_{\text{ISE}} + \lambda_{\text{log}} \mathcal{L}_{\text{log-ISE}} + \lambda_{\text{tail}} \mathcal{L}_{\text{tail}}
+\end{equation}
+
+Typical weights: $\lambda_{\text{ISE}} = 0.1$, $\lambda_{\text{log}} = 0.05$, $\lambda_{\text{tail}} = 0.5$.
+
+\subsubsection{Training Algorithm}
+
+\begin{algorithm}[H]
+\caption{Train Noise-Conditioned Denoiser}
+\begin{algorithmic}[1]
+\REQUIRE Dataset $\{(c_i, \text{samples}_i)\}$, network $f_\theta$, epochs $E$
+\FOR{epoch = 1 to $E$}
+    \FOR{each batch $\{(T_j, H_j)\}$}
+        \STATE Sample noise levels: $t_j \sim \text{Uniform}(0, 1)$
+        \STATE Sample noise: $\eta_j \sim \mathcal{N}(0, \mathbf{I})$
+        \STATE Create noisy histograms: $H_{t,j} = \sqrt{\bar{\alpha}_{t_j}} H_j + \sqrt{1-\bar{\alpha}_{t_j}} \eta_j$
+        \STATE Forward pass: $D_{\text{raw},j} = f_\theta(H_{t,j}, t_j)$
+        \STATE Project: $\hat{D}_j = \text{Sinkhorn}(D_{\text{raw},j})$
+        \STATE Compute loss: $\mathcal{L} = \mathcal{L}_{\text{CE}}(\hat{D}_j, T_j) + \text{secondary terms}$
+        \STATE Backpropagate and update $\theta$
+    \ENDFOR
+    \IF{epoch $\mod 10 = 0$}
+        \STATE Validate on held-out copulas, visualize samples
+    \ENDIF
+\ENDFOR
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Inference for Vine Construction}
+
+\begin{algorithm}[H]
+\caption{Single-Pass Copula Density Estimation}
+\begin{algorithmic}[1]
+\REQUIRE Pseudo-observations $\{(u_i, v_i)\}_{i=1}^N$ for a pair, trained model $f_\theta$
+\STATE Construct empirical histogram: $H = \text{histogram}(\{(u_i, v_i)\}, \text{bins}=m)$
+\STATE Normalize: $H \gets H / \sum H$
+\STATE Forward pass: $D_{\text{raw}} = f_\theta(H, t=0)$ \COMMENT{Clean input, no noise}
+\STATE Project: $\hat{D} = \text{Sinkhorn}(D_{\text{raw}})$
+\STATE Compute $h$-functions via numerical integration:
+\begin{align*}
+h(u|v) &= \int_0^u \hat{c}(s, v) \, ds \\
+h(v|u) &= \int_0^v \hat{c}(u, s) \, ds
+\end{align*}
+\RETURN Copula density $\hat{c}$ and $h$-functions
+\end{algorithmic}
+\end{algorithm}
+
+\textbf{Runtime}: One U-Net forward pass ($\sim$5-10ms on GPU) + IPFP ($\sim$1-2ms) = $\sim$10ms per pair.
+
+For a vine with 100 edges: $\sim$1 second total.
+
+\subsection{Advantages for Vine Copulas}
+
+\begin{enumerate}
+    \item \textbf{Single-pass inference}: No iterative sampling (50-1000 steps)
+    \item \textbf{Exact constraints}: IPFP guarantees uniform marginals
+    \item \textbf{Robustness}: Learns to handle varying histogram quality via noise conditioning
+    \item \textbf{Correct objective}: CE/NLL directly optimizes likelihood of target copula
+    \item \textbf{Scalability}: Fast enough for thousands of pair-copulas in large vines
+    \item \textbf{Interpretable}: No latent variables, direct density-space operation
+\end{enumerate}
+
+\subsection{Relationship to Diffusion Models}
+
+This approach borrows the noise conditioning strategy from diffusion models:
+\begin{itemize}
+    \item Training data augmentation: $H_t = \sqrt{\bar{\alpha}_t} H + \sqrt{1-\bar{\alpha}_t} \eta$
+    \item Time embedding $t$ conditions the network on noise level
+    \item Network learns to "denoise" histograms of varying quality
+\end{itemize}
+
+But it \emph{does not} use the generative diffusion process:
+\begin{itemize}
+    \item No reverse SDE / iterative denoising at inference
+    \item No sampling from $\mathcal{N}(0, \mathbf{I})$ to generate novel copulas
+    \item $t$ is a conditioning variable, not a time index in a sampling trajectory
+\end{itemize}
+
+\textbf{Analogy}: Similar to how BERT uses masked language modeling for pre-training but doesn't iteratively unmask at inference.
+
+\section{Alternative Approaches for Unconditional Generation}
+
+For the separate research goal of unconditional copula generation (Use Case 1), we briefly outline two principled approaches:
+
+\subsection{Latent Diffusion Models}
+
+\subsection{Latent Diffusion Models}
+
+\textbf{Use case}: Unconditional generation of diverse copula families.
+
+\subsubsection{Overview}
+
+Separate representation learning from generation:
+
+\begin{enumerate}
+    \item \textbf{Phase 1}: Train autoencoder $E_\phi, D_\psi$ with copula-aware losses
+    \item \textbf{Phase 2}: Train DDPM in latent space on $\mathbf{z} = E_\phi(c)$
+    \item \textbf{Sampling}: Sample $\mathbf{z} \sim p_\theta(\mathbf{z})$, decode $\hat{c} = D_\psi(\mathbf{z})$, project
+\end{enumerate}
+
+\subsubsection{Autoencoder Design}
+
+\textbf{Encoder} $E_\phi: \mathbb{R}^{m \times m} \to \mathbb{R}^d$:
+\begin{verbatim}
+Conv2d(1, 64, 3, stride=2)   -> BN -> ReLU  # 64->32
+Conv2d(64, 128, 3, stride=2)  -> BN -> ReLU  # 32->16
+Conv2d(128, 256, 3, stride=2) -> BN -> ReLU  # 16->8
+Conv2d(256, 512, 3, stride=2) -> BN -> ReLU  # 8->4
+Flatten -> Linear(512*16, d)
+\end{verbatim}
+
+\textbf{Decoder} $D_\psi: \mathbb{R}^d \to \mathbb{R}^{m \times m}$:
+\begin{verbatim}
+Linear(d, 512*16) -> Reshape(512, 4, 4)
+ConvTranspose2d(512, 256, 4, stride=2) -> BN -> ReLU
+ConvTranspose2d(256, 128, 4, stride=2) -> BN -> ReLU
+ConvTranspose2d(128, 64, 4, stride=2)  -> BN -> ReLU
+ConvTranspose2d(64, 1, 4, stride=2)    -> Softplus
+Sinkhorn projection
+\end{verbatim}
+
+\textbf{Training loss}:
+\begin{equation}
+\mathcal{L}_{\text{AE}} = \|\tilde{c} - c\|^2 + \alpha \|\log \tilde{c} - \log c\|^2 + \lambda_{\text{marg}} \mathcal{L}_{\text{marginal}} + \lambda_{\text{smooth}} \|\nabla \tilde{c}\|^2
+\end{equation}
+
+\subsubsection{Latent Diffusion}
+
+Once autoencoder converges, freeze and train DDPM on latent codes:
+\begin{equation}
+\mathcal{L}_{\text{latent}} = \mathbb{E}_{t, \mathbf{z}_0, \epsilon} \left[ \|\epsilon - \epsilon_\theta(\mathbf{z}_t, t)\|^2 \right]
+\end{equation}
+
+Network: Simple MLP or 1D transformer operating on $\mathbb{R}^d$.
+
+\subsubsection{Evaluation}
+
+\textbf{Pros}:
+\begin{itemize}
+    \item Separates copula constraints (AE) from generation (diffusion)
+    \item Fast sampling ($\sim$20-50 steps in low-dimensional latent space)
+    \item Can interpolate between copulas via latent codes
+\end{itemize}
+
+\textbf{Cons}:
+\begin{itemize}
+    \item Two-stage training complexity
+    \item AE reconstruction quality limits final sample quality
+    \item Overkill for per-pair fitting (Use Case 2)
+\end{itemize}
+
+\textbf{Recommendation}: Research direction for copula family generation, not for vine construction.
+
+\subsection{Score-Based Generative Models}
+
+\textbf{Use case}: Unconditional generation with principled density-space operation.
+
+Score-based models \cite{song2020score} learn the \textbf{score function} $s_\theta(c, t) \approx \nabla_c \log p_t(c)$ where $p_t(c)$ is the density at noise level $t$.
+
+\subsubsection{Forward SDE}
+
+Defines stochastic differential equation adding noise gradually:
+\begin{equation}
+dc = \mathbf{f}(c, t) \, dt + g(t) \, dW_t
+\end{equation}
+
+\textbf{Variance Exploding (VE)}:  $dc = \sqrt{d[\sigma^2(t)]/dt} \, dW_t$
+
+\textbf{Variance Preserving (VP)}:  $dc = -\frac{1}{2} \beta(t) c \, dt + \sqrt{\beta(t)} \, dW_t$
+
+\subsubsection{Reverse SDE with Score}
+
+Sample by reversing the process using learned score:
+\begin{equation}
+dc = \left[ \mathbf{f}(c, t) - g(t)^2 \nabla_c \log p_t(c) \right] dt + g(t) \, d\bar{W}_t
+\end{equation}
+
+\subsubsection{Training}
+
+Denoising score matching in density space:
+\begin{equation}
+\mathcal{L}_{\text{DSM}} = \mathbb{E}_{t, c_0, \epsilon} \left[ \left\| s_\theta(c_0 + \sigma(t) \epsilon, t) + \frac{\epsilon}{\sigma(t)} \right\|^2 \right]
+\end{equation}
+
+Optional marginal penalty to encourage copula constraints:
+\begin{equation}
+\mathcal{L} = \mathcal{L}_{\text{DSM}} + \lambda_{\text{marg}} \left( \left\| \int c_t \, dv - 1 \right\|^2 + \left\| \int c_t \, du - 1 \right\|^2 \right)
+\end{equation}
+
+\subsubsection{Sampling}
+
+Predictor-corrector algorithm with Sinkhorn projection at each step (Algorithm 5):
+\begin{enumerate}
+    \item Initialize $c_T \sim \mathcal{N}(\mathbf{1}, \sigma^2_{\max} \mathbf{I})$, project
+    \item For $t = T \to 0$:
+    \begin{itemize}
+        \item Predictor: SDE step using score
+        \item Project with Sinkhorn
+        \item Corrector: Langevin MCMC refinement
+        \item Project again
+    \end{itemize}
+\end{enumerate}
+
+Requires $\sim$1000 steps, each with U-Net forward pass + IPFP.
+
+\subsubsection{Evaluation}
+
+\textbf{Pros}:
+\begin{itemize}
+    \item Natural density-space operation
+    \item Integrated manifold projection
+    \item Exact likelihood via probability flow ODE
+    \item Strong theoretical foundation
+\end{itemize}
+
+\textbf{Cons}:
+\begin{itemize}
+    \item Very expensive sampling (1000 steps × IPFP)
+    \item Many hyperparameters to tune
+    \item Overkill for per-pair vine fitting
+\end{itemize}
+
+\textbf{Recommendation}: Principled research direction for unconditional generation; too slow for vine construction.
+
+\section{Comparison and Recommendations}
+
+\subsection{Summary Table}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{lp{2.8cm}p{2.8cm}p{2.8cm}p{2.8cm}}
+\hline
+\textbf{Criterion} & \textbf{Log-DDPM (Failed)} & \textbf{Denoiser (Recommended)} & \textbf{Latent Diff} & \textbf{Score SDE} \\
+\hline
+Use case & Unconditional generation & Per-pair vine fitting & Unconditional generation & Unconditional generation \\
+\hline
+Training space & Log-density & Density & Latent codes & Density \\
+\hline
+Constraints & Post-hoc (fails) & IPFP (always) & Decoder + IPFP & Manifold projection \\
+\hline
+Inference & 50 steps & 1 step & 20 steps & 1000 steps \\
+\hline
+Runtime/pair & $\sim$50ms & $\sim$10ms & N/A & N/A \\
+\hline
+Training complexity & Medium & Medium & High (2-phase) & Medium-High \\
+\hline
+Sample quality & Failed (uniform) & Expected good & Unknown & Expected good \\
+\hline
+Likelihood eval & Hard & Easy (CE) & Very hard & Easy (ODE) \\
+\hline
+Implementation & Exists (failed) & Minor changes & New arch & Moderate changes \\
+\hline
+Status & Abandoned & **Recommended** & Future work & Future work \\
+\hline
+\end{tabular}
+\caption{Comparison of approaches for copula density estimation. The noise-conditioned denoiser is recommended for vine copula construction (Use Case 2), while latent diffusion and score-based models are research directions for unconditional generation (Use Case 1).}
+\end{table}
+
+\subsection{Primary Recommendation: Noise-Conditioned Denoiser}
+
+For the main goal of fast, robust pair-copula estimation in vine construction:
+
+\textbf{Implement the noise-conditioned density denoiser (Section 5)}:
+\begin{itemize}
+    \item Single-pass inference: histogram → U-Net → IPFP → density ($\sim$10ms)
+    \item Correct likelihood objective: cross-entropy or sample-based NLL
+    \item Robustness via noise augmentation during training
+    \item Exact copula constraints via Sinkhorn
+    \item Scalable to thousands of pairs
+\end{itemize}
+
+\textbf{Expected timeline}: 2-3 weeks
+\begin{itemize}
+    \item Week 1: Implement corrected loss function (CE/NLL), retrain existing U-Net
+    \item Week 2: Validate on copula zoo, tune hyperparameters
+    \item Week 3: Integration with vine construction pipeline
+\end{itemize}
+
+\textbf{Key changes from failed DDPM}:
+\begin{enumerate}
+    \item \textbf{Loss}: Replace incorrect NLL with proper CE on grid or sample-based NLL
+    \item \textbf{Inference}: Remove iterative denoising, use single forward pass at $t=0$
+    \item \textbf{Training}: Keep noise conditioning for robustness, but treat as augmentation
+    \item \textbf{Space}: Work in density space throughout (no log-density diffusion)
+\end{enumerate}
+
+\subsection{Future Research Directions}
+
+\paragraph{Latent Diffusion (Section 6.1)}
+For building a flexible generative model of copula families:
+\begin{itemize}
+    \item Train copula-aware autoencoder with reconstruction + constraint losses
+    \item Train DDPM in latent space on encoded copulas
+    \item Applications: copula interpolation, extrapolation, exploration of dependence structures
+    \item Timeline: 4-6 weeks for full implementation
+\end{itemize}
+
+\paragraph{Score-Based Models (Section 6.2)}
+For principled unconditional generation with exact likelihoods:
+\begin{itemize}
+    \item Learn score function in density space
+    \item Reverse SDE with integrated projection
+    \item Applications: likelihood-based copula selection, density estimation with uncertainty
+    \item Timeline: 4-5 weeks for implementation + tuning
+\end{itemize}
+
+Both are viable for Use Case 1 but unnecessary for Use Case 2.
+
+\section{Implementation Checklist}
+
+\subsection{Priority 1: Noise-Conditioned Denoiser (Immediate)}
+
+\subsubsection{Fix Data Pipeline}
+\begin{itemize}
+    \item[$\checkmark$] Verify densities normalized: $\int c = 1$ (already fixed)
+    \item[$\checkmark$] Verify uniform marginals on targets (already validated)
+    \item[$\square$] Implement histogram construction from pseudo-observations
+    \item[$\square$] Add noise conditioning: $H_t = \sqrt{\bar{\alpha}_t} H + \sqrt{1-\bar{\alpha}_t} \eta$
+\end{itemize}
+
+\subsubsection{Fix Loss Function}
+\begin{itemize}
+    \item[$\square$] **CRITICAL**: Replace uniform-grid NLL with cross-entropy:
+    \begin{equation*}
+    \mathcal{L}_{\text{CE}} = -\sum_{ij} T_{ij} \log(\hat{D}_{ij} + \epsilon)
+    \end{equation*}
+    \item[$\square$] Or implement sample-based NLL with bilinear interpolation
+    \item[$\square$] Keep ISE, log-ISE, tail as secondary (small weights)
+    \item[$\square$] Remove marginal KL (IPFP enforces this)
+\end{itemize}
+
+\subsubsection{Modify Inference}
+\begin{itemize}
+    \item[$\square$] Remove iterative denoising loop
+    \item[$\square$] Single forward pass: $f_\theta(H, t=0)$
+    \item[$\square$] Always apply Sinkhorn projection
+    \item[$\square$] Validate: check marginal uniformity, positivity, normalization
+\end{itemize}
+
+\subsubsection{Training}
+\begin{itemize}
+    \item[$\square$] Train on synthetic copula zoo (existing dataset OK)
+    \item[$\square$] Monitor CE loss, ISE, marginal deviation
+    \item[$\square$] Visualize predictions every 500 steps
+    \item[$\square$] Target metrics: MAE $< 0.3$, MSE $< 500$, ISE $< 100$
+\end{itemize}
+
+\subsection{Priority 2: Latent Diffusion (If Needed)}
+
+\subsubsection{Autoencoder}
+\begin{itemize}
+    \item[$\square$] Design encoder (Conv2d stack to latent dim 256-512)
+    \item[$\square$] Design decoder (ConvTranspose2d + Softplus + Sinkhorn)
+    \item[$\square$] Train with reconstruction + marginal + smoothness losses
+    \item[$\square$] Validate: reconstruction MSE $< 0.05$, preserve structure
+\end{itemize}
+
+\subsubsection{Latent DDPM}
+\begin{itemize}
+    \item[$\square$] Encode dataset to latent codes
+    \item[$\square$] Train MLP/transformer in latent space
+    \item[$\square$] Sample and decode, validate copula properties
+\end{itemize}
+
+\subsection{Priority 3: Score-Based (If Needed)}
+
+\subsubsection{Score Network}
+\begin{itemize}
+    \item[$\square$] Adapt existing U-Net for score prediction
+    \item[$\square$] Train with denoising score matching + marginal penalty
+    \item[$\square$] Monitor score norm (should be $O(1)$)
+\end{itemize}
+
+\subsubsection{Sampling}
+\begin{itemize}
+    \item[$\square$] Implement Euler-Maruyama SDE solver
+    \item[$\square$] Add Langevin MCMC corrector
+    \item[$\square$] Integrate Sinkhorn at each step
+    \item[$\square$] Tune: steps, corrector iterations, Langevin rate
+\end{itemize}
+
+\section{Conclusion}
+
+We have documented the failure of an unconditional log-space DDPM for copula density estimation, identifying root causes beyond mathematical impossibility:
+\begin{itemize}
+    \item Incorrect likelihood formulation favoring uniform densities
+    \item Objective mismatch between log-space diffusion and density-space constraints
+    \item Post-hoc projection creating attractor to uniformity
+    \item Wrong tool for the job: full generative model when conditional regression suffices
+\end{itemize}
+
+\textbf{The practical solution} for vine copula construction is a noise-conditioned density denoiser that:
+\begin{itemize}
+    \item Treats noise conditioning as training augmentation, not generative sampling
+    \item Uses correct likelihood objectives (cross-entropy or sample-based NLL)
+    \item Provides single-pass inference with exact copula constraints
+    \item Scales to thousands of pair-copulas efficiently
+\end{itemize}
+
+This approach borrows the robustness benefits of diffusion training without the computational overhead of iterative sampling.
+
+For unconditional copula generation research, latent diffusion and score-based models remain viable directions, but they address a fundamentally different problem than fast per-pair estimation for vines.
+
+\textbf{Next steps}: Implement corrected loss function, validate on copula zoo, integrate with vine pipeline. Expected improvement: MAE $1.0 \to 0.2$, enabling practical deep learning for vine copulas.
+
+\bibliographystyle{plain}
+\begin{thebibliography}{9}
+
+\bibitem{ho2020denoising}
+Jonathan Ho, Ajay Jain, and Pieter Abbeel.
+\newblock Denoising diffusion probabilistic models.
+\newblock In \emph{NeurIPS}, 2020.
+
+\bibitem{song2020score}
+Yang Song, Jascha Sohl-Dickstein, Diederik P. Kingma, Abhishek Kumar, Stefano Ermon, and Ben Poole.
+\newblock Score-based generative modeling through stochastic differential equations.
+\newblock In \emph{ICLR}, 2021.
+
+\bibitem{rombach2022high}
+Robin Rombach, Andreas Blattmann, Dominik Lorenz, Patrick Esser, and Björn Ommer.
+\newblock High-resolution image synthesis with latent diffusion models.
+\newblock In \emph{CVPR}, 2022.
+
+\bibitem{nelsen2006introduction}
+Roger B. Nelsen.
+\newblock \emph{An Introduction to Copulas}.
+\newblock Springer, 2nd edition, 2006.
+
+\bibitem{cuturi2013sinkhorn}
+Marco Cuturi.
+\newblock Sinkhorn distances: Lightspeed computation of optimal transport.
+\newblock In \emph{NeurIPS}, 2013.
+
+\end{thebibliography}
+
+\end{document}

@@ -50,6 +50,10 @@ checkpoints/
 *.pth
 *.ckpt
 
+# Local archives and experiment results
+archive/
+results/
+
 # OS
 .DS_Store
 Thumbs.db

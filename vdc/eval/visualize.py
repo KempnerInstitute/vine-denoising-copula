@@ -106,6 +106,57 @@ def plot_density_heatmap(
     return fig, ax, im
 
 
+def _percentile_scale(arr: np.ndarray, lower: float = 1.0, upper: float = 99.5) -> Tuple[float, float]:
+    """Return a robust (vmin, vmax) pair that is not dominated by outliers."""
+    arr = np.asarray(arr)
+    lo = float(np.percentile(arr, lower))
+    hi = float(np.percentile(arr, upper))
+    if hi - lo < 1e-12:
+        lo = float(arr.min())
+        hi = float(arr.max())
+    if hi - lo < 1e-12:
+        hi = lo + 1e-9
+    return lo, hi
+
+
+def _format_metric(value: float) -> str:
+    """Pretty-print metrics with adaptive formatting."""
+    if value == 0.0:
+        return "0.0000"
+    abs_val = abs(value)
+    if abs_val >= 1e3 or abs_val < 1e-3:
+        return f"{value:.2e}"
+    return f"{value:.4f}"
+
+
+def _resolve_color_scales(
+    density_pred: np.ndarray,
+    density_true: np.ndarray,
+    mode: str = "independent",
+) -> Tuple[Tuple[float, float], Tuple[float, float]]:
+    """
+    Determine (vmin, vmax) pairs for predicted and true panels.
+
+    Args:
+        density_pred: Predicted density grid
+        density_true: True density grid
+        mode: 'independent' or 'shared'
+
+    Returns:
+        ((pred_vmin, pred_vmax), (true_vmin, true_vmax))
+    """
+    mode = mode.lower()
+    if mode == "independent":
+        pred_scale = _percentile_scale(density_pred)
+        true_scale = _percentile_scale(density_true)
+        return pred_scale, true_scale
+    if mode == "shared":
+        combined = np.concatenate((density_pred.ravel(), density_true.ravel()))
+        shared_scale = _percentile_scale(combined)
+        return shared_scale, shared_scale
+    raise ValueError(f"Unknown scale mode: {mode}")
+
+
 def plot_comparison(
     density_pred: np.ndarray,
     density_true: np.ndarray,
@@ -114,6 +165,7 @@ def plot_comparison(
     save_path: Optional[Path] = None,
     metrics: Optional[Dict[str, float]] = None,
     figsize: Tuple[int, int] = (18, 5),
+    scale_mode: str = "independent",
 ) -> plt.Figure:
     """
     Create comprehensive comparison plot: predicted vs true vs difference.
@@ -133,10 +185,11 @@ def plot_comparison(
     fig = plt.figure(figsize=figsize)
     gs = GridSpec(1, 3, figure=fig, wspace=0.3)
     
-    # Determine common color scale
-    vmin = min(density_pred.min(), density_true.min())
-    vmax = max(density_pred.max(), density_true.max())
-    
+    # Color scale handling
+    (pred_vmin, pred_vmax), (true_vmin, true_vmax) = _resolve_color_scales(
+        density_pred, density_true, mode=scale_mode
+    )
+
     # Plot 1: Predicted
     ax1 = fig.add_subplot(gs[0, 0])
     plot_density_heatmap(
@@ -144,11 +197,11 @@ def plot_comparison(
         title="Predicted Density",
         ax=ax1,
         cmap='viridis',
-        vmin=vmin,
-        vmax=vmax,
+        vmin=pred_vmin,
+        vmax=pred_vmax,
         points=points,
     )
-    
+
     # Plot 2: True
     ax2 = fig.add_subplot(gs[0, 1])
     plot_density_heatmap(
@@ -156,26 +209,27 @@ def plot_comparison(
         title="True Density",
         ax=ax2,
         cmap='viridis',
-        vmin=vmin,
-        vmax=vmax,
+        vmin=true_vmin,
+        vmax=true_vmax,
         points=points,
     )
-    
+
     # Plot 3: Absolute Difference
     ax3 = fig.add_subplot(gs[0, 2])
     diff = np.abs(density_pred - density_true)
+    _, diff_vmax = _percentile_scale(diff, lower=0.0, upper=99.5)
     plot_density_heatmap(
         diff,
         title="Absolute Error",
         ax=ax3,
         cmap='Reds',
         vmin=0,
-        vmax=None,
+        vmax=diff_vmax,
     )
-    
+
     # Add metrics text if provided
-    if metrics is not None:
-        metrics_text = "\n".join([f"{k}: {v:.4f}" for k, v in metrics.items()])
+    if metrics is not None and len(metrics) > 0:
+        metrics_text = "\n".join([f"{k}: {_format_metric(v)}" for k, v in metrics.items()])
         fig.text(
             0.99, 0.02,
             metrics_text,
@@ -231,6 +285,10 @@ def plot_marginals(
     title: str = "Marginal Densities",
     save_path: Optional[Path] = None,
     figsize: Tuple[int, int] = (12, 4),
+    row_coords: Optional[np.ndarray] = None,
+    col_coords: Optional[np.ndarray] = None,
+    row_widths: Optional[np.ndarray] = None,
+    col_widths: Optional[np.ndarray] = None,
 ) -> plt.Figure:
     """
     Plot marginal densities (should be uniform for copulas).
@@ -245,19 +303,25 @@ def plot_marginals(
         Figure object
     """
     m = density.shape[0]
-    du = 1.0 / m
-    u_grid = np.linspace(du/2, 1-du/2, m)
+    if row_widths is None:
+        row_widths = np.full(m, 1.0 / m)
+    if col_widths is None:
+        col_widths = np.full(m, 1.0 / m)
+    if row_coords is None:
+        row_coords = np.cumsum(row_widths) - 0.5 * row_widths
+    if col_coords is None:
+        col_coords = np.cumsum(col_widths) - 0.5 * col_widths
     
     # Compute marginals by integration
-    marginal_u = np.sum(density, axis=1) * du  # ∫ c(u,v) dv
-    marginal_v = np.sum(density, axis=0) * du  # ∫ c(u,v) du
+    marginal_u = np.sum(density * col_widths[None, :], axis=1)  # ∫ c(u,v) dv
+    marginal_v = np.sum(density * row_widths[:, None], axis=0)  # ∫ c(u,v) du
     
     fig, axes = plt.subplots(1, 2, figsize=figsize)
     
     # Marginal over u
-    axes[0].plot(u_grid, marginal_u, 'b-', linewidth=2, label='Estimated', alpha=0.8)
+    axes[0].plot(row_coords, marginal_u, 'b-', linewidth=2, label='Estimated', alpha=0.8)
     axes[0].axhline(1.0, color='r', linestyle='--', linewidth=2, label='Uniform (ideal)')
-    axes[0].fill_between(u_grid, marginal_u, 1.0, alpha=0.3, color='blue')
+    axes[0].fill_between(row_coords, marginal_u, 1.0, alpha=0.3, color='blue')
     axes[0].set_xlabel('u', fontweight='bold')
     axes[0].set_ylabel('∫ c(u,v) dv', fontweight='bold')
     axes[0].set_title('Marginal over u', fontweight='bold')
@@ -276,9 +340,9 @@ def plot_marginals(
     )
     
     # Marginal over v
-    axes[1].plot(u_grid, marginal_v, 'g-', linewidth=2, label='Estimated', alpha=0.8)
+    axes[1].plot(col_coords, marginal_v, 'g-', linewidth=2, label='Estimated', alpha=0.8)
     axes[1].axhline(1.0, color='r', linestyle='--', linewidth=2, label='Uniform (ideal)')
-    axes[1].fill_between(u_grid, marginal_v, 1.0, alpha=0.3, color='green')
+    axes[1].fill_between(col_coords, marginal_v, 1.0, alpha=0.3, color='green')
     axes[1].set_xlabel('v', fontweight='bold')
     axes[1].set_ylabel('∫ c(u,v) du', fontweight='bold')
     axes[1].set_title('Marginal over v', fontweight='bold')

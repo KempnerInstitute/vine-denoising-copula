@@ -218,6 +218,7 @@ def tail_weighted_loss(
     weight: float = 2.0,
     mode: str = 'density',
     eps: float = 1e-10,
+    reduction: str = 'mean',
 ) -> torch.Tensor:
     """
     Weighted loss that emphasizes tail regions.
@@ -232,9 +233,10 @@ def tail_weighted_loss(
         weight: Weight multiplier for tail regions (default: 2.0)
         mode: 'density' (penalize low density in tails) or 'nll' (weighted NLL on points)
         eps: Small constant
+        reduction: 'mean', 'sum', or 'none'
         
     Returns:
-        Weighted loss scalar
+        Weighted loss scalar or (B,) losses
     """
     if mode == 'density':
         # Grid-based: penalize regions where density is too low in tails
@@ -260,10 +262,17 @@ def tail_weighted_loss(
         weights[:, in_tail] *= weight
         
         # Weighted MSE to some reference (e.g., mean density)
-        target = D.mean()
-        loss = (weights * (D - target) ** 2).mean()
+        target = D.mean(dim=[1, 2], keepdim=True) # Fix: mean per sample
+        loss = (weights * (D - target) ** 2).mean(dim=[1, 2]) # (B,)
         
-        return loss
+        if reduction == 'mean':
+            return loss.mean()
+        elif reduction == 'sum':
+            return loss.sum()
+        elif reduction == 'none':
+            return loss
+        else:
+            raise ValueError(f"Invalid reduction: {reduction}")
         
     elif mode == 'nll':
         # Point-based: weighted NLL
@@ -282,12 +291,96 @@ def tail_weighted_loss(
         
         # Apply weights
         weights = torch.where(in_tail, weight, 1.0)
-        weighted_nll = (weights * nll).mean()
+        weighted_nll = (weights * nll).mean(dim=1) # (B,)
         
-        return weighted_nll
+        if reduction == 'mean':
+            return weighted_nll.mean()
+        elif reduction == 'sum':
+            return weighted_nll.sum()
+        elif reduction == 'none':
+            return weighted_nll
+        else:
+            raise ValueError(f"Invalid reduction: {reduction}")
     
     else:
         raise ValueError(f"Invalid mode: {mode}")
+
+
+def hfunc_penalty(
+    density_grid: torch.Tensor,
+    reduction: str = 'mean',
+) -> torch.Tensor:
+    """
+    Penalty for h-functions violating proper copula properties.
+    
+    H-functions are conditional CDFs computed via cumulative integration:
+    - h_{U|V}(u|v) = ∫₀ᵘ c(s,v) ds  (must be in [0,1], monotone, h(1|v)=1)
+    - h_{V|U}(v|u) = ∫₀ᵛ c(u,t) dt  (must be in [0,1], monotone, h(u|1)=1)
+    
+    This loss ensures:
+    1. H-values stay in [0, 1]
+    2. H-functions are monotonically increasing
+    3. Endpoint condition: h(1|·) = 1
+    
+    Args:
+        density_grid: (B, 1, m, m) or (B, m, m) copula density
+        reduction: 'mean', 'sum', or 'none'
+        
+    Returns:
+        H-function penalty scalar or (B,) losses
+    """
+    if density_grid.dim() == 4:
+        B, _, m, _ = density_grid.shape
+        D = density_grid.squeeze(1)
+    else:
+        B, m, _ = density_grid.shape
+        D = density_grid
+    
+    du = dv = 1.0 / m
+    
+    # Compute h-functions via cumulative integration
+    # h_{U|V}(u|v) = ∫₀ᵘ c(s,v) ds - integrate along u-axis (dim=1)
+    h_u_given_v = torch.cumsum(D, dim=1) * du  # (B, m, m)
+    
+    # h_{V|U}(v|u) = ∫₀ᵛ c(u,t) dt - integrate along v-axis (dim=2)
+    h_v_given_u = torch.cumsum(D, dim=2) * dv  # (B, m, m)
+    
+    # Penalty 1: Values outside [0, 1]
+    # Penalize negative values or values > 1
+    penalty_bounds_u = (torch.relu(-h_u_given_v).mean(dim=[1, 2]) + 
+                        torch.relu(h_u_given_v - 1.0).mean(dim=[1, 2]))
+    penalty_bounds_v = (torch.relu(-h_v_given_u).mean(dim=[1, 2]) + 
+                        torch.relu(h_v_given_u - 1.0).mean(dim=[1, 2]))
+    
+    # Penalty 2: Non-monotonicity
+    # H-functions must be non-decreasing in their first argument
+    # For h_u_given_v: should increase along dim=1 (u direction)
+    diff_u = h_u_given_v[:, 1:, :] - h_u_given_v[:, :-1, :]  # Should be ≥ 0
+    penalty_monotone_u = torch.relu(-diff_u).mean(dim=[1, 2])
+    
+    # For h_v_given_u: should increase along dim=2 (v direction)
+    diff_v = h_v_given_u[:, :, 1:] - h_v_given_u[:, :, :-1]  # Should be ≥ 0
+    penalty_monotone_v = torch.relu(-diff_v).mean(dim=[1, 2])
+    
+    # Penalty 3: Endpoint condition h(1|·) = 1
+    # h_u_given_v[-1, :] should equal 1 for all v
+    # h_v_given_u[:, -1] should equal 1 for all u
+    penalty_endpoint_u = ((h_u_given_v[:, -1, :] - 1.0) ** 2).mean(dim=1)
+    penalty_endpoint_v = ((h_v_given_u[:, :, -1] - 1.0) ** 2).mean(dim=1)
+    
+    # Total penalty per batch
+    penalty = (penalty_bounds_u + penalty_bounds_v + 
+               penalty_monotone_u + penalty_monotone_v + 
+               penalty_endpoint_u + penalty_endpoint_v)  # (B,)
+    
+    if reduction == 'mean':
+        return penalty.mean()
+    elif reduction == 'sum':
+        return penalty.sum()
+    elif reduction == 'none':
+        return penalty
+    else:
+        raise ValueError(f"Invalid reduction: {reduction}")
 
 
 class CopulaLoss(torch.nn.Module):
