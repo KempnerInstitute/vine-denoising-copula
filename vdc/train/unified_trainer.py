@@ -35,18 +35,18 @@ import matplotlib.pyplot as plt
 # Ensure parent directory is on path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from src.data.onthefly import OnTheFlyCopulaDataset
-from src.models.copula_cnn import CopulaDensityCNN
-from src.models.copula_cnn_enhanced import EnhancedCopulaDensityCNN
-from src.models.copula_denoiser import CopulaDenoiser
+from vdc.data.onthefly import OnTheFlyCopulaDataset
+from vdc.models.copula_cnn import CopulaDensityCNN
+from vdc.models.copula_cnn_enhanced import EnhancedCopulaDensityCNN
+from vdc.models.copula_denoiser import CopulaDenoiser
 from vdc.models.unet_grid import GridUNet
 from vdc.models.copula_diffusion import CopulaAwareDiffusion
 from vdc.models.projection import copula_project, sinkhorn_project_density
 from vdc.losses import tail_weighted_loss
-from src.utils.ipfp_log import ipfp_project_log, marginal_deviation
-from src.utils.histogram import anti_aliased_hist
-from src.utils.metrics import kendall_tau, tail_dependence_from_grid
-from src.utils.probit_transform import (
+from vdc.utils.ipfp_log import ipfp_project_log, marginal_deviation
+from vdc.utils.histogram import anti_aliased_hist
+from vdc.utils.metrics import kendall_tau, tail_dependence_from_grid
+from vdc.utils.probit_transform import (
     copula_density_to_probit_density,
     probit_density_to_copula_density,
     copula_logdensity_to_probit_logdensity,
