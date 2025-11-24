@@ -30,9 +30,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from vdc.models.unet_grid import GridUNet
 from vdc.models.projection import copula_project
-from vdc.losses.nll import nll_points
-from vdc.losses.ise import ise_logdensity
-from vdc.losses.regularizers import marginal_penalty, tail_weighted_loss
+from vdc.losses import nll_points, ise_logdensity, marginal_penalty, tail_weighted_loss
 from vdc.data.loaders import CopulaPairsDataset
 
 

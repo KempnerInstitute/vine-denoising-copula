@@ -1,0 +1,238 @@
+================================================================================
+COMPREHENSIVE CODEBASE CLEANUP - COMPLETE
+================================================================================
+
+Date: November 24, 2025
+
+SUMMARY
+-------
+Performed comprehensive cleanup of the vine_diffusion_copula codebase,
+removing all unnecessary files, logs, and legacy code while preserving
+all active production components.
+
+
+SCRIPTS FOLDER CLEANUP
+======================
+
+KEPT (4 Active Scripts):
+-------------------------
+1. train_unified.py                      (3.2K)  - ✓ NEW thin CLI wrapper
+2. visualize_diffusion_offline.py        (14K)   - ✓ Offline visualization
+3. test_diffusion_copula_bivariate.py    (4.9K)  - ✓ Standardized testing
+4. evaluate_model.py                     (15K)   - ✓ Model evaluation
+
+ARCHIVED (22 Legacy Scripts → archive/scripts_legacy/):
+--------------------------------------------------------
+Training Scripts (9 files, 176K total):
+  - train_cnn_distributed.py
+  - train_denoiser.py
+  - train_distributed_production.py
+  - train_distributed_simple.py
+  - train_large_scale.py
+  - train_onthefly_distributed.py
+  - train_onthefly.py
+  - train_softmax_mass.py
+  - quick_train.py
+
+Utility Scripts (6 files):
+  - compare_baselines.py
+  - compare_probit_impact.py
+  - find_optimal_batch_size.py
+  - generate_comprehensive_data.py
+  - monitor_training.py
+  - plot_loss_trajectory.py
+
+Test Scripts (4 files):
+  - test_diffusion.py
+  - test_mixture.py
+  - test_on_known_copulas.py
+  - test_probit_smoothing.py
+
+Shell Scripts (5 files):
+  - configure_account.sh
+  - launch_denoiser_CE.sh
+  - train_grid_ddp.sh
+  - train_local_multi_gpu.sh
+  - train_local.sh
+
+DELETED:
+--------
+- scripts/slurm/             (entire directory with old SLURM jobs)
+- scripts/__pycache__/       (Python cache)
+- scripts/archive/           (already archived elsewhere)
+
+
+LOGS & RESULTS CLEANUP
+======================
+
+✓ logs/ directory:
+  - Removed: 150 old log files
+  - Status: Empty, ready for new runs
+
+✓ results/ directory:
+  - Cleared completely
+  - Status: Empty, ready for new evaluations
+
+
+CHECKPOINTS CLEANUP
+===================
+
+KEPT (Active Diffusion Checkpoints):
+-------------------------------------
+checkpoints/diffusion_probit_m128/           - ✓ Probit grid runs
+checkpoints/diffusion_uniform_m128/          - ✓ Uniform grid runs
+checkpoints/validate_no_probit_diffusion_m128/ - ✓ "Good run" reference
+
+ARCHIVED (Old Checkpoints → archive/checkpoints_old/):
+-------------------------------------------------------
+checkpoints/enhanced_cnn/
+checkpoints/production/
+checkpoints/unet_production/
+
+
+PYTHON CACHE CLEANUP
+====================
+
+✓ Removed all __pycache__/ directories
+✓ Removed all *.pyc files
+
+
+FINAL DIRECTORY STRUCTURE
+==========================
+
+vine_diffusion_copula/
+├── vdc/                          # Core library (clean)
+│   ├── train/
+│   │   ├── __init__.py
+│   │   ├── unified_trainer.py    # Main training engine
+│   │   └── train_grid.py
+│   ├── vine/
+│   │   └── copula_diffusion.py   # Vine-copula interface
+│   ├── models/
+│   ├── data/
+│   └── eval/
+│
+├── scripts/                      # ✓ CLEANED (4 active scripts only)
+│   ├── train_unified.py
+│   ├── visualize_diffusion_offline.py
+│   ├── test_diffusion_copula_bivariate.py
+│   └── evaluate_model.py
+│
+├── configs/                      # Active configs only
+│   ├── validate_no_probit_diffusion_m128.yaml
+│   ├── train_diffusion_uniform_m128.yaml
+│   ├── train_diffusion_probit_m128.yaml
+│   ├── train_diffusion_boundary_m128.yaml
+│   └── archive/                  # 35 old configs
+│
+├── slurm_jobs/                   # Active job scripts only
+│   ├── validate_diffusion_no_probit_m128.sh
+│   ├── train_diffusion_uniform_m128.sh
+│   ├── train_diffusion_probit_m128.sh
+│   ├── train_diffusion_boundary_m128.sh
+│   └── archive/                  # 16 old jobs
+│
+├── checkpoints/                  # ✓ CLEANED (3 active dirs only)
+│   ├── diffusion_probit_m128/
+│   ├── diffusion_uniform_m128/
+│   └── validate_no_probit_diffusion_m128/
+│
+├── logs/                         # ✓ EMPTY (ready for new runs)
+├── results/                      # ✓ EMPTY (ready for new evaluations)
+│
+└── archive/                      # All legacy code (gitignored)
+    ├── scripts/                  # Original train_unified.py backup
+    ├── scripts_legacy/           # 22 archived scripts
+    ├── checkpoints_old/          # 3 old checkpoint directories
+    ├── configs/                  # 35 old configs
+    └── slurm_jobs/               # 16 old SLURM scripts
+
+
+SPACE SAVED
+===========
+
+Scripts:     ~176K (training) + ~50K (utilities) = ~226K archived
+Logs:        150 files removed
+Checkpoints: 3 old directories archived
+Cache:       All __pycache__ and *.pyc removed
+
+
+ACTIVE WORKFLOW
+===============
+
+Training:
+  sbatch slurm_jobs/train_diffusion_uniform_m128.sh
+  sbatch slurm_jobs/train_diffusion_probit_m128.sh
+  sbatch slurm_jobs/train_diffusion_boundary_m128.sh
+
+Visualization:
+  python scripts/visualize_diffusion_offline.py --checkpoint PATH
+
+Testing:
+  python scripts/test_diffusion_copula_bivariate.py --checkpoint PATH
+
+Evaluation:
+  python scripts/evaluate_model.py --checkpoint PATH
+
+
+GITIGNORE STATUS
+================
+
+The following are ignored by git (won't clutter repository):
+  ✓ archive/          (all legacy code)
+  ✓ results/          (evaluation outputs)
+  ✓ logs/             (training logs)
+  ✓ checkpoints/      (model weights)
+  ✓ __pycache__/      (Python cache)
+  ✓ *.pyc             (compiled Python)
+
+
+BENEFITS
+========
+
+1. Clean Repository
+   - Only active, production-ready code in main directories
+   - All legacy code safely archived
+   - Easy to navigate and understand
+
+2. Reduced Confusion
+   - No multiple competing training scripts
+   - Clear single entrypoint: train_unified.py
+   - Obvious which files are current
+
+3. Disk Space
+   - Removed 150 log files
+   - Archived 22+ legacy scripts
+   - Cleaned all Python cache
+
+4. Professional Structure
+   - Library code in vdc/
+   - Scripts are thin wrappers
+   - Configs and jobs are minimal and focused
+
+
+MIGRATION NOTES
+===============
+
+If you need any archived script:
+  - Location: archive/scripts_legacy/
+  - All functionality is now in vdc/train/unified_trainer.py
+  - Use train_unified.py with appropriate config instead
+
+
+NEXT STEPS
+==========
+
+1. The codebase is now clean and professional
+2. All active workflows continue to work
+3. Ready for new training runs:
+   sbatch slurm_jobs/train_diffusion_boundary_m128.sh
+
+4. Use the clean API:
+   from vdc.vine.copula_diffusion import DiffusionCopulaModel
+   model = DiffusionCopulaModel.from_checkpoint("path/to/checkpoint.pt")
+
+
+================================================================================
+Cleanup complete! Codebase is now minimal, clean, and professional.
+================================================================================

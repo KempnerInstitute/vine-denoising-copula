@@ -1,6 +1,6 @@
 # Ignore drafts folder (separate git repo)
 drafts/
-
+*.md
 # Python
 __pycache__/
 *.py[cod]
@@ -22,7 +22,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-
+archive/
 # Virtual environments
 venv/
 env/
@@ -49,6 +49,10 @@ checkpoints/
 *.pt
 *.pth
 *.ckpt
+
+# Local archives and experiment results
+archive/
+results/
 
 # OS
 .DS_Store
