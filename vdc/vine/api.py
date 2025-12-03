@@ -231,9 +231,10 @@ class VineCopulaModel:
         
         # Predict density
         with torch.no_grad():
-            t = torch.ones(1, 1, 1, 1, device=self.device) * 0.5
+            # Time tensor should be (B,) shape for the model
+            t = torch.ones(1, device=self.device) * 0.5
             logD_raw = model(hist_t, t)
-            D_pos = torch.exp(logD_raw)
+            D_pos = torch.exp(logD_raw).clamp(min=1e-12, max=1e6)
             D_copula = copula_project(D_pos, iters=20)
         
         # Create h-function lookup

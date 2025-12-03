@@ -1,0 +1,117 @@
+# Unified Configuration for Evaluation and Visualization
+# This config drives the complete post-training analysis workflow
+
+# Model to evaluate
+model:
+  checkpoint: checkpoints/validate_no_probit_diffusion_m128/model_step_5000.pt
+  device: cuda  # or cpu
+
+# Evaluation settings
+evaluation:
+  # Data source
+  data_source: parametric  # Options: parametric, real_data, both
+  
+  # Grid resolution for density estimation
+  grid_resolution: 128
+  binning: uniform  # uniform or probit
+  
+  # Projection settings
+  projection_iters: 15
+  
+  # Copula families to test (for parametric evaluation)
+  test_copulas:
+    - family: gaussian
+      params: {rho: 0.75}
+      name: Gaussian_rho0.75
+    
+    - family: gaussian
+      params: {rho: -0.65}
+      name: Gaussian_rho-0.65
+    
+    - family: clayton
+      params: {theta: 2.5}
+      name: Clayton_theta2.5
+    
+    - family: gumbel
+      params: {theta: 3.0}
+      name: Gumbel_theta3.0
+    
+    - family: frank
+      params: {theta: 5.0}
+      name: Frank_theta5.0
+    
+    - family: student
+      params: {rho: 0.7, nu: 6.0}
+      name: Student_rho0.7_nu6
+  
+  # Real data evaluation (when data_source includes 'real_data')
+  real_data:
+    enabled: false
+    data_path: data/my_bivariate_data.csv
+    columns: [var1, var2]
+    sample_size: 5000
+    transform_marginals: true  # Apply empirical CDF transformation
+
+# Visualization settings
+visualization:
+  output_dir: results/evaluation
+  
+  # Figure types
+  generate_comparison_plots: true
+  generate_marginal_plots: true
+  generate_hfunction_plots: true
+  
+  # Plot settings
+  color_scale_mode: both  # independent, shared, both
+  dpi: 300
+  figsize: [10, 8]
+  
+  # Save formats
+  formats: [png, pdf]
+
+# Metrics to compute
+metrics:
+  # Density fit quality
+  - ise  # Integrated Squared Error
+  - kl_divergence
+  - marginal_deviation
+  - tail_dependence
+  
+  # Copula-specific
+  - kendall_tau
+  - spearman_rho
+  - upper_tail_dependence  # lambda_U
+  - lower_tail_dependence  # lambda_L
+
+# H-function computation (for vine copula construction)
+hfunctions:
+  enabled: true
+  interpolation: bilinear  # bilinear or cubic
+  save_to_file: true
+
+# Sampling from estimated copula
+sampling:
+  enabled: true
+  n_samples: 10000
+  save_samples: true
+
+# Output organization
+output:
+  create_summary_report: true
+  save_metrics_json: true
+  save_densities_npy: true
+
+# Future extensions (not yet implemented)
+extensions:
+  # Multivariate vine estimation
+  vine_copula:
+    enabled: false
+    dimension: 3  # Number of variables
+    structure: C-vine  # C-vine, D-vine, R-vine
+    
+  # Real-world application
+  application:
+    enabled: false
+    type: financial_risk  # Options: financial_risk, weather, etc.
+    dataset: data/application_data.csv
+

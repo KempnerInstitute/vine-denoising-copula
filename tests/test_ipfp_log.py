@@ -1,7 +1,7 @@
 """Tests for log-domain IPFP projection accuracy and convergence."""
 import torch
 import pytest
-from src.utils.ipfp_log import ipfp_project_log, marginal_deviation
+from vdc.utils.ipfp_log import ipfp_project_log, marginal_deviation
 
 @pytest.mark.parametrize("m", [32, 64])
 def test_ipfp_marginal_accuracy(m):

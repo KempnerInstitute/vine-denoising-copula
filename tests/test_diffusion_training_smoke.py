@@ -6,7 +6,7 @@ import pytest
 
 from scripts.train_unified import build_model, training_step
 from vdc.models.copula_diffusion import CopulaAwareDiffusion
-from src.data.onthefly import OnTheFlyCopulaDataset
+from vdc.data.onthefly import OnTheFlyCopulaDataset
 
 
 def _make_config() -> dict:

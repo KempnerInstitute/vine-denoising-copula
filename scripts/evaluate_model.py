@@ -20,7 +20,7 @@ import argparse
 import torch
 import numpy as np
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Optional
 import yaml
 import json
 from tqdm import tqdm
@@ -42,6 +42,7 @@ from vdc.eval.visualize import (
     plot_metrics_summary,
     create_paper_figure,
 )
+from vdc.vine.copula_diffusion import DiffusionCopulaModel
 
 
 # Default test copulas with ground truth
@@ -121,94 +122,54 @@ DEFAULT_TEST_COPULAS = [
 ]
 
 
-def load_model(checkpoint_path: Path, device: str = 'cuda') -> GridUNet:
+def load_model(checkpoint_path: Path, device: str = 'cuda') -> DiffusionCopulaModel:
     """
-    Load trained model from checkpoint.
+    Load a trained diffusion model from checkpoint.
     
     Args:
-        checkpoint_path: Path to .pt checkpoint file
+        checkpoint_path: Path to model checkpoint
         device: Device to load model on
         
     Returns:
-        Loaded model in eval mode
+        DiffusionCopulaModel wrapper
     """
     print(f"Loading model from: {checkpoint_path}")
     
-    checkpoint = torch.load(checkpoint_path, map_location=device)
-    
-    # Extract model config
-    if 'config' in checkpoint:
-        config = checkpoint['config']
-        model_config = config.get('model', {})
-    else:
-        # Use defaults if config not in checkpoint
-        model_config = {
-            'm': 64,
-            'base_channels': 96,
-            'channel_mults': [1, 2, 3, 4],
-            'num_res_blocks': 2,
-            'attention_resolutions': [16, 8],
-            'dropout': 0.1,
-        }
-        print("Warning: Config not in checkpoint, using defaults")
-    
-    # Create model
-    model = GridUNet(**model_config).to(device)
-    
-    # Load weights (handle EMA if present)
-    if 'model_ema' in checkpoint:
-        print("Loading EMA weights")
-        model.load_state_dict(checkpoint['model_ema'])
-    elif 'model' in checkpoint:
-        model.load_state_dict(checkpoint['model'])
-    else:
-        model.load_state_dict(checkpoint)
-    
-    model.eval()
+    model = DiffusionCopulaModel.from_checkpoint(str(checkpoint_path), device=device)
     
     print(f"✓ Model loaded successfully")
-    print(f"  Parameters: {sum(p.numel() for p in model.parameters()):,}")
-    if 'step' in checkpoint:
-        print(f"  Training step: {checkpoint['step']:,}")
+    print(f"  Parameters: {sum(p.numel() for p in model.model.parameters()):,}")
     
     return model
 
 
 def predict_density(
-    model: GridUNet,
+    model: DiffusionCopulaModel,
     points: np.ndarray,
     m: int = 64,
     device: str = 'cuda',
 ) -> np.ndarray:
     """
-    Predict copula density from sample points.
+    Predict copula density from sample points using the diffusion model.
     
     Args:
-        model: Trained model
+        model: DiffusionCopulaModel wrapper
         points: (n, 2) sample points in [0,1]²
         m: Grid resolution
-        device: Device
+        device: Device (unused, model has device)
         
     Returns:
         (m, m) predicted density
     """
-    # Create histogram
-    hist = points_to_histogram(points, m=m)
-    hist_t = torch.from_numpy(hist).float().unsqueeze(0).unsqueeze(0).to(device)
-    
-    # Predict with model
-    with torch.no_grad():
-        t = torch.ones(1, 1, 1, 1, device=device) * 0.5  # Use t=0.5 for prediction
-        logD_raw = model(hist_t, t)
-        D_pos = torch.exp(logD_raw)
-        D_hat = copula_project(D_pos)
-    
-    density_pred = D_hat[0, 0].cpu().numpy()
-    return density_pred
+    # Use the DiffusionCopulaModel's estimation method
+    density, _, _ = model.estimate_density_from_samples(
+        points, m=m, projection_iters=15
+    )
+    return density
 
 
 def evaluate_single_copula(
-    model: GridUNet,
+    model: DiffusionCopulaModel,
     copula_spec: Dict,
     n_samples: int = 2000,
     m: int = 64,
@@ -219,7 +180,7 @@ def evaluate_single_copula(
     Evaluate model on a single copula family.
     
     Args:
-        model: Trained model
+        model: Trained DiffusionCopulaModel
         copula_spec: Dict with 'family', 'params', 'name', 'rotation'
         n_samples: Number of samples to generate
         m: Grid resolution
@@ -258,20 +219,37 @@ def evaluate_single_copula(
     print("Predicting density with model...")
     density_pred = predict_density(model, points, m=m, device=device)
     
-    # Create histogram for evaluation
-    hist = points_to_histogram(points, m=m)
-    hist_t = torch.from_numpy(hist).float().unsqueeze(0).unsqueeze(0).to(device)
-    
-    # Compute metrics
+    # Compute metrics directly (avoiding evaluate_pair_copula since we already have density)
     print("Computing metrics...")
-    metrics = evaluate_pair_copula(
-        model,
-        hist_t,
-        points,
-        true_density=density_true,
-        device=device,
-        m=m,
-    )
+    metrics = {}
+    du = 1.0 / m
+    
+    # 1. Kendall's tau
+    from vdc.utils.stats import kendall_tau as kd_tau
+    metrics['tau_data'] = kd_tau(points[:, 0], points[:, 1])
+    
+    # 2. ISE (if ground truth available)
+    if density_true is not None:
+        ise = np.mean((density_pred - density_true) ** 2) * du * du
+        metrics['ise'] = ise
+    
+    # 3. Marginal uniformity check
+    marginal_u = np.sum(density_pred, axis=1) * du  # Should be ~1
+    marginal_v = np.sum(density_pred, axis=0) * du  # Should be ~1
+    metrics['marginal_u_error'] = np.mean(np.abs(marginal_u - 1.0))
+    metrics['marginal_v_error'] = np.mean(np.abs(marginal_v - 1.0))
+    
+    # 4. Mass conservation
+    total_mass = np.sum(density_pred) * du * du
+    metrics['total_mass'] = total_mass
+    metrics['mass_error'] = abs(total_mass - 1.0)
+    
+    # 5. NLL on test points (interpolate density and compute)
+    from vdc.losses import nll_points
+    D_hat_t = torch.from_numpy(density_pred).float().unsqueeze(0).unsqueeze(0).to(device)
+    points_t = torch.from_numpy(points).float().unsqueeze(0).to(device)
+    nll = nll_points(D_hat_t, points_t)
+    metrics['nll'] = nll.item()
     
     # Print metrics
     print(f"\nMetrics:")

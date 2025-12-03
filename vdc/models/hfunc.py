@@ -47,11 +47,12 @@ class HFuncLookup:
         self.m_v = m_v
         self.density_grid = density_grid
         
-        # Default uniform grids
+        # Default uniform grids - use cell CENTERS (0.5/m, 1.5/m, ..., (m-0.5)/m)
+        # This is important: copula densities are evaluated at cell centers, not edges
         if u_grid is None:
-            u_grid = np.linspace(0, 1, m_u)
+            u_grid = np.linspace(0.5/m_u, 1 - 0.5/m_u, m_u)
         if v_grid is None:
-            v_grid = np.linspace(0, 1, m_v)
+            v_grid = np.linspace(0.5/m_v, 1 - 0.5/m_v, m_v)
             
         self.u_grid = u_grid
         self.v_grid = v_grid

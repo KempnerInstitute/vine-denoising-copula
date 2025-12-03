@@ -1,0 +1,80 @@
+# Conditional Diffusion with Hybrid Loss Configuration
+# 
+# Key improvement: Add direct density supervision to the diffusion training
+# - Primary: Noise prediction MSE (standard diffusion)
+# - Secondary: ISE on reconstructed density at each step
+# - This should help the model learn correct density scale
+#
+
+model:
+  type: diffusion_unet
+  m: 64
+  in_channels: 2  # [noisy_log_density, histogram]
+  base_channels: 64
+  channel_mults: [1, 2, 3, 4]
+  num_res_blocks: 2
+  attention_resolutions: [16, 8]
+  dropout: 0.1
+
+diffusion:
+  timesteps: 1000
+  noise_schedule: cosine
+  beta_start: 0.0001
+  beta_end: 0.02
+
+data:
+  mode: online_generation
+  m: 64
+  n_samples_per_copula: 2000
+  batch_size: 32
+  num_workers: 4
+  prefetch_factor: 2
+  transform_to_probit_space: false
+  copula_families:
+    single:
+      gaussian: 0.2
+      clayton: 0.2
+      gumbel: 0.2
+      frank: 0.15
+      joe: 0.15
+      student: 0.1
+    mixture:
+      enabled: true
+      prob: 0.2
+      n_components: [2, 3]
+  param_ranges:
+    gaussian_rho: [-0.9, 0.9]
+    clayton_theta: [0.5, 10.0]
+    gumbel_theta: [1.0, 10.0]
+    frank_theta: [-10.0, 10.0]
+    joe_theta: [1.0, 10.0]
+    student_rho: [-0.9, 0.9]
+    student_nu: [3.0, 20.0]
+  rotation_prob: 0.25
+
+training:
+  max_steps: 50000
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+  batch_size: 32
+  use_amp: true
+  gradient_clip: 1.0
+  log_every: 100
+  save_every: 5000
+  visualize_every: 2000
+  projection_iters: 10
+  
+  conditional_mode: histogram
+  histogram_normalize: true
+  
+  # HYBRID LOSS: Combine noise prediction with density supervision
+  loss_type: hybrid
+  loss_weights:
+    noise: 1.0         # Standard diffusion noise MSE
+    x0_ise: 0.5        # ISE on predicted x0 (reconstructed density)
+    x0_log_ise: 0.3    # Log-ISE for shape matching
+    marginal: 0.1      # Marginal uniformity on predicted x0
+    tail: 0.2          # Tail accuracy on predicted x0
+
+checkpoint_dir: checkpoints/conditional_diffusion_hybrid
+

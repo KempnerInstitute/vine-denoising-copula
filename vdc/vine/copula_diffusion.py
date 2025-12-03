@@ -29,7 +29,7 @@ from scripts.visualize_diffusion_offline import (  # type: ignore
     build_binning,
     build_diffusion,
     build_model,
-    denoise_log_density,
+    denoise_from_histogram,
     load_checkpoint,
     to_area_tensor,
 )
@@ -125,7 +125,10 @@ class DiffusionCopulaModel:
         projection_iters: int = 15,
     ) -> np.ndarray:
         """
-        Run one DDPM denoising pass starting from a given target log-density.
+        Run reverse diffusion denoising starting from a given density.
+        
+        Uses the denoise_from_histogram approach which treats the input as a
+        noisy observation and runs reverse diffusion from an intermediate timestep.
         """
         m = log_density_grid.shape[0]
         assert log_density_grid.shape == (m, m)
@@ -139,12 +142,21 @@ class DiffusionCopulaModel:
         density_tensor = (
             torch.from_numpy(density_true).float().unsqueeze(0).unsqueeze(0).to(self.device)
         )
-        target_log = torch.log(density_tensor.clamp(min=1e-12))
 
+        # Determine starting timestep
         timesteps = int(self.diffusion.timesteps)
-        t = noise_step if noise_step is not None else timesteps - 1
+        start_t = noise_step if noise_step is not None else min(500, timesteps - 1)
 
-        recon_log = denoise_log_density(self.model, self.diffusion, target_log, t)
+        # Use denoise_from_histogram to run reverse diffusion
+        recon_log = denoise_from_histogram(
+            self.model, 
+            self.diffusion, 
+            density_tensor,  # Input is normalized density
+            self.device,
+            num_steps=50,
+            start_t=start_t
+        )
+        
         recon_density = torch.exp(recon_log).clamp(1e-12, 1e6)
         recon_density = recon_density / (
             (recon_density * area_tensor).sum(dim=(2, 3), keepdim=True).clamp_min(1e-12)

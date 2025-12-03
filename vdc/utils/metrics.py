@@ -55,24 +55,35 @@ def tail_density(d: torch.Tensor, tail_region: float = 0.1) -> torch.Tensor:
 def kendall_tau(samples: torch.Tensor, max_points: int = 2000) -> torch.Tensor:
     """Approximate Kendall's tau from samples (N,2) or (B,N,2).
     Subsamples to max_points for O(n^2) concordance computation.
+    
+    Returns Kendall's tau in [-1, 1].
     """
-    if samples.dim() == 2: samples = samples.unsqueeze(0)
+    if samples.dim() == 2: 
+        samples = samples.unsqueeze(0)
     B, N, _ = samples.shape
     if N > max_points:
         idx = torch.randperm(N, device=samples.device)[:max_points]
         samples = samples[:, idx]
         N = max_points
-    u = samples[...,0]; v = samples[...,1]
-    # (B,N,N) differences
+    u = samples[..., 0]  # (B, N)
+    v = samples[..., 1]  # (B, N)
+    
+    # (B, N, N) differences
     du = u.unsqueeze(-1) - u.unsqueeze(-2)
     dv = v.unsqueeze(-1) - v.unsqueeze(-2)
-    sign = torch.sign(du*dv)
-    # ignore zeros (ties) by masking
-    mask = (du!=0) & (dv!=0)
-    concord = (sign>0).float()[mask].sum(dim=-1)
-    discord = (sign<0).float()[mask].sum(dim=-1)
-    denom = mask.float().sum(dim=-1).clamp_min(1.0)
-    tau = (concord - discord) / denom
+    sign = torch.sign(du * dv)
+    
+    # Ignore zeros (ties) by masking
+    mask = (du != 0) & (dv != 0)
+    
+    # Apply mask and sum per batch
+    # Concordant: sign > 0, Discordant: sign < 0
+    concordant = ((sign > 0) & mask).float().sum(dim=(-2, -1))  # (B,)
+    discordant = ((sign < 0) & mask).float().sum(dim=(-2, -1))  # (B,)
+    total_pairs = mask.float().sum(dim=(-2, -1)).clamp_min(1.0)  # (B,)
+    
+    # Kendall's tau = (concordant - discordant) / total_pairs
+    tau = (concordant - discordant) / total_pairs
     return tau.mean()
 
 def tail_dependence_from_grid(d: torch.Tensor, q_high: float = 0.95, q_low: float = 0.05) -> torch.Tensor:

@@ -324,7 +324,7 @@ def print_vine_structure(structure: VineStructure):
         for i, (edge, tau) in enumerate(zip(tree.edges, tree.tau_values)):
             node_i, node_j, cond_set = edge
             if len(cond_set) == 0:
-                print(f"  Edge {i+1}: ({node_i}, {node_j}) | {} — τ = {tau:.4f}")
+                print(f"  Edge {i+1}: ({node_i}, {node_j}) | {{}} — τ = {tau:.4f}")
             else:
                 cond_str = ", ".join(map(str, sorted(cond_set)))
                 print(f"  Edge {i+1}: ({node_i}, {node_j}) | {{{cond_str}}} — τ = {tau:.4f}")

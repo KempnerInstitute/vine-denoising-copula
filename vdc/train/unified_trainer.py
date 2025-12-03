@@ -201,16 +201,17 @@ def build_model(model_type: str, config: Dict, device: torch.device):
         ).to(device)
     
     if model_type == 'diffusion_unet':
+        # For diffusion_unet: ALWAYS use in_channels=1 (matches original good run)
+        # use_coordinates flag is ignored for this model type
         return GridUNet(
             m=m,
-            in_channels=mcfg.get('in_channels', 1),
+            in_channels=1,  # Hardcoded - NO coordinate concatenation for diffusion
             base_channels=mcfg.get('base_channels', 128),
             channel_mults=tuple(mcfg.get('channel_mults', [1, 2, 4])),
             num_res_blocks=mcfg.get('num_res_blocks', 2),
             attention_resolutions=tuple(mcfg.get('attention_resolutions', [])),
             dropout=mcfg.get('dropout', 0.1),
-            time_emb_dim=mcfg.get('time_emb_dim', 256),
-            use_coordinates=mcfg.get('use_coordinates', True)
+            time_emb_dim=mcfg.get('time_emb_dim', 256)
         ).to(device)
     
     raise ValueError(f"Unknown model type: {model_type}")
@@ -504,55 +505,53 @@ def training_step(
         noisy_log_density = diffusion.q_sample(density_log, t, noise=noise)
         
         with autocast(device_type='cuda', enabled=use_amp):
-            if use_coords:
-                coords = torch.stack(torch.meshgrid(row_coords_geom, col_coords_geom, indexing='ij'), dim=0)
-                coords = coords.unsqueeze(0).expand(B, -1, -1, -1)
-                model_input = torch.cat([noisy_log_density, coords], dim=1)
+            # For diffusion_unet: NO coordinate concatenation (matches original good run)
+            # Coordinates only used for enhanced_cnn and denoiser
+            predicted_noise = model(noisy_log_density, t.float() / diffusion.timesteps)
+        
+        # Clamp predicted noise to prevent extreme values
+        predicted_noise = predicted_noise.clamp(min=-10, max=10)
+        
+        # Compute predicted x_0 (clean log-density) - matches original good run formula
+        alpha_t = diffusion.alphas_cumprod[t].view(-1, 1, 1, 1)
+        sqrt_alpha_t = torch.sqrt(alpha_t)
+        sqrt_one_minus_alpha_t = torch.sqrt(1 - alpha_t)
+        pred_log_density = (noisy_log_density - sqrt_one_minus_alpha_t * predicted_noise) / sqrt_alpha_t
+        pred_log_density = pred_log_density.clamp(min=-20, max=20)
+        pred_density = torch.exp(pred_log_density).clamp(min=1e-12, max=1e6)
+        pred_density = normalize_grid(pred_density)
+        
+        # Projection to copula constraints (matches original good run logic)
+        skip_projection = projection_iters == 0
+        if skip_projection:
+            proj_density = pred_density
+        else:
+            proj_density_raw = copula_project(pred_density, iters=projection_iters,
+                                             row_target=row_widths_vec, col_target=col_widths_vec)
+            if detach_projection:
+                # Original: recon_density_copula (no grad) but proj for metrics
+                proj_density = pred_density  # No gradient through projection
             else:
-                model_input = noisy_log_density
-            
-            predicted_noise = model(model_input, t)
-            
-            # Predicted clean log-density
-            pred_log_density = diffusion.predict_start_from_noise(noisy_log_density, t, predicted_noise)
-            pred_density = torch.exp(pred_log_density).clamp(min=1e-12, max=1e6)
-            pred_density = normalize_grid(pred_density)
-            
-            # Projection to copula constraints
-            if projection_iters > 0:
-                if detach_projection:
-                    pred_density_proj = copula_project(
-                        pred_density.detach(),
-                        iters=projection_iters,
-                        row_target=row_widths_vec,
-                        col_target=col_widths_vec
-                    )
-                    pred_density = pred_density + (pred_density_proj - pred_density.detach())
-                else:
-                    pred_density = copula_project(
-                        pred_density,
-                        iters=projection_iters,
-                        row_target=row_widths_vec,
-                        col_target=col_widths_vec
-                    )
-                pred_density = normalize_grid(pred_density)
-            
-            # Loss on denoising task
-            noise_loss = torch.nn.functional.mse_loss(predicted_noise, noise)
-            
-            # Density-based losses
-            density_loss, density_metrics, density_components = compute_density_losses(
-                pred_density,
-                density,
-                training,
-                geometry,
-                loss_weights_eff,
-                tail_mask,
-                model_output=None,
-                weight_factor=None
-            )
-            
-            total_loss = noise_loss + density_loss
+                proj_density = proj_density_raw
+        
+        proj_density = normalize_grid(proj_density)
+        
+        # Loss on denoising task - matches original: torch.mean((pred - real)**2)
+        noise_loss = torch.mean((predicted_noise - noise) ** 2)
+        
+        # Density-based losses on projected density
+        density_loss, density_metrics, density_components = compute_density_losses(
+            proj_density,
+            density,
+            training,
+            geometry,
+            loss_weights_eff,
+            tail_mask,
+            model_output=None,
+            weight_factor=None
+        )
+        
+        total_loss = noise_loss + density_loss
         
         metrics = {
             'loss': total_loss.item(),
