@@ -1,6 +1,8 @@
 # Ignore drafts folder (separate git repo)
 drafts/
-*.md
+
+# Keep only README.md
+!README.md
 # Python
 __pycache__/
 *.py[cod]

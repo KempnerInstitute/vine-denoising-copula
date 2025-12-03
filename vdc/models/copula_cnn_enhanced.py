@@ -1,4 +1,4 @@
-"""Enhanced Copula CNN with optional log-density head, coordinate/probit inputs, and time/noise conditioning.
+r"""Enhanced Copula CNN with optional log-density head, coordinate/probit inputs, and time/noise conditioning.
 
 Design goals:
 - Backward-compatible with baseline model usage via dict outputs.
