@@ -1,0 +1,81 @@
+# Conditional Diffusion Training Configuration - IMPROVED SMOOTHNESS
+# 
+# Key improvements over the base config:
+# 1. Added log-space cross-entropy loss to match density magnitudes
+# 2. Added tail-weighted loss for peaked copulas (Clayton, Gumbel, Joe)
+# 3. Added TV smoothness regularization to reduce spottiness
+# 4. Longer training (150k steps) for better convergence
+#
+
+model:
+  type: diffusion_unet
+  m: 64
+  in_channels: 2  # [noisy_log_density, histogram]
+  base_channels: 64
+  channel_mults: [1, 2, 3, 4]
+  num_res_blocks: 2
+  attention_resolutions: [16, 8]
+  dropout: 0.1
+
+diffusion:
+  timesteps: 1000
+  noise_schedule: cosine
+  beta_start: 0.0001
+  beta_end: 0.02
+
+data:
+  mode: online_generation
+  m: 64
+  n_samples_per_copula: 2000
+  batch_size: 32
+  num_workers: 4
+  prefetch_factor: 2
+  transform_to_probit_space: false
+  copula_families:
+    single:
+      gaussian: 0.20
+      clayton: 0.20
+      gumbel: 0.20
+      frank: 0.15
+      joe: 0.15
+      student: 0.10
+    mixture:
+      enabled: true
+      prob: 0.2
+      n_components: [2, 3]
+  param_ranges:
+    gaussian_rho: [-0.9, 0.9]
+    clayton_theta: [0.5, 10.0]
+    gumbel_theta: [1.0, 10.0]
+    frank_theta: [-10.0, 10.0]
+    joe_theta: [1.0, 10.0]
+    student_rho: [-0.9, 0.9]
+    student_nu: [3.0, 20.0]
+  rotation_prob: 0.25
+
+training:
+  max_steps: 150000  # Longer training for better convergence
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+  batch_size: 32
+  use_amp: true
+  gradient_clip: 1.0
+  log_every: 100
+  save_every: 10000
+  visualize_every: 5000
+  projection_iters: 10
+  
+  conditional_mode: histogram
+  histogram_normalize: true
+  
+  # IMPROVED loss weights for smoothness and magnitude matching
+  loss_weights:
+    noise: 1.0      # Primary diffusion loss
+    ise: 0.5        # Integrated squared error
+    marginal: 0.1   # Marginal uniformity
+    ce: 0.3         # NEW: Log-space cross-entropy for magnitude matching
+    tail: 0.2       # NEW: Tail-weighted loss for peaked copulas
+    tv: 0.05        # NEW: Total variation smoothness regularization
+
+checkpoint_dir: checkpoints/conditional_diffusion_smooth
+

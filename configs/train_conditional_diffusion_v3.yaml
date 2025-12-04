@@ -1,0 +1,116 @@
+# Conditional Diffusion V3 - Improved Training Data Diversity
+#
+# Key improvements over V2:
+# 1. Much higher mixture probability (50%) for non-parametric structures
+# 2. More mixture components (2-5)
+# 3. All available copula families including BB1, BB6, BB7, BB8
+# 4. Higher rotation probability (50%) for asymmetric learning
+# 5. Wider parameter ranges for extreme dependencies
+# 6. Added independence copula for near-uniform cases
+#
+# Goal: Train a general non-parametric density estimator, not a copula classifier
+
+model:
+  type: diffusion_unet
+  m: 64
+  in_channels: 2  # [noisy_log_density, histogram]
+  base_channels: 64
+  channel_mults: [1, 2, 3, 4]
+  num_res_blocks: 2
+  attention_resolutions: [16, 8]
+  dropout: 0.1
+
+diffusion:
+  timesteps: 1000
+  noise_schedule: cosine
+  beta_start: 0.0001
+  beta_end: 0.02
+
+data:
+  mode: online_generation
+  m: 64
+  n_samples_per_copula: 2000
+  batch_size: 32
+  num_workers: 4
+  prefetch_factor: 2
+  
+  # IMPROVED: More diverse copula families
+  copula_families:
+    single:
+      # Elliptical (symmetric, smooth)
+      gaussian: 0.12
+      student: 0.10
+      
+      # Archimedean (asymmetric tails)
+      clayton: 0.12
+      gumbel: 0.12
+      frank: 0.10
+      joe: 0.10
+      
+      # Two-parameter families (more complex shapes)
+      bb1: 0.08
+      bb6: 0.06
+      bb7: 0.08
+      bb8: 0.06
+      
+      # Independence (uniform, near-zero dependence)
+      independence: 0.06
+      
+    mixture:
+      enabled: true
+      prob: 0.50  # KEY: 50% mixtures for non-parametric structures
+      n_components: [2, 5]  # More components for complex densities
+
+  # IMPROVED: Wider parameter ranges
+  param_ranges:
+    # Elliptical
+    gaussian_rho: [-0.95, 0.95]
+    student_rho: [-0.95, 0.95]
+    student_nu: [2.5, 30.0]  # Lower nu = heavier tails
+    
+    # Archimedean
+    clayton_theta: [0.2, 15.0]  # Extended range
+    gumbel_theta: [1.0, 12.0]
+    frank_theta: [-15.0, 15.0]  # Wider for negative dependence
+    joe_theta: [1.0, 12.0]
+    
+    # BB families (two parameters each)
+    bb1_theta: [0.1, 6.0]
+    bb1_delta: [1.0, 6.0]
+    bb6_theta: [1.0, 6.0]
+    bb6_delta: [1.0, 6.0]
+    bb7_theta: [1.0, 6.0]
+    bb7_delta: [0.1, 6.0]
+    bb8_theta: [1.0, 6.0]
+    bb8_delta: [0.01, 1.0]
+
+  # KEY: Higher rotation for asymmetric learning
+  rotation_prob: 0.50
+
+training:
+  max_steps: 300000  # Longer training for more diversity
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+  batch_size: 32
+  use_amp: true
+  gradient_clip: 1.0
+  log_every: 100
+  save_every: 10000
+  visualize_every: 5000
+  steps_per_epoch: 1000
+  
+  # CFG settings
+  cfg_dropout_prob: 0.15
+  
+  # Loss weights
+  loss_weights:
+    noise: 1.0
+    ise: 0.5
+    marginal: 0.1
+    log: 0.3
+    tail: 0.3
+    tv: 0.1
+    anticopy: 0.5
+
+checkpoint_dir: checkpoints/conditional_diffusion_v3
+

@@ -50,6 +50,7 @@ from vdc.models.copula_diffusion import CopulaAwareDiffusion
 from vdc.models.projection import copula_project
 from vdc.data.onthefly import OnTheFlyCopulaDataset
 from vdc.data.hist import scatter_to_hist
+from vdc.utils.smoothing import total_variation_loss, log_total_variation_loss, smooth_density_gaussian
 
 
 def setup_distributed() -> Tuple[int, int, int]:
@@ -197,11 +198,32 @@ def training_step(
             (aux_weight.squeeze(-2) * (col_marg - 1.0) ** 2).mean()
         )
         
+        # Log-space cross-entropy loss (helps match density magnitudes)
+        target_log_clipped = torch.log(density.clamp(min=1e-12))
+        recon_log_clipped = torch.log(recon_density.clamp(min=1e-12))
+        loss_ce = (aux_weight * (target_log_clipped - recon_log_clipped) ** 2).mean()
+        
+        # Tail loss (focus on corners where peaked copulas have mass)
+        corner_mask = torch.zeros_like(density)
+        tail_size = max(5, m // 12)  # ~5 cells in corners
+        corner_mask[:, :, :tail_size, :tail_size] = 1.0  # lower-left
+        corner_mask[:, :, :tail_size, -tail_size:] = 1.0  # lower-right
+        corner_mask[:, :, -tail_size:, :tail_size] = 1.0  # upper-left
+        corner_mask[:, :, -tail_size:, -tail_size:] = 1.0  # upper-right
+        tail_weight = corner_mask * 4.0 + (1 - corner_mask) * 1.0  # 4x weight in corners
+        loss_tail = (aux_weight * tail_weight * (target_log_clipped - recon_log_clipped) ** 2).mean()
+        
+        # TV smoothness loss (penalize spottiness)
+        loss_tv = log_total_variation_loss(recon_log, weight=1.0)
+        
         # Total loss
         total_loss = (
             loss_weights.get('noise', 1.0) * loss_noise +
             loss_weights.get('ise', 0.5) * loss_ise +
-            loss_weights.get('marginal', 0.1) * loss_marginal
+            loss_weights.get('marginal', 0.1) * loss_marginal +
+            loss_weights.get('ce', 0.3) * loss_ce +
+            loss_weights.get('tail', 0.2) * loss_tail +
+            loss_weights.get('tv', 0.05) * loss_tv
         )
     
     # Backward pass
@@ -221,6 +243,9 @@ def training_step(
         'noise': float(loss_noise.item()),
         'ise': float(loss_ise.item()),
         'marginal': float(loss_marginal.item()),
+        'ce': float(loss_ce.item()),
+        'tail': float(loss_tail.item()),
+        'tv': float(loss_tv.item()),
     }
 
 

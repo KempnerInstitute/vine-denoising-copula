@@ -107,18 +107,6 @@ DEFAULT_TEST_COPULAS = [
         'name': 'Student-t(ρ=0.7, ν=5)',
         'rotation': 0,
     },
-    {
-        'family': 'bb1',
-        'params': {'theta': 0.5, 'delta': 1.5},
-        'name': 'BB1(θ=0.5, δ=1.5)',
-        'rotation': 0,
-    },
-    {
-        'family': 'bb7',
-        'params': {'theta': 1.5, 'delta': 0.5},
-        'name': 'BB7(θ=1.5, δ=0.5)',
-        'rotation': 0,
-    },
 ]
 
 
@@ -148,6 +136,15 @@ def predict_density(
     points: np.ndarray,
     m: int = 64,
     device: str = 'cuda',
+    smooth_sigma: float = 0.0,
+    num_diffusion_steps: int = 50,
+    cfg_scale: float = 2.0,
+    adaptive_cfg: bool = False,
+    num_ensemble: int = 1,
+    ensemble_mode: str = "geometric",
+    use_cfg: bool = True,
+    # Legacy parameter (ignored when use_cfg=True)
+    noise_step: int = 300,
 ) -> np.ndarray:
     """
     Predict copula density from sample points using the diffusion model.
@@ -157,13 +154,31 @@ def predict_density(
         points: (n, 2) sample points in [0,1]²
         m: Grid resolution
         device: Device (unused, model has device)
+        smooth_sigma: Gaussian smoothing sigma (0 = no smoothing, CFG is already smooth)
+        num_diffusion_steps: Number of reverse diffusion steps (50 is usually enough)
+        cfg_scale: Classifier-Free Guidance scale (>1 = stronger conditioning)
+        adaptive_cfg: If True, automatically adjust CFG based on histogram properties
+        num_ensemble: Number of independent inferences to average (more = smoother/robust)
+        ensemble_mode: How to aggregate: "geometric", "arithmetic", or "median"
+        use_cfg: Whether to use CFG sampling (True for V2 models)
         
     Returns:
         (m, m) predicted density
     """
-    # Use the DiffusionCopulaModel's estimation method
+    # Use the DiffusionCopulaModel's estimation method with CFG
+    # Use 100 projection iterations for better marginal uniformity
     density, _, _ = model.estimate_density_from_samples(
-        points, m=m, projection_iters=15
+        points, 
+        m=m, 
+        projection_iters=100,
+        smooth_sigma=smooth_sigma,
+        num_diffusion_steps=num_diffusion_steps,
+        cfg_scale=cfg_scale,
+        adaptive_cfg=adaptive_cfg,
+        num_ensemble=num_ensemble,
+        ensemble_mode=ensemble_mode,
+        use_cfg=use_cfg,
+        noise_step=noise_step,
     )
     return density
 
@@ -175,6 +190,14 @@ def evaluate_single_copula(
     m: int = 64,
     device: str = 'cuda',
     output_dir: Optional[Path] = None,
+    smooth_sigma: float = 0.0,
+    num_diffusion_steps: int = 50,
+    cfg_scale: float = 2.0,
+    adaptive_cfg: bool = False,
+    num_ensemble: int = 1,
+    ensemble_mode: str = "geometric",
+    use_cfg: bool = True,
+    noise_step: int = 300,
 ) -> Dict:
     """
     Evaluate model on a single copula family.
@@ -205,19 +228,39 @@ def evaluate_single_copula(
     
     # Compute true density
     print("Computing true density...")
-    density_true = analytic_logpdf_grid(family, params, m=m, rotation=rotation)
-    density_true = np.exp(density_true)
+    density_true_raw = analytic_logpdf_grid(family, params, m=m, rotation=rotation)
+    density_true_raw = np.exp(density_true_raw)
     
-    # Normalize true density (should already be normalized, but ensure)
+    # Project true density through IPFP to make it a valid copula density
+    # This is necessary because copulas with singularities (Clayton, Gumbel, Joe)
+    # have infinite density at corners, which breaks the uniform marginal property
+    # on a finite grid. IPFP projection makes fair comparison possible.
+    # Use 100 iterations for better convergence with peaked copulas.
     du = 1.0 / m
+    density_true_t = torch.from_numpy(density_true_raw).float().unsqueeze(0).unsqueeze(0).to(device)
+    density_true_proj = copula_project(density_true_t, iters=100)
+    density_true = density_true_proj[0, 0].cpu().numpy()
+    
+    # Check normalization
     mass_true = np.sum(density_true) * du * du
     if abs(mass_true - 1.0) > 0.01:
-        print(f"Warning: True density mass = {mass_true:.4f}, normalizing...")
+        print(f"Note: True density mass = {mass_true:.4f} after projection")
         density_true = density_true / mass_true
     
     # Predict density
-    print("Predicting density with model...")
-    density_pred = predict_density(model, points, m=m, device=device)
+    cfg_info = "adaptive" if adaptive_cfg else f"cfg_scale={cfg_scale}"
+    print(f"Predicting density with model (ensemble={num_ensemble}, {cfg_info})...")
+    density_pred = predict_density(
+        model, points, m=m, device=device,
+        smooth_sigma=smooth_sigma,
+        num_diffusion_steps=num_diffusion_steps,
+        cfg_scale=cfg_scale,
+        adaptive_cfg=adaptive_cfg,
+        num_ensemble=num_ensemble,
+        ensemble_mode=ensemble_mode,
+        use_cfg=use_cfg,
+        noise_step=noise_step,
+    )
     
     # Compute metrics directly (avoiding evaluate_pair_copula since we already have density)
     print("Computing metrics...")
@@ -251,6 +294,11 @@ def evaluate_single_copula(
     nll = nll_points(D_hat_t, points_t)
     metrics['nll'] = nll.item()
     
+    # 6. Peak values comparison
+    metrics['peak_pred'] = float(density_pred.max())
+    metrics['peak_true'] = float(density_true.max())
+    metrics['peak_ratio'] = metrics['peak_pred'] / max(metrics['peak_true'], 1e-10)
+    
     # Print metrics
     print(f"\nMetrics:")
     print(f"  ISE:           {metrics.get('ise', -1):.6f}")
@@ -258,6 +306,9 @@ def evaluate_single_copula(
     print(f"  Mass Error:    {metrics.get('mass_error', -1):.6f}")
     print(f"  Marginal U:    {metrics.get('marginal_u_error', -1):.6f}")
     print(f"  Marginal V:    {metrics.get('marginal_v_error', -1):.6f}")
+    print(f"  Peak Pred:     {metrics.get('peak_pred', -1):.2f}")
+    print(f"  Peak True:     {metrics.get('peak_true', -1):.2f}")
+    print(f"  Peak Ratio:    {metrics.get('peak_ratio', -1):.4f}")
     print(f"  Tau Error:     {abs(metrics.get('tau_data', 0) - metrics.get('tau_pred', metrics.get('tau_data', 0))):.6f}")
     
     # Generate visualizations if output_dir provided
@@ -267,7 +318,7 @@ def evaluate_single_copula(
         # Sanitize name for filename
         safe_name = name.replace('(', '_').replace(')', '').replace('=', '').replace(' ', '_').replace(',', '')
         
-        # Comparison plot
+        # Comparison plot - use shared color scale for fair visual comparison
         print("Creating comparison plot...")
         plot_comparison(
             density_pred,
@@ -276,6 +327,7 @@ def evaluate_single_copula(
             points=points,
             save_path=output_dir / f"{safe_name}_comparison.png",
             metrics=metrics,
+            scale_mode="shared",  # Use same color scale for pred and true
         )
         
         # Marginals plot
@@ -352,6 +404,54 @@ def main():
         action='store_true',
         help='Save predicted and true densities as .npy files'
     )
+    parser.add_argument(
+        '--smooth-sigma',
+        type=float,
+        default=0.0,
+        help='Gaussian smoothing sigma (0 = no smoothing, CFG is already smooth)'
+    )
+    parser.add_argument(
+        '--num-diffusion-steps',
+        type=int,
+        default=50,
+        help='Number of reverse diffusion steps (50 is usually enough for CFG)'
+    )
+    parser.add_argument(
+        '--cfg-scale',
+        type=float,
+        default=2.0,
+        help='Classifier-Free Guidance scale (>1 = stronger conditioning). Ignored if --adaptive-cfg is set.'
+    )
+    parser.add_argument(
+        '--adaptive-cfg',
+        action='store_true',
+        help='Use adaptive CFG based on histogram properties (recommended)'
+    )
+    parser.add_argument(
+        '--num-ensemble',
+        type=int,
+        default=1,
+        help='Number of independent inferences to average (recommended: 3-5 for best quality)'
+    )
+    parser.add_argument(
+        '--ensemble-mode',
+        type=str,
+        choices=['geometric', 'arithmetic', 'median'],
+        default='geometric',
+        help='How to aggregate ensemble: geometric (log-avg), arithmetic (mean), median'
+    )
+    parser.add_argument(
+        '--no-cfg',
+        action='store_true',
+        help='Use legacy denoising method instead of CFG (for older models)'
+    )
+    # Legacy parameter
+    parser.add_argument(
+        '--noise-step',
+        type=int,
+        default=300,
+        help='(Legacy) Starting timestep for denoising - only used with --no-cfg'
+    )
     
     args = parser.parse_args()
     
@@ -372,6 +472,22 @@ def main():
     
     print(f"\nTesting on {len(test_copulas)} copula configurations")
     
+    # Print inference parameters
+    use_cfg = not args.no_cfg
+    print(f"\nInference parameters:")
+    print(f"  Use CFG: {use_cfg}")
+    if use_cfg:
+        if args.adaptive_cfg:
+            print(f"  CFG scale: ADAPTIVE (auto-adjusted based on histogram)")
+        else:
+            print(f"  CFG scale: {args.cfg_scale}")
+    else:
+        print(f"  Noise step (legacy): {args.noise_step}")
+    print(f"  Diffusion steps: {args.num_diffusion_steps}")
+    print(f"  Smooth sigma: {args.smooth_sigma}")
+    print(f"  Ensemble size: {args.num_ensemble}")
+    print(f"  Ensemble mode: {args.ensemble_mode}")
+    
     # Evaluate each copula
     results = []
     for copula_spec in tqdm(test_copulas, desc="Evaluating copulas"):
@@ -382,6 +498,14 @@ def main():
             m=args.m,
             device=args.device,
             output_dir=args.output / 'individual',
+            smooth_sigma=args.smooth_sigma,
+            num_diffusion_steps=args.num_diffusion_steps,
+            cfg_scale=args.cfg_scale,
+            adaptive_cfg=args.adaptive_cfg,
+            num_ensemble=args.num_ensemble,
+            ensemble_mode=args.ensemble_mode,
+            use_cfg=use_cfg,
+            noise_step=args.noise_step,
         )
         results.append(result)
     
