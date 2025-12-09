@@ -1,15 +1,17 @@
 # Vine Diffusion Copula
 
-Nonparametric bivariate copula density estimation using denoising diffusion probabilistic models.
+Nonparametric copula density estimation using denoising diffusion probabilistic models, with support for high-dimensional vine copula structures.
 
 ## What This Does
 
 Estimates the copula density function c(u,v) from bivariate data:
 - **Input**: Pseudo-observations (u_i, v_i) in [0,1]² (data after marginal transformation)
 - **Output**: Copula density c(u,v) on a discrete grid, satisfying copula constraints
-- **Method**: Denoising diffusion with iterative refinement over 1000 timesteps
+- **Method**: Denoising diffusion with iterative refinement
 
-Constraints enforced:
+The estimated bivariate copulas can be combined into vine structures (D-vine, C-vine, R-vine) for modeling high-dimensional dependence.
+
+### Constraints Enforced
 - c(u,v) ≥ 0 (non-negative)
 - ∫₀¹ c(u,v) dv = 1 for all u (uniform marginals)
 - ∫₀¹ c(u,v) du = 1 for all v
@@ -18,104 +20,209 @@ Constraints enforced:
 ## Installation
 
 ```bash
-git clone https://github.com/your-org/vine_diffusion_copula.git
+git clone https://github.com/KempnerInstitute/vine_diffusion_copula.git
 cd vine_diffusion_copula
 conda env create -f environment.yml
-conda activate diffuse_vine_cop
+conda activate vdc
 pip install -e .
 ```
 
 ## Quick Start
 
-### Using Pretrained Models
-
-```python
-from vdc.vine.copula_diffusion import DiffusionCopulaModel
-import numpy as np
-
-# Load pretrained model
-model = DiffusionCopulaModel.from_checkpoint(
-    "checkpoints/diffusion_uniform_m128/model_step_20000.pt"
-)
-
-# Estimate copula density from data (pseudo-observations in [0,1]²)
-density, u_coords, v_coords = model.estimate_density_from_samples(
-    your_data,
-    m=128
-)
-
-# Compute h-functions for vine construction
-h1, h2 = model.h_functions_from_grid(density)
-
-# Sample from estimated copula
-samples = model.sample_from_density(density, n_samples=5000)
-```
-
-### Training Custom Models
+### 1. Training a Model
 
 ```bash
-# Submit training job
-sbatch slurm_jobs/train_diffusion_uniform_m128.sh
+# Single GPU
+python scripts/train.py --config configs/train/default.yaml
 
-# Monitor progress
-tail -f logs/train_diffusion_uniform_m128_*.out
+# Multi-GPU (4 GPUs)
+torchrun --nproc_per_node=4 scripts/train.py --config configs/train/default.yaml
 
-# Visualize results
-python scripts/visualize_diffusion_offline.py \
-    --checkpoint checkpoints/diffusion_uniform_m128/model_step_20000.pt
+# SLURM cluster
+sbatch slurm/train.sh
+```
+
+### 2. Evaluating a Model
+
+```bash
+# Full evaluation (bivariate + vine copula)
+python scripts/evaluate.py --checkpoint checkpoints/model.pt
+
+# Quick evaluation
+python scripts/evaluate.py --checkpoint checkpoints/model.pt --quick
+
+# SLURM cluster
+CHECKPOINT=checkpoints/model.pt sbatch slurm/evaluate.sh
+```
+
+### 3. Inference: Density Estimation
+
+```bash
+# Estimate density from your data
+python scripts/infer.py density --checkpoint checkpoints/model.pt --data your_samples.npy
+
+# Visualize on test copulas
+python scripts/infer.py visualize --checkpoint checkpoints/model.pt
+```
+
+### 4. Using in Python
+
+```python
+import torch
+import numpy as np
+from vdc.vine.api import VineCopulaModel
+from vdc.models.unet_grid import GridUNet
+
+# Load trained model
+checkpoint = torch.load('checkpoints/model.pt')
+model = GridUNet(**checkpoint['config']['model'])
+model.load_state_dict(checkpoint['model_state_dict'])
+model.eval()
+
+# Fit a D-vine copula to high-dimensional data
+U = np.random.uniform(0, 1, (1000, 5))  # 5D copula samples
+vine = VineCopulaModel(vine_type='dvine', m=64, device='cuda')
+vine.fit(U, model)
+
+# Evaluate density and generate samples
+logpdf = vine.logpdf(U_test)
+samples = vine.simulate(n=1000)
+
+# Save for later use
+vine.save('my_vine.pkl')
 ```
 
 ## Project Structure
 
 ```
 vine_diffusion_copula/
-├── vdc/                    # Core library
-│   ├── vine/              # Main user-facing API
-│   ├── models/            # Network architectures
-│   ├── data/              # Data generation
-│   └── utils/             # Utilities
-├── scripts/               # Training and evaluation scripts
-├── examples/              # Usage examples
-├── docs/                  # Documentation
-├── configs/               # Training configurations
-├── slurm_jobs/           # Batch job scripts
-└── tests/                # Unit tests
+├── vdc/                          # Core library
+│   ├── models/                   # Neural network architectures
+│   │   ├── unet_grid.py         # Main UNet model
+│   │   ├── copula_diffusion.py  # Diffusion process
+│   │   ├── projection.py        # Copula constraint projection
+│   │   └── hfunc.py             # H-function (conditional CDF)
+│   ├── vine/                     # Vine copula API
+│   │   ├── api.py               # High-level VineCopulaModel class
+│   │   ├── structure.py         # Vine structure building
+│   │   └── recursion.py         # Vine recursion algorithms
+│   ├── train/                    # Training utilities
+│   │   └── unified_trainer.py   # Main training loop
+│   ├── data/                     # Data generation
+│   │   ├── generators.py        # Copula sampling
+│   │   └── onthefly.py          # On-the-fly dataset
+│   ├── utils/                    # Utilities
+│   └── config.py                 # Configuration management
+├── scripts/                      # Main entry points
+│   ├── train.py                 # Training script
+│   ├── evaluate.py              # Evaluation script
+│   └── infer.py                 # Inference script
+├── configs/                      # Configuration files
+│   ├── train/default.yaml       # Training config
+│   └── inference/default.yaml   # Inference config
+├── slurm/                        # SLURM job scripts
+│   ├── train.sh                 # Training job
+│   └── evaluate.sh              # Evaluation job
+├── examples/                     # Usage examples
+├── tests/                        # Unit tests
+└── docs/                         # Documentation
 ```
 
-## Documentation
+## Configuration
 
-- **For users**: `docs/API.md` - Complete API reference
-- **For researchers**: `QUICK_START.md` - Training workflows
-- **Technical details**: `docs/TECHNICAL_DETAILS.md` - Mathematical framework
-- **Examples**: `examples/` - Working code samples
+All settings are controlled via YAML config files:
 
-## Pretrained Models
+```yaml
+# configs/train/default.yaml
+model:
+  type: "diffusion_unet"
+  grid_size: 64
+  base_channels: 64
 
-Available in `checkpoints/`:
-- `validate_no_probit_diffusion_m128` - Reference baseline (5k steps)
-- `diffusion_uniform_m128` - Production uniform grid (20k steps)
-- `diffusion_probit_m128` - Boundary-focused probit grid (20k steps)
+diffusion:
+  timesteps: 1000
+  noise_schedule: "cosine"
+
+training:
+  max_steps: 150000
+  batch_size: 32
+  learning_rate: 1.0e-4
+
+output:
+  base_dir: "results"
+  include_timestamp: true
+  include_job_id: true
+```
+
+Override via command line:
+```bash
+python scripts/train.py --config configs/train/default.yaml \
+    training.max_steps=200000 model.base_channels=128
+```
+
+## Results Organization
+
+Results are automatically organized with timestamps and job IDs:
+```
+results/
+└── evaluation_20251209_143022_job12345/
+    ├── checkpoints/           # Model checkpoints
+    ├── figures/               # Visualizations
+    │   ├── bivariate_results.png
+    │   └── vine_results.png
+    ├── logs/                  # Training logs
+    ├── metrics/               # JSON metrics
+    ├── config.yaml            # Config used
+    └── results.json           # Evaluation results
+```
 
 ## Key Features
 
-- Nonparametric copula density estimation
-- Support for uniform and boundary-focused (probit) grids
-- H-function computation for vine copula construction
-- Sampling from estimated copulas
-- Multiple copula families for training (Gaussian, Clayton, Gumbel, Frank, Joe, Student-t)
-- Multi-GPU training support
-- Comprehensive evaluation metrics
+- **Diffusion-based density estimation**: Learn copula densities directly from samples
+- **Vine copula support**: Build D-vine, C-vine, R-vine structures for high-dimensional data
+- **Automatic constraint enforcement**: IPFP projection ensures valid copula densities
+- **Multi-GPU training**: Distributed training with PyTorch DDP
+- **Flexible configuration**: YAML configs with command-line overrides
+- **Comprehensive evaluation**: Bivariate ISE, vine log-likelihood, Rosenblatt uniformity tests
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) | Quick start guide for new users |
+| [docs/USER_GUIDE.md](docs/USER_GUIDE.md) | Comprehensive usage guide with examples |
+| [docs/API.md](docs/API.md) | Complete API reference |
+| [docs/TECHNICAL_DETAILS.md](docs/TECHNICAL_DETAILS.md) | Mathematical framework |
+| [docs/WHY_DIFFUSION.md](docs/WHY_DIFFUSION.md) | Design decisions and motivation |
+
+## Examples
+
+| Example | Description |
+|---------|-------------|
+| [examples/use_pretrained_model.py](examples/use_pretrained_model.py) | Load model, estimate density, compute h-functions |
+| [examples/train_custom_copula.py](examples/train_custom_copula.py) | Create custom config, train model |
+| [examples/fit_vine_copula.py](examples/fit_vine_copula.py) | Fit D-vine to high-dimensional data |
+
+Run examples:
+```bash
+# Use pretrained model
+python examples/use_pretrained_model.py --checkpoint checkpoints/model.pt
+
+# Create custom training config
+python examples/train_custom_copula.py
+
+# Fit vine copula
+python examples/fit_vine_copula.py --checkpoint checkpoints/model.pt --dimension 5
+```
 
 ## Citation
-
-If you use this in your research:
 
 ```bibtex
 @software{vine_diffusion_copula,
   title={Vine Diffusion Copula: Deep Learning for Copula Density Estimation},
-  author={Your Name},
+  author={Kempner Institute},
   year={2025},
-  url={https://github.com/your-org/vine_diffusion_copula}
+  url={https://github.com/KempnerInstitute/vine_diffusion_copula}
 }
 ```
 

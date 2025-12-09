@@ -1,0 +1,100 @@
+# =============================================================================
+# Vine Diffusion Copula - Master Configuration
+# =============================================================================
+# Default config file. Override values via command line or experiment configs.
+# Usage:
+#   python scripts/train.py --config configs/default.yaml
+#   python scripts/evaluate.py --config configs/default.yaml
+
+experiment:
+  name: "vine_diffusion_copula"
+  description: "Diffusion-based copula density estimator"
+  seed: 42
+
+model:
+  type: "diffusion_unet"
+  grid_size: 64
+  checkpoint: null
+  in_channels: 1
+  base_channels: 64
+  channel_mults: [1, 2, 3, 4]
+  num_res_blocks: 2
+  attention_resolutions: [16, 8]
+  dropout: 0.1
+  time_emb_dim: 256
+  use_coordinates: false
+  transform_to_probit_space: false
+
+diffusion:
+  timesteps: 1000
+  noise_schedule: "cosine"
+  sampling_steps: 50
+  cfg_scale: 2.0
+
+data:
+  m: 64
+  n_samples_per_copula: 1000
+  copula_families: ["gaussian", "student", "clayton", "gumbel", "frank", "joe"]
+  binning: "uniform"
+  num_workers: 4
+
+training:
+  max_steps: 150000
+  batch_size: 32
+  learning_rate: 1.0e-4
+  weight_decay: 0.01
+  gradient_clip: 1.0
+  loss_weights:
+    ce: 1.0
+    ise: 0.1
+    tail: 0.05
+    ms: 0.1
+    marg_kl: 0.01
+  projection_iters: 10
+  detach_projection: true
+  skip_projection: false
+  use_amp: true
+  log_every: 100
+  save_every: 10000
+  viz_every: 5000
+  early_stopping:
+    enable: false
+    metric: "loss"
+    patience: 5000
+
+inference:
+  task: "evaluate"
+  sampling_steps: 50
+  cfg_scale: 2.0
+  batch_size: 32
+
+evaluation:
+  scenarios:
+    - name: "gaussian_ar1"
+      params: {rho: 0.6}
+    - name: "student_ar1"
+      params: {rho: 0.6, df: 5}
+    - name: "clayton_vine"
+      params: {theta: 2.0}
+    - name: "mixed_vine"
+      params: {}
+  dimensions: [3, 5, 10]
+  n_train: 2000
+  n_test: 500
+
+visualization:
+  plot_densities: true
+  plot_samples: true
+  figure_format: ["png"]
+  dpi: 150
+
+output:
+  base_dir: "results"
+  checkpoint_dir: "checkpoints"
+  include_timestamp: true
+  include_job_id: true
+
+hardware:
+  device: "cuda"
+  num_gpus: 1
+  mixed_precision: true

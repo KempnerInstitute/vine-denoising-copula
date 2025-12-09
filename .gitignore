@@ -55,6 +55,7 @@ checkpoints/
 # Local archives and experiment results
 archive/
 results/
+slurm_logs/
 
 # OS
 .DS_Store
