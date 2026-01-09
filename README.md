@@ -32,14 +32,16 @@ pip install -e .
 ### 1. Training a Model
 
 ```bash
-# Single GPU
-python scripts/train.py --config configs/train/default.yaml
+# Recommended (unified trainer) — pick one:
+python scripts/train_unified.py --config configs/train/diffusion_cond.yaml --model-type diffusion_unet
+python scripts/train_unified.py --config configs/train/denoiser_cond.yaml  --model-type denoiser
+python scripts/train_unified.py --config configs/train/enhanced_cnn_cond.yaml --model-type enhanced_cnn
 
-# Multi-GPU (4 GPUs)
-torchrun --nproc_per_node=4 scripts/train.py --config configs/train/default.yaml
+# Multi-GPU (example: 4 GPUs)
+torchrun --nproc_per_node=4 scripts/train_unified.py --config configs/train/diffusion_cond.yaml --model-type diffusion_unet
 
-# SLURM cluster
-sbatch slurm/train.sh
+# SLURM (paper-style jobs; write a run directory with checkpoints/results/analysis)
+sbatch slurm/paper_vdc_diffusion_cond.sh
 ```
 
 ### 2. Evaluating a Model
@@ -50,6 +52,9 @@ python scripts/evaluate.py --checkpoint checkpoints/model.pt
 
 # Quick evaluation
 python scripts/evaluate.py --checkpoint checkpoints/model.pt --quick
+
+# Standardized comparison across checkpoints (bivariate + small vine tasks)
+python scripts/model_selection.py --checkpoints checkpoints/*/model_step_*.pt --n-samples 2000
 
 # SLURM cluster
 CHECKPOINT=checkpoints/model.pt sbatch slurm/evaluate.sh
@@ -70,21 +75,34 @@ python scripts/infer.py visualize --checkpoint checkpoints/model.pt
 ```python
 import torch
 import numpy as np
+from pathlib import Path
 from vdc.vine.api import VineCopulaModel
-from vdc.models.unet_grid import GridUNet
+from scripts.train_unified import build_model
+from vdc.models.copula_diffusion import CopulaAwareDiffusion
 
-# Load trained model
-checkpoint = torch.load('checkpoints/model.pt')
-model = GridUNet(**checkpoint['config']['model'])
-model.load_state_dict(checkpoint['model_state_dict'])
+# Load checkpoint + build model
+ckpt_path = Path("checkpoints/your_run/model_step_100000.pt")
+ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+config = ckpt["config"]
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+model_type = config.get("model", {}).get("type", "diffusion_unet")
+model = build_model(model_type, config, device)
+model.load_state_dict(ckpt["model_state_dict"], strict=False)
 model.eval()
+
+# Diffusion object only needed for diffusion_unet inference
+diffusion = None
+if model_type == "diffusion_unet":
+    diffusion = CopulaAwareDiffusion(
+        timesteps=int(config.get("diffusion", {}).get("timesteps", 1000)),
+        beta_schedule=str(config.get("diffusion", {}).get("noise_schedule", "cosine")),
+    ).to(device)
 
 # Fit a D-vine copula to high-dimensional data
 U = np.random.uniform(0, 1, (1000, 5))  # 5D copula samples
 vine = VineCopulaModel(vine_type='dvine', m=64, device='cuda')
-vine.fit(U, model, diffusion)  # diffusion!=None -> iterative DDIM sampling
-# For single-pass estimators (denoiser/enhanced_cnn), pass diffusion=None:
-# vine.fit(U, model, diffusion=None)
+vine.fit(U, model, diffusion=diffusion)  # diffusion!=None -> iterative DDIM sampling
 
 # Evaluate density and generate samples
 logpdf = vine.logpdf(U_test)
@@ -195,6 +213,12 @@ This repo includes configs for head-to-head comparisons:
 - `configs/train/enhanced_cnn_cond.yaml` (strong CNN baseline)
 
 Use `scripts/model_selection.py` to compare checkpoints on a fixed bivariate suite.
+
+## Paper (ICML 2026)
+
+The paper source and paper-only SLURM jobs live in the separate `drafts/` repository:
+- LaTeX: `drafts/vine_diffusion.tex`
+- Artifact scripts: `drafts/scripts/paper_artifacts.py`
 
 ## Documentation
 

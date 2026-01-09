@@ -181,7 +181,7 @@ class SimpleDVine:
             V.append(V_next)
         
         if verbose:
-            print(f"  ✓ Fitted {total_pairs} pair copulas")
+            print(f"  Fitted {total_pairs} pair copulas")
     
     @torch.no_grad()
     def _estimate_pair_copula(self, model, diffusion, pair_data) -> Tuple:
@@ -323,9 +323,9 @@ def main():
     U_train = generate_gaussian_vine(n_train, d, rho=rho, seed=42)
     U_test = generate_gaussian_vine(n_test, d, rho=rho, seed=123)
     
-    print(f"  ✓ Training data: {U_train.shape}")
-    print(f"  ✓ Test data: {U_test.shape}")
-    print(f"  ✓ True correlation: ρ = {rho} (AR(1) structure)")
+    print(f"  Training data: {U_train.shape}")
+    print(f"  Test data: {U_test.shape}")
+    print(f"  True correlation: ρ = {rho} (AR(1) structure)")
     
     if args.checkpoint is None:
         print("\n" + "-" * 50)
@@ -350,8 +350,8 @@ def main():
     model, diffusion, config = load_model(args.checkpoint, args.device)
     m = config.get('data', {}).get('m', 64)
     
-    print(f"  ✓ Model loaded ({sum(p.numel() for p in model.parameters()):,} params)")
-    print(f"  ✓ Grid resolution: {m}×{m}")
+    print(f"  Model loaded ({sum(p.numel() for p in model.parameters()):,} params)")
+    print(f"  Grid resolution: {m}×{m}")
     
     # =========================================================================
     # Step 3: Fit D-vine
@@ -365,7 +365,7 @@ def main():
     vine.fit(U_train, model, diffusion, verbose=True)
     
     fit_time = time.time() - start_time
-    print(f"  ✓ Fitting completed in {fit_time:.1f} seconds")
+    print(f"  Fitting completed in {fit_time:.1f} seconds")
     
     # =========================================================================
     # Step 4: Evaluate on test data

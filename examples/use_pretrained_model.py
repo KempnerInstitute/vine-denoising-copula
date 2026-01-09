@@ -152,7 +152,7 @@ def main():
     Z[:, 1] = rho * Z[:, 0] + np.sqrt(1 - rho**2) * Z[:, 1]
     samples = norm.cdf(Z)
     
-    print(f"  ✓ Generated {n_samples} samples from Gaussian copula (ρ={rho})")
+    print(f"  Generated {n_samples} samples from Gaussian copula (ρ={rho})")
     print(f"    Shape: {samples.shape}")
     print(f"    Range: [{samples.min():.4f}, {samples.max():.4f}]")
     
@@ -170,7 +170,7 @@ def main():
         print(f"\n[Step 3] Estimating copula density...")
         density = estimate_density(model, diffusion, samples, m, args.device)
         
-        print(f"  ✓ Estimated density on {m}×{m} grid")
+        print(f"  Estimated density on {m}×{m} grid")
         print(f"    Density range: [{density.min():.4f}, {density.max():.4f}]")
         print(f"    Total mass: {density.sum() * (1/m)**2:.4f}")
         
@@ -187,7 +187,7 @@ def main():
         h1 = hfunc.h_u_given_v(test_u, test_v)
         h2 = hfunc.h_v_given_u(test_u, test_v)
         
-        print(f"  ✓ H-functions computed")
+        print(f"  H-functions computed")
         print(f"    Test points (u, v): {list(zip(test_u, test_v))}")
         print(f"    H(u|v): {h1}")
         print(f"    H(v|u): {h2}")
@@ -231,7 +231,7 @@ def main():
             plt.savefig(output_path, dpi=150)
             plt.close()
             
-            print(f"  ✓ Saved visualization: {output_path}")
+            print(f"  Saved visualization: {output_path}")
             
         except ImportError:
             print("  (matplotlib not available, skipping visualization)")

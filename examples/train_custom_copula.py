@@ -146,7 +146,7 @@ def main():
     print("\n[Step 1] Creating custom training configuration...")
     
     config_path, config = create_config()
-    print(f"  ✓ Saved configuration to: {config_path}")
+    print(f"  Saved configuration to: {config_path}")
     print(f"\n  Key settings:")
     print(f"    - Grid resolution: {config['data']['m']}×{config['data']['m']}")
     print(f"    - Training steps: {config['training']['max_steps']:,}")

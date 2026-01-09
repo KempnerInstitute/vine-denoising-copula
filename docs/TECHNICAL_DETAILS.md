@@ -298,36 +298,11 @@ To quantify the one-shot vs diffusion tradeoff:
 
 ---
 
-## Publication Angle
+## Pointers into the Codebase
 
-**Title Ideas**:
-- "Diffusion Models for Nonparametric Copula Density Estimation"
-- "Data-Driven Vine Copulas via Denoising Diffusion"
-- "Learning Copula Densities with Diffusion Models"
-
-**Key Claims**:
-1. Novel application of diffusion to constrained density estimation
-2. Superior to CNNs for copulas (ablation studies)
-3. Enables fully data-driven vine construction
-4. State-of-the-art marginal uniformity and tail dependence
-
-**Venues**:
-- NeurIPS, ICML (ML conferences)
-- AISTATS (statistics + ML)
-- UAI (uncertainty in AI)
-- Journal of Computational Finance (if financial application)
-
----
-
-## Bottom Line
-
-**This is a legitimate, novel research contribution.**
-
-It's NOT just applying existing methods - it's:
-- Adapting diffusion to a new domain (copulas)
-- Solving real constraints (marginal uniformity)
-- Enabling new applications (data-driven vines)
-- Demonstrably better than simpler alternatives
-
-**Defensible, publishable, and useful.** ✅
+- **Training (recommended entrypoint)**: `scripts/train_unified.py`
+- **Models**: `vdc/models/` (`unet_grid.py`, `copula_denoiser.py`, `copula_cnn_enhanced.py`)
+- **Diffusion sampler (DDIM)**: `vdc/inference/density.py`
+- **Copula projection (IPFP/Sinkhorn)**: `vdc/models/projection.py`
+- **Vine fitting + recursion**: `vdc/vine/api.py`, `vdc/vine/recursion.py`
 

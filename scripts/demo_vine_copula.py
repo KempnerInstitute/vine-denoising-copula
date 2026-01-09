@@ -262,7 +262,7 @@ def demo_vine_fitting():
             'tau': tau
         })
         
-        print(f"    ✓ Density range: [{density.min():.4f}, {density.max():.4f}]")
+        print(f"    Density range: [{density.min():.4f}, {density.max():.4f}]")
     
     print(f"\n✓ Fitted {len(pair_copulas)} pair copulas for Tree 1")
     

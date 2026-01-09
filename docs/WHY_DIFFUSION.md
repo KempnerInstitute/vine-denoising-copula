@@ -1,13 +1,12 @@
-# Why Diffusion Models for Copulas?
+# Why Denoising (and Sometimes Diffusion) for Copula Densities?
 
-## TL;DR
+## Summary
 
-**Copulas have hard constraints** (uniform marginals, unit mass). Diffusion models handle these better than CNNs because they:
-1. Can refine predictions iteratively (DDIM/CFG) as an optional inference mode
-2. Learn at multiple scales simultaneously
-3. Naturally incorporate projection into the generation process
+Copula densities live on a constrained set (non-negative, unit mass, uniform marginals). This repository uses denoising-style training plus IPFP/Sinkhorn projection to produce valid copula densities from empirical bivariate data.
 
-**Important note (repo status)**: this codebase supports **both** (a) iterative conditional diffusion and (b) fast **single-pass** denoiser/CNN baselines. The paper/report keeps both and compares them; whichever wins on the benchmark suite becomes the default.
+The codebase supports **two inference variants**:
+- **One-shot**: a single forward pass from a histogram (fast).
+- **Iterative diffusion**: DDIM sampling in log-density space, optionally with classifier-free guidance (CFG) on histogram conditioning (more compute, potentially higher fidelity).
 
 ---
 
@@ -100,49 +99,13 @@ U-Net architecture + 1000 denoising steps:
 ---
 
 ## Empirical Validation
-
-From our experiments:
-
-**Diffusion (this work)**:
-- Marginal error: < 0.0001 (nearly perfect)
-- ISE: ~8,000-10,000
-- Visual fit: Excellent
-- Training: Stable, no NaN
-
-**Hypothetical Simple CNN**:
-- Would need: Strong marginal penalties + heavy projection
-- Likely result: Mode averaging, poor tails, marginal violations
-- Training: Gradient conflicts, instability
-
-**Parametric (e.g., Gaussian copula)**:
-- Perfect constraints (analytic form)
-- But: Can't fit complex dependence (limited to ρ parameter)
+This repository is set up to evaluate the one-shot and diffusion variants under a fixed benchmark suite (bivariate metrics and vine-level PIT/NLL). Any claims about accuracy and runtime should be supported by those results.
 
 ---
 
 ## Key Insight (and what we do \*not\* claim)
 
 Diffusion can be used as a **stochastic generator** (sample multiple plausible densities by changing the diffusion randomness), but this project’s primary goal is **accurate amortized density estimation** for vines. We therefore evaluate diffusion mainly as an \emph{estimator} (one-shot vs iterative refinement), and treat uncertainty-style benefits as optional.
-
----
-
-## Is This Publishable?
-
-**Yes.** Here's why:
-
-1. **Novel Application**: First use of diffusion for copula density estimation
-2. **Technical Contribution**: Handling hard probabilistic constraints in diffusion
-3. **Practical Impact**: Enables data-driven vine copula construction
-4. **Empirical Validation**: Demonstrably better than alternatives
-
-**Not just**:
-- "We applied diffusion to X" (shallow)
-- "We tweaked hyperparameters" (incremental)
-
-**But rather**:
-- Solving a real problem (constrained density estimation)
-- With a principled approach (diffusion as iterative refinement)
-- That outperforms alternatives (can be empirically shown)
 
 ---
 
@@ -170,14 +133,4 @@ Diffusion can be used as a **stochastic generator** (sample multiple plausible d
 
 ## Conclusion
 
-**This is NOT just a CNN.**
-
-Diffusion models bring:
-- Iterative refinement (unique to diffusion)
-- Multi-scale learning (architectural + temporal)
-- Natural constraint handling (projection as generation)
-- Posterior distribution (not just point estimate)
-
-**This is a legitimate, novel contribution to copula estimation.**
-
-Ready to be presented to the field. ✅
+In this project, diffusion is primarily used as a **denoising mechanism** for copula density estimation under constraints. The recommended workflow is to keep both one-shot and diffusion variants, compare them with a consistent evaluation protocol, and choose the default based on measured accuracy and runtime.
