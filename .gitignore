@@ -43,7 +43,7 @@ ENV/
 *.ipynb
 
 # Data and outputs
-data/
+/data/
 outputs/
 logs/
 wandb/
