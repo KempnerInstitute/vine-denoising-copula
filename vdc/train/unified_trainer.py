@@ -201,11 +201,12 @@ def build_model(model_type: str, config: Dict, device: torch.device):
         ).to(device)
     
     if model_type == 'diffusion_unet':
-        # For diffusion_unet: ALWAYS use in_channels=1 (matches original good run)
-        # use_coordinates flag is ignored for this model type
+        # Diffusion UNet supports optional conditioning channels (e.g., log-histogram),
+        # controlled via config['model']['in_channels'].
+        # Default remains 1 for backward compatibility.
         return GridUNet(
             m=m,
-            in_channels=1,  # Hardcoded - NO coordinate concatenation for diffusion
+            in_channels=mcfg.get('in_channels', 1),
             base_channels=mcfg.get('base_channels', 128),
             channel_mults=tuple(mcfg.get('channel_mults', [1, 2, 4])),
             num_res_blocks=mcfg.get('num_res_blocks', 2),
@@ -649,6 +650,10 @@ def train(
         n_samples_per_batch=config['data']['n_samples_per_copula'],
         m=m,
         families=config['data']['copula_families'],
+        param_ranges=config['data'].get('param_ranges'),
+        rotation_prob=float(config['data'].get('rotation_prob', 0.3)),
+        mixture_prob=float(config['data'].get('mixture_prob', 0.0)),
+        n_mixture_components=tuple(config['data'].get('n_mixture_components', (2, 3))),
         transform_to_probit_space=config['model'].get('transform_to_probit_space', False),
         seed=42 + rank
     )

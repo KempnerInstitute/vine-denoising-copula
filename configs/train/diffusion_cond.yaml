@@ -1,0 +1,82 @@
+# =============================================================================
+# Histogram-Conditioned Diffusion (iterative DDIM inference)
+# =============================================================================
+experiment:
+  name: "copula_diffusion_cond"
+  description: "Conditional diffusion model: (histogram) -> copula density via DDIM+CFG"
+  seed: 42
+
+model:
+  type: "diffusion_unet"
+  grid_size: 64
+  # 2 channels: [x_t (noisy log-density), log_histogram (conditioning)]
+  in_channels: 2
+  base_channels: 64
+  channel_mults: [1, 2, 3, 4]
+  num_res_blocks: 2
+  attention_resolutions: [16, 8]
+  dropout: 0.1
+  time_emb_dim: 256
+
+diffusion:
+  timesteps: 1000
+  noise_schedule: "cosine"
+  sampling_steps: 50
+  # Used at inference time when use_histogram_conditioning=True
+  cfg_scale: 2.0
+
+data:
+  m: 64
+  n_samples_per_copula: 1000
+  copula_families: ["gaussian", "student", "clayton", "gumbel", "frank", "joe", "independence"]
+  binning: "uniform"
+  num_workers: 4
+
+  # Parameter ranges (explicit + reproducible)
+  param_ranges:
+    gaussian_rho: [-0.95, 0.95]
+    student_rho: [-0.9, 0.9]
+    student_df: [2, 30]
+    clayton_theta: [0.1, 10.0]
+    gumbel_theta: [1.1, 8.0]
+    frank_theta: [-15.0, 15.0]
+    joe_theta: [1.1, 8.0]
+
+training:
+  max_steps: 150000
+  batch_size: 32
+  learning_rate: 1.0e-4
+  weight_decay: 0.01
+  gradient_clip: 1.0
+
+  # Classifier-free dropout probability for training conditional diffusion
+  # (probability of zeroing the histogram conditioning channel)
+  cfg_dropout_prob: 0.10
+
+  # Loss suite on projected density (in addition to diffusion noise MSE)
+  loss_weights:
+    ce: 1.0
+    ise: 0.0
+    tail: 0.1
+    ms: 0.0
+    marg_kl: 0.0
+
+  projection_iters: 30
+  detach_projection: false
+  skip_projection: false
+  use_amp: true
+
+  log_every: 100
+  save_every: 10000
+  viz_every: 5000
+
+output:
+  base_dir: "results"
+  checkpoint_dir: "checkpoints"
+  include_timestamp: true
+  include_job_id: true
+
+hardware:
+  device: "cuda"
+  mixed_precision: true
+

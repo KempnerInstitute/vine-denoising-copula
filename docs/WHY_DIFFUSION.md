@@ -3,9 +3,11 @@
 ## TL;DR
 
 **Copulas have hard constraints** (uniform marginals, unit mass). Diffusion models handle these better than CNNs because they:
-1. Refine predictions iteratively (1000 steps, not one-shot)
+1. Can refine predictions iteratively (DDIM/CFG) as an optional inference mode
 2. Learn at multiple scales simultaneously
 3. Naturally incorporate projection into the generation process
+
+**Important note (repo status)**: this codebase supports **both** (a) iterative conditional diffusion and (b) fast **single-pass** denoiser/CNN baselines. The paper/report keeps both and compares them; whichever wins on the benchmark suite becomes the default.
 
 ---
 
@@ -44,7 +46,7 @@ A valid copula density \( c(u,v) \) must satisfy:
 
 ## How Diffusion Solves These
 
-### 1. Iterative Refinement
+### 1. Iterative Refinement (optional)
 
 ```
 Step 0:   Noisy density (random)
@@ -52,7 +54,7 @@ Step 500: Rough shape emerges, marginals ~uniform
 Step 999: Fine details, constraints nearly perfect
 ```
 
-**Advantage**: 
+**Advantage**:
 - Progressive constraint satisfaction
 - Early steps learn global structure
 - Late steps refine details
@@ -118,28 +120,9 @@ From our experiments:
 
 ---
 
-## Key Insight
+## Key Insight (and what we do \*not\* claim)
 
-**Diffusion models don't just predict densities.**
-
-They learn:
-\[
-p(c_0 | \text{data})
-\]
-
-The full **posterior distribution** over copulas given data.
-
-This means:
-- Better uncertainty quantification
-- Robustness to noise
-- Multiple plausible copulas (if sampled from posterior)
-
-CNNs give:
-\[
-\hat{c} = f_\theta(\text{data})
-\]
-
-A single point estimate. No posterior, no uncertainty.
+Diffusion can be used as a **stochastic generator** (sample multiple plausible densities by changing the diffusion randomness), but this project’s primary goal is **accurate amortized density estimation** for vines. We therefore evaluate diffusion mainly as an \emph{estimator} (one-shot vs iterative refinement), and treat uncertainty-style benefits as optional.
 
 ---
 
@@ -167,7 +150,7 @@ A single point estimate. No posterior, no uncertainty.
 
 1. **Ablation: Diffusion vs. CNN**
    - Same architecture (UNet)
-   - Different: T=1 (CNN) vs. T=1000 (diffusion)
+   - Different inference: one-shot (single forward) vs. iterative DDIM (S steps)
    - Metric: ISE, marginal error, tail dependence
 
 2. **Ablation: Number of Timesteps**

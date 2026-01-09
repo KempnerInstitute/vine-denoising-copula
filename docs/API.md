@@ -180,7 +180,7 @@ vine = VineCopulaModel(
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `fit` | `(U, model, verbose=True)` | Fit vine to data |
+| `fit` | `(U, model, diffusion, verbose=True)` | Fit vine to data |
 | `logpdf` | `(U) -> ndarray` | Compute log-density |
 | `pdf` | `(U) -> ndarray` | Compute density |
 | `simulate` | `(n, seed=None) -> ndarray` | Generate samples |
@@ -195,7 +195,7 @@ vine = VineCopulaModel(
 U = np.random.uniform(0, 1, (1000, 5))
 
 vine = VineCopulaModel(vine_type='dvine', m=64)
-vine.fit(U, diffusion_model, verbose=True)
+vine.fit(U, diffusion_model, diffusion, verbose=True)
 
 # Evaluate
 logpdf = vine.logpdf(U_test)
@@ -397,9 +397,9 @@ U_test = generate_gaussian_vine(n_test, d, rho=0.6, seed=123)
 # 2. Load diffusion model (see above)
 # model, diffusion = ...
 
-# 3. Fit D-vine
+# 3. Fit D-vine (pass both model and diffusion process)
 vine = VineCopulaModel(vine_type='dvine', m=64, device='cuda')
-vine.fit(U_train, model, verbose=True)
+vine.fit(U_train, model, diffusion, verbose=True)
 
 # 4. Evaluate
 logpdf = vine.logpdf(U_test)

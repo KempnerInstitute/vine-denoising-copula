@@ -18,6 +18,7 @@ import sys
 from pathlib import Path
 
 import yaml
+from vdc.models.copula_diffusion import CopulaAwareDiffusion
 
 # Add project root to path
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -228,9 +229,13 @@ def main():
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
     
-    # Fit vine copula to your data
+    # Fit vine copula to your data (pass diffusion process too)
+    diffusion = CopulaAwareDiffusion(
+        timesteps=config['diffusion']['timesteps'],
+        beta_schedule=config['diffusion']['noise_schedule'],
+    )
     vine = VineCopulaModel(vine_type='dvine')
-    vine.fit(your_data, model)
+    vine.fit(your_data, model, diffusion)
     
     # Evaluate and sample
     logpdf = vine.logpdf(test_data)

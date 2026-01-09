@@ -44,9 +44,9 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from vdc.models.unet_grid import GridUNet
 from vdc.models.copula_diffusion import CopulaAwareDiffusion
-from vdc.models.projection import copula_project
 from vdc.models.hfunc import HFuncLookup
 from vdc.config import get_run_dir
+from vdc.inference.density import sample_density_grid, scatter_to_hist
 from vdc.data.generators import (
     sample_gaussian_copula, sample_student_copula,
     sample_clayton_copula, sample_gumbel_copula,
@@ -57,28 +57,6 @@ from vdc.data.generators import (
 )
 
 
-def scatter_to_hist(pts: np.ndarray, m: int, reflect: bool = True) -> np.ndarray:
-    """Create 2D histogram from scatter points."""
-    if reflect:
-        pts_reflected = []
-        for dx, dy in [(0, 0), (0, -1), (0, 1), (-1, 0), (1, 0)]:
-            shifted = pts.copy()
-            shifted[:, 0] += dx
-            shifted[:, 1] += dy
-            mask = (shifted[:, 0] >= 0) & (shifted[:, 0] <= 1) & \
-                   (shifted[:, 1] >= 0) & (shifted[:, 1] <= 1)
-            pts_reflected.append(shifted[mask])
-        pts_all = np.vstack(pts_reflected)
-    else:
-        pts_all = pts
-    
-    hist, _, _ = np.histogram2d(
-        pts_all[:, 0], pts_all[:, 1],
-        bins=m, range=[[0, 1], [0, 1]]
-    )
-    return hist.astype(np.float64)
-
-
 def load_model(checkpoint_path: Path, device: torch.device) -> Tuple[torch.nn.Module, CopulaAwareDiffusion, Dict]:
     """Load trained model from checkpoint."""
     checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
@@ -86,7 +64,14 @@ def load_model(checkpoint_path: Path, device: torch.device) -> Tuple[torch.nn.Mo
     
     model_cfg = config.get('model', {})
     m = config.get('data', {}).get('m', 64)
-    in_channels = model_cfg.get('in_channels', 1)
+    model_type = model_cfg.get('type', 'diffusion_unet')
+    in_channels_cfg = model_cfg.get('in_channels', 1)
+    if model_type == 'diffusion_unet':
+        if in_channels_cfg != 1:
+            print(f"Warning: overriding in_channels={in_channels_cfg} -> 1 for diffusion_unet")
+        in_channels = 1
+    else:
+        in_channels = in_channels_cfg
     
     model = GridUNet(
         m=m,
@@ -109,7 +94,6 @@ def load_model(checkpoint_path: Path, device: torch.device) -> Tuple[torch.nn.Mo
     return model, diffusion, config
 
 
-@torch.no_grad()
 def estimate_pair_copula(
     model: torch.nn.Module,
     diffusion: CopulaAwareDiffusion,
@@ -118,52 +102,20 @@ def estimate_pair_copula(
     device: torch.device,
     num_steps: int = 50,
 ) -> Tuple[np.ndarray, HFuncLookup]:
-    """Estimate bivariate copula density from pair samples."""
-    hist = scatter_to_hist(pair_data, m, reflect=True)
-    du = 1.0 / m
-    hist = hist / (hist.sum() * du * du + 1e-12)
-    
-    hist_tensor = torch.from_numpy(hist).float().unsqueeze(0).unsqueeze(0).to(device)
-    
-    # Sample from diffusion
-    T = diffusion.timesteps
-    x_t = torch.randn(1, 1, m, m, device=device)
-    
-    step_size = max(1, T // num_steps)
-    timesteps = list(range(T - 1, -1, -step_size))
-    if timesteps[-1] != 0:
-        timesteps.append(0)
-    
-    alphas_cumprod = diffusion.alphas_cumprod.to(device)
-    
-    for i, t in enumerate(timesteps):
-        t_tensor = torch.full((1,), t, device=device, dtype=torch.long)
-        t_normalized = t_tensor.float() / T
-        pred_noise = model(x_t, t_normalized)
-        
-        alpha_t = alphas_cumprod[t]
-        sqrt_alpha_t = torch.sqrt(alpha_t)
-        sqrt_one_minus_alpha_t = torch.sqrt(1 - alpha_t)
-        
-        pred_x0 = (x_t - sqrt_one_minus_alpha_t * pred_noise) / sqrt_alpha_t
-        pred_x0 = pred_x0.clamp(-20, 20)
-        
-        if t == 0:
-            x_t = pred_x0
-        else:
-            t_prev = timesteps[i + 1] if i + 1 < len(timesteps) else 0
-            alpha_t_prev = alphas_cumprod[t_prev] if t_prev > 0 else torch.tensor(1.0, device=device)
-            dir_xt = torch.sqrt(1 - alpha_t_prev) * pred_noise
-            x_t = torch.sqrt(alpha_t_prev) * pred_x0 + dir_xt
-    
-    density = torch.exp(x_t).clamp(1e-12, 1e6)
-    mass = (density * du * du).sum(dim=(-2, -1), keepdim=True).clamp_min(1e-12)
-    density = density / mass
-    density = copula_project(density, iters=50)
-    
-    density_np = density[0, 0].cpu().numpy()
+    """Estimate bivariate copula density from pair samples (shared sampler)."""
+    use_histogram_conditioning = bool(getattr(model, "conv_in").in_channels > 1)
+    density_np = sample_density_grid(
+        model=model,
+        diffusion=diffusion,
+        samples=pair_data,
+        m=m,
+        device=device,
+        num_steps=num_steps,
+        cfg_scale=1.0,
+        use_histogram_conditioning=use_histogram_conditioning,
+        projection_iters=50,
+    )
     hfunc = HFuncLookup(density_np)
-    
     return density_np, hfunc
 
 

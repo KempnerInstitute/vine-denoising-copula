@@ -1,13 +1,13 @@
 # Vine Diffusion Copula
 
-Nonparametric copula density estimation using denoising diffusion probabilistic models, with support for high-dimensional vine copula structures.
+Nonparametric copula density estimation using denoising-based neural estimators (iterative diffusion and single-pass denoisers), with support for high-dimensional vine copula structures.
 
 ## What This Does
 
 Estimates the copula density function c(u,v) from bivariate data:
 - **Input**: Pseudo-observations (u_i, v_i) in [0,1]² (data after marginal transformation)
 - **Output**: Copula density c(u,v) on a discrete grid, satisfying copula constraints
-- **Method**: Denoising diffusion with iterative refinement
+- **Method**: Supports (a) iterative conditional diffusion (DDIM/CFG) and (b) fast single-pass denoiser/CNN baselines, all with IPFP/Sinkhorn projection to enforce exact copula constraints
 
 The estimated bivariate copulas can be combined into vine structures (D-vine, C-vine, R-vine) for modeling high-dimensional dependence.
 
@@ -82,7 +82,9 @@ model.eval()
 # Fit a D-vine copula to high-dimensional data
 U = np.random.uniform(0, 1, (1000, 5))  # 5D copula samples
 vine = VineCopulaModel(vine_type='dvine', m=64, device='cuda')
-vine.fit(U, model)
+vine.fit(U, model, diffusion)  # diffusion!=None -> iterative DDIM sampling
+# For single-pass estimators (denoiser/enhanced_cnn), pass diffusion=None:
+# vine.fit(U, model, diffusion=None)
 
 # Evaluate density and generate samples
 logpdf = vine.logpdf(U_test)
@@ -178,18 +180,28 @@ results/
 
 ## Key Features
 
-- **Diffusion-based density estimation**: Learn copula densities directly from samples
+- **Denoising-based density estimation**: Iterative conditional diffusion and fast single-pass estimators
 - **Vine copula support**: Build D-vine, C-vine, R-vine structures for high-dimensional data
 - **Automatic constraint enforcement**: IPFP projection ensures valid copula densities
 - **Multi-GPU training**: Distributed training with PyTorch DDP
 - **Flexible configuration**: YAML configs with command-line overrides
 - **Comprehensive evaluation**: Bivariate ISE, vine log-likelihood, Rosenblatt uniformity tests
 
+## Comparing One-Shot vs Diffusion
+
+This repo includes configs for head-to-head comparisons:
+- `configs/train/diffusion_cond.yaml` (iterative diffusion, optional histogram conditioning / CFG)
+- `configs/train/denoiser_cond.yaml` (single-pass denoiser)
+- `configs/train/enhanced_cnn_cond.yaml` (strong CNN baseline)
+
+Use `scripts/model_selection.py` to compare checkpoints on a fixed bivariate suite.
+
 ## Documentation
 
 | Document | Description |
 |----------|-------------|
 | [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) | Quick start guide for new users |
+| [docs/CONFIGURATION.md](docs/CONFIGURATION.md) | **Complete configuration guide for all tasks** |
 | [docs/USER_GUIDE.md](docs/USER_GUIDE.md) | Comprehensive usage guide with examples |
 | [docs/API.md](docs/API.md) | Complete API reference |
 | [docs/TECHNICAL_DETAILS.md](docs/TECHNICAL_DETAILS.md) | Mathematical framework |

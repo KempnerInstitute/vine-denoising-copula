@@ -37,30 +37,8 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from vdc.models.unet_grid import GridUNet
 from vdc.models.copula_diffusion import CopulaAwareDiffusion
-from vdc.models.projection import copula_project
 from vdc.config import get_run_dir
-
-
-def scatter_to_hist(pts: np.ndarray, m: int, reflect: bool = True) -> np.ndarray:
-    """Create 2D histogram from scatter points."""
-    if reflect:
-        pts_reflected = []
-        for dx, dy in [(0, 0), (0, -1), (0, 1), (-1, 0), (1, 0)]:
-            shifted = pts.copy()
-            shifted[:, 0] += dx
-            shifted[:, 1] += dy
-            mask = (shifted[:, 0] >= 0) & (shifted[:, 0] <= 1) & \
-                   (shifted[:, 1] >= 0) & (shifted[:, 1] <= 1)
-            pts_reflected.append(shifted[mask])
-        pts_all = np.vstack(pts_reflected)
-    else:
-        pts_all = pts
-    
-    hist, _, _ = np.histogram2d(
-        pts_all[:, 0], pts_all[:, 1],
-        bins=m, range=[[0, 1], [0, 1]]
-    )
-    return hist.astype(np.float64)
+from vdc.inference.density import sample_density_grid, scatter_to_hist
 
 
 def load_model(checkpoint_path: Path, device: torch.device) -> Tuple[torch.nn.Module, CopulaAwareDiffusion, Dict]:
@@ -73,8 +51,9 @@ def load_model(checkpoint_path: Path, device: torch.device) -> Tuple[torch.nn.Mo
     model_cfg = config.get('model', {})
     m = config.get('data', {}).get('m', 64)
     
-    # Determine input channels based on config
-    in_channels = model_cfg.get('in_channels', 1)
+    # Determine input channels based on config.
+    # For conditional diffusion, diffusion_unet may use in_channels=2: [x_t, log_histogram].
+    in_channels = int(model_cfg.get('in_channels', 1))
     
     model = GridUNet(
         m=m,
@@ -99,93 +78,6 @@ def load_model(checkpoint_path: Path, device: torch.device) -> Tuple[torch.nn.Mo
     print(f"✓ Model loaded (step {step}, {n_params:,} parameters)")
     
     return model, diffusion, config
-
-
-@torch.no_grad()
-def estimate_density(
-    model: torch.nn.Module,
-    diffusion: CopulaAwareDiffusion,
-    samples: np.ndarray,
-    m: int,
-    device: torch.device,
-    num_steps: int = 50,
-    cfg_scale: float = 2.0,
-    use_histogram_conditioning: bool = False,
-) -> np.ndarray:
-    """
-    Estimate copula density from bivariate samples.
-    
-    Args:
-        model: Trained diffusion model
-        diffusion: Diffusion process
-        samples: (n, 2) array of samples in [0,1]^2
-        m: Grid resolution
-        device: Compute device
-        num_steps: Number of sampling steps
-        cfg_scale: Classifier-free guidance scale
-        use_histogram_conditioning: Whether model uses histogram conditioning
-        
-    Returns:
-        (m, m) estimated density grid
-    """
-    # Create histogram from samples
-    hist = scatter_to_hist(samples, m, reflect=True)
-    du = 1.0 / m
-    hist = hist / (hist.sum() * du * du + 1e-12)
-    
-    hist_tensor = torch.from_numpy(hist).float().unsqueeze(0).unsqueeze(0).to(device)
-    log_histogram = torch.log(hist_tensor.clamp(min=1e-12))
-    
-    # Sample from diffusion
-    T = diffusion.timesteps
-    x_t = torch.randn(1, 1, m, m, device=device)
-    
-    step_size = max(1, T // num_steps)
-    timesteps = list(range(T - 1, -1, -step_size))
-    if timesteps[-1] != 0:
-        timesteps.append(0)
-    
-    alphas_cumprod = diffusion.alphas_cumprod.to(device)
-    
-    for i, t in enumerate(timesteps):
-        t_tensor = torch.full((1,), t, device=device, dtype=torch.long)
-        t_normalized = t_tensor.float() / T
-        
-        if use_histogram_conditioning:
-            # Model expects [noisy_density, histogram] concatenated
-            model_input_cond = torch.cat([x_t, log_histogram], dim=1)
-            pred_noise_cond = model(model_input_cond, t_normalized)
-            
-            model_input_uncond = torch.cat([x_t, torch.zeros_like(log_histogram)], dim=1)
-            pred_noise_uncond = model(model_input_uncond, t_normalized)
-            
-            pred_noise = pred_noise_uncond + cfg_scale * (pred_noise_cond - pred_noise_uncond)
-        else:
-            # Model takes only noisy density
-            pred_noise = model(x_t, t_normalized)
-        
-        alpha_t = alphas_cumprod[t]
-        sqrt_alpha_t = torch.sqrt(alpha_t)
-        sqrt_one_minus_alpha_t = torch.sqrt(1 - alpha_t)
-        
-        pred_x0 = (x_t - sqrt_one_minus_alpha_t * pred_noise) / sqrt_alpha_t
-        pred_x0 = pred_x0.clamp(-20, 20)
-        
-        if t == 0:
-            x_t = pred_x0
-        else:
-            t_prev = timesteps[i + 1] if i + 1 < len(timesteps) else 0
-            alpha_t_prev = alphas_cumprod[t_prev] if t_prev > 0 else torch.tensor(1.0, device=device)
-            dir_xt = torch.sqrt(1 - alpha_t_prev) * pred_noise
-            x_t = torch.sqrt(alpha_t_prev) * pred_x0 + dir_xt
-    
-    # Convert to density and project
-    density = torch.exp(x_t).clamp(1e-12, 1e6)
-    mass = (density * du * du).sum(dim=(-2, -1), keepdim=True).clamp_min(1e-12)
-    density = density / mass
-    density = copula_project(density, iters=50)
-    
-    return density[0, 0].cpu().numpy()
 
 
 def visualize_density(
@@ -256,7 +148,11 @@ def cmd_density(args):
     # Estimate density
     print("Estimating density...")
     density = estimate_density(
-        model, diffusion, samples, m, device,
+        model=model,
+        diffusion=diffusion,
+        samples=samples,
+        m=m,
+        device=device,
         num_steps=args.num_steps,
         cfg_scale=args.cfg_scale,
         use_histogram_conditioning=use_histogram,

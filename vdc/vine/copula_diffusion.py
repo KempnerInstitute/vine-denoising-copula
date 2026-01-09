@@ -1,19 +1,18 @@
 """
 High-level interface for using a trained diffusion copula model as a bivariate copula.
 
-This module is intentionally lightweight and depends only on existing training/eval
-code paths. It provides:
+This wrapper is intended to be **importable as a library module** (e.g. from tests),
+so it must not depend on ad-hoc script modules that may be missing in some checkouts.
 
-    - DiffusionCopulaModel: load from checkpoint and estimate a copula density
-      on a grid from either
-        * an analytic truth (for benchmarks), or
-        * empirical bivariate samples in [0, 1]^2.
-    - Utilities to approximate h-functions and to sample from the estimated copula.
+It provides:
+- `DiffusionCopulaModel.from_checkpoint`: load a `GridUNet` + `CopulaAwareDiffusion`
+  from a training checkpoint produced by `scripts/train.py` / `scripts/train_unified.py`.
+- `estimate_density_from_samples`: estimate a bivariate copula density grid from
+  pseudo-observations in [0,1]^2 via the shared reverse diffusion routine
+  `vdc.inference.density.sample_density_grid`.
 
-The goal is to give a clean "vine-ready" API without re-implementing training.
-
-NOTE: This wrapper currently targets diffusion UNet checkpoints trained with
-      scripts/train_unified.py and evaluated via scripts/visualize_diffusion_offline.py.
+Note: advanced CFG / custom binning utilities previously lived in a separate script;
+this module focuses on a stable, self-contained API that matches the rest of the codebase.
 """
 from __future__ import annotations
 
@@ -24,191 +23,11 @@ from typing import Optional, Tuple
 import numpy as np
 import torch
 
-# We rely on the existing offline visualization utilities to avoid code duplication.
-from scripts.visualize_diffusion_offline import (  # type: ignore
-    build_binning,
-    build_diffusion,
-    build_model,
-    denoise_from_histogram,
-    load_checkpoint,
-    to_area_tensor,
-)
-from vdc.data.hist import points_to_histogram
+from vdc.inference.density import sample_density_grid
+from vdc.models.copula_diffusion import CopulaAwareDiffusion
+from vdc.models.unet_grid import GridUNet
 from vdc.models.projection import copula_project
 from vdc.utils.smoothing import smooth_density_gaussian
-
-
-def compute_corner_concentration(hist: np.ndarray, corner_size: int = 8) -> Tuple[float, int]:
-    """
-    Compute how much mass is concentrated in each corner.
-    
-    Returns:
-        (concentration_score, dominant_corner)
-        
-    concentration_score: 0-1, how much mass is in the most concentrated corner
-    dominant_corner: 0=top-left, 1=top-right, 2=bottom-left, 3=bottom-right
-    """
-    m = hist.shape[0]
-    hist_norm = hist / (hist.sum() + 1e-12)
-    
-    # Define corner regions
-    corners = {
-        0: hist_norm[:corner_size, :corner_size],       # Top-left (0,0)
-        1: hist_norm[:corner_size, -corner_size:],      # Top-right (0, m-1)
-        2: hist_norm[-corner_size:, :corner_size],      # Bottom-left (m-1, 0)
-        3: hist_norm[-corner_size:, -corner_size:],     # Bottom-right (m-1, m-1)
-    }
-    
-    corner_masses = {k: v.sum() for k, v in corners.items()}
-    dominant = max(corner_masses, key=corner_masses.get)
-    max_mass = corner_masses[dominant]
-    
-    # Expected mass in corner if uniform
-    expected_mass = (corner_size / m) ** 2
-    
-    # Concentration score: how much more than expected
-    concentration = min(1.0, max_mass / expected_mass / 10)  # Scale so ~10x expected = 1.0
-    
-    return concentration, dominant
-
-
-def adaptive_cfg_scale(hist: np.ndarray, base_cfg: float = 2.0, max_cfg: float = 5.0) -> float:
-    """
-    Compute adaptive CFG scale based on histogram properties.
-    
-    The key insight:
-    - Peaked copulas (Clayton, Gumbel, Joe) have mass concentrated in corners
-    - Smooth copulas (Gaussian, Frank) have more diffuse mass
-    
-    Higher CFG is needed for peaked copulas to capture the sharp structure.
-    Lower CFG works better for smooth copulas to avoid over-sharpening.
-    
-    Args:
-        hist: 2D histogram array
-        base_cfg: Minimum CFG scale for smooth copulas (default 2.0)
-        max_cfg: Maximum CFG scale for peaked copulas (default 5.0)
-        
-    Returns:
-        Adaptive CFG scale in [base_cfg, max_cfg]
-    """
-    hist_norm = hist / (hist.sum() + 1e-12)
-    
-    # 1. Corner concentration score
-    corner_conc, _ = compute_corner_concentration(hist)
-    
-    # 2. Peakedness: max / median ratio
-    # Peaked copulas have high max relative to median
-    sorted_vals = np.sort(hist_norm.flatten())
-    median_val = sorted_vals[len(sorted_vals) // 2]
-    max_val = hist_norm.max()
-    
-    if median_val > 1e-12:
-        peak_ratio = max_val / median_val
-        # Log scale: ratio of 10 → 0.5, ratio of 100 → 1.0
-        peakedness = min(1.0, np.log10(max(1, peak_ratio)) / 2)
-    else:
-        peakedness = 1.0  # Very sparse histogram
-    
-    # 3. Combine scores: use weighted average
-    # Corner concentration is more reliable than peakedness
-    combined = 0.6 * corner_conc + 0.4 * peakedness
-    
-    # 4. Interpolate CFG scale
-    cfg = base_cfg + (max_cfg - base_cfg) * combined
-    
-    return cfg
-
-
-def sample_with_cfg(
-    model: torch.nn.Module,
-    diffusion,
-    histogram: torch.Tensor,
-    device: torch.device,
-    num_steps: int = 50,
-    cfg_scale: float = 2.0,
-) -> torch.Tensor:
-    """
-    Sample from the conditional diffusion model with Classifier-Free Guidance.
-    
-    This starts from pure noise and generates a clean density conditioned on the
-    input histogram.
-    
-    Args:
-        model: The diffusion UNet model
-        diffusion: CopulaAwareDiffusion instance
-        histogram: (B, 1, m, m) normalized density histogram as conditioning
-        device: torch device
-        num_steps: Number of reverse diffusion steps (more = better quality)
-        cfg_scale: Guidance scale (>1 emphasizes conditioning, 1 = no guidance)
-        
-    Returns:
-        (B, 1, m, m) generated density
-    """
-    B = histogram.shape[0]
-    m = histogram.shape[-1]
-    T = diffusion.timesteps
-    
-    # Normalize histogram
-    du = dv = 1.0 / m
-    mass = (histogram * du * dv).sum(dim=(-2, -1), keepdim=True).clamp_min(1e-12)
-    histogram = histogram / mass
-    log_histogram = torch.log(histogram.clamp(min=1e-12))
-    
-    # Start from pure noise
-    x_t = torch.randn(B, 1, m, m, device=device)
-    
-    # Timestep schedule
-    if num_steps >= T:
-        timesteps = list(range(T - 1, -1, -1))
-    else:
-        step_size = T // num_steps
-        timesteps = list(range(T - 1, -1, -step_size))
-        if timesteps[-1] != 0:
-            timesteps.append(0)
-    
-    alphas_cumprod = diffusion.alphas_cumprod.to(device)
-    
-    with torch.no_grad():
-        for i, t in enumerate(timesteps):
-            t_tensor = torch.full((B,), t, device=device, dtype=torch.long)
-            t_normalized = t_tensor.float() / T
-            
-            # Conditional prediction (with histogram)
-            model_input_cond = torch.cat([x_t, log_histogram], dim=1)
-            pred_noise_cond = model(model_input_cond, t_normalized)
-            
-            # Unconditional prediction (without histogram) for CFG
-            log_histogram_uncond = torch.zeros_like(log_histogram)
-            model_input_uncond = torch.cat([x_t, log_histogram_uncond], dim=1)
-            pred_noise_uncond = model(model_input_uncond, t_normalized)
-            
-            # CFG: pred = uncond + scale * (cond - uncond)
-            pred_noise = pred_noise_uncond + cfg_scale * (pred_noise_cond - pred_noise_uncond)
-            
-            # DDIM update
-            alpha_t = alphas_cumprod[t]
-            sqrt_alpha_t = torch.sqrt(alpha_t)
-            sqrt_one_minus_alpha_t = torch.sqrt(1 - alpha_t)
-            
-            pred_x0 = (x_t - sqrt_one_minus_alpha_t * pred_noise) / sqrt_alpha_t
-            pred_x0 = pred_x0.clamp(-20, 20)
-            
-            if t == 0:
-                x_t = pred_x0
-            else:
-                if i + 1 < len(timesteps):
-                    t_prev = timesteps[i + 1]
-                else:
-                    t_prev = 0
-                
-                alpha_t_prev = alphas_cumprod[t_prev] if t_prev > 0 else torch.tensor(1.0, device=device)
-                dir_xt = torch.sqrt(1 - alpha_t_prev) * pred_noise
-                x_t = torch.sqrt(alpha_t_prev) * pred_x0 + dir_xt
-    
-    # Convert to density
-    density = torch.exp(x_t).clamp(1e-12, 1e6)
-    mass = (density * du * dv).sum(dim=(-2, -1), keepdim=True).clamp_min(1e-12)
-    return density / mass
 
 
 @dataclass
@@ -250,115 +69,64 @@ class DiffusionCopulaModel:
             in the checkpoint is used (recommended).
         """
         ckpt_path = Path(checkpoint_path)
+        if not ckpt_path.exists():
+            raise FileNotFoundError(f"Checkpoint not found: {ckpt_path}")
+
         if device is None:
             device_t = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         else:
             device_t = torch.device(device)
 
-        checkpoint, config = load_checkpoint(ckpt_path, device_t, config_path)
-        model = build_model(config, device_t)
+        # We ignore config_path for now and rely on the config embedded in the checkpoint.
+        checkpoint = torch.load(ckpt_path, map_location=device_t, weights_only=False)
+        config = checkpoint.get("config", {})
+
+        m = int(config.get("data", {}).get("m", 64))
+        model_cfg = config.get("model", {})
+
         state = checkpoint.get("model_state_dict", checkpoint.get("model", None))
         if state is None:
             raise RuntimeError(f"Checkpoint at {ckpt_path} does not contain model weights")
-        model.load_state_dict(state, strict=True)
+
+        # Robustly infer in_channels from the checkpoint to support older/newer variants.
+        if isinstance(state, dict) and "conv_in.weight" in state:
+            in_channels = int(state["conv_in.weight"].shape[1])
+        else:
+            in_channels = int(model_cfg.get("in_channels", 1))
+
+        model = GridUNet(
+            m=m,
+            in_channels=in_channels,
+            base_channels=int(model_cfg.get("base_channels", 64)),
+            channel_mults=tuple(model_cfg.get("channel_mults", (1, 2, 3, 4))),
+            num_res_blocks=int(model_cfg.get("num_res_blocks", 2)),
+            attention_resolutions=tuple(model_cfg.get("attention_resolutions", (16, 8))),
+            dropout=float(model_cfg.get("dropout", 0.1)),
+        ).to(device_t)
+
+        # Allow missing keys for backward compatibility (e.g., older checkpoints without log_n embedding).
+        model.load_state_dict(state, strict=False)
+        if not any(str(k).startswith("logn_embed") for k in state.keys()):
+            # Make log_n conditioning a no-op if the checkpoint did not include it.
+            for p in model.logn_embed.parameters():
+                torch.nn.init.zeros_(p)
         model.eval()
 
-        diffusion = build_diffusion(config, device_t)
+        diff_cfg = config.get("diffusion", {})
+        diffusion = CopulaAwareDiffusion(
+            timesteps=int(diff_cfg.get("timesteps", 1000)),
+            beta_schedule=str(diff_cfg.get("noise_schedule", "cosine")),
+        ).to(device_t)
 
         return cls(model=model, diffusion=diffusion, config=config, device=device_t)
 
     # ------------------------------------------------------------------
     # Core density estimation
     # ------------------------------------------------------------------
-    def _grid_geometry(
-        self,
-        m: Optional[int] = None,
-        binning: Optional[str] = None,
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, torch.Tensor]:
-        """
-        Build 1D binning and 2D cell-area tensor for a given grid resolution.
-
-        Returns
-        -------
-        u_centers, v_centers, cell_areas_np, area_tensor
-        """
-        m_cfg = int(self.config.get("data", {}).get("m", 64))
-        m_eff = int(m) if m is not None else m_cfg
-
-        mode = binning or self.config.get("data", {}).get("binning", "uniform")
-        _, u_centers, du = build_binning(m_eff, mode=mode)
-        _, v_centers, dv = build_binning(m_eff, mode=mode)
-        cell_areas_np = np.outer(du, dv)
-        area_tensor = to_area_tensor(du, dv, self.device, torch.float32)
-        return u_centers, v_centers, cell_areas_np, area_tensor
-
-    def _denoise_from_log_density(
-        self,
-        log_density_grid: np.ndarray,
-        noise_step: Optional[int] = None,
-        projection_iters: int = 15,
-        num_diffusion_steps: int = 100,
-    ) -> np.ndarray:
-        """
-        Run reverse diffusion denoising starting from a given density.
-        
-        Uses the denoise_from_histogram approach which treats the input as a
-        noisy observation and runs reverse diffusion from an intermediate timestep.
-        
-        Args:
-            log_density_grid: (m, m) log-density array
-            noise_step: Starting timestep for denoising (lower = preserve more input)
-            projection_iters: IPFP iterations for copula constraints
-            num_diffusion_steps: Number of reverse diffusion steps (more = smoother)
-        """
-        m = log_density_grid.shape[0]
-        assert log_density_grid.shape == (m, m)
-
-        # Normalize to a proper copula density under the chosen geometry.
-        u_centers, v_centers, cell_areas_np, area_tensor = self._grid_geometry(m=m)
-        density_true = np.exp(np.clip(log_density_grid, -20.0, 20.0))
-        density_true = np.clip(density_true, 1e-12, 1e6)
-        density_true /= max(1e-20, float((density_true * cell_areas_np).sum()))
-
-        density_tensor = (
-            torch.from_numpy(density_true).float().unsqueeze(0).unsqueeze(0).to(self.device)
-        )
-
-        # Determine starting timestep - default to moderate noise level
-        timesteps = int(self.diffusion.timesteps)
-        start_t = noise_step if noise_step is not None else min(300, timesteps - 1)
-
-        # Use denoise_from_histogram to run reverse diffusion
-        recon_log = denoise_from_histogram(
-            self.model, 
-            self.diffusion, 
-            density_tensor,  # Input is normalized density
-            self.device,
-            num_steps=num_diffusion_steps,
-            start_t=start_t
-        )
-        
-        recon_density = torch.exp(recon_log).clamp(1e-12, 1e6)
-        recon_density = recon_density / (
-            (recon_density * area_tensor).sum(dim=(2, 3), keepdim=True).clamp_min(1e-12)
-        )
-
-        # Marginal projection for a valid copula (row/col sums ~1).
-        du_vec = torch.from_numpy(cell_areas_np.sum(axis=1)).float().to(self.device)
-        dv_vec = torch.from_numpy(cell_areas_np.sum(axis=0)).float().to(self.device)
-        if projection_iters > 0:
-            recon_density = copula_project(
-                recon_density,
-                iters=projection_iters,
-                row_target=du_vec,
-                col_target=dv_vec,
-            )
-            recon_density = recon_density.clamp(1e-12, 1e6)
-            recon_density = recon_density / (
-                (recon_density * area_tensor).sum(dim=(2, 3), keepdim=True).clamp_min(1e-12)
-            )
-
-        return recon_density[0, 0].detach().cpu().numpy()
+    def _grid_centers(self, m: int) -> Tuple[np.ndarray, np.ndarray]:
+        u = np.linspace(0.5 / m, 1.0 - 0.5 / m, m)
+        v = np.linspace(0.5 / m, 1.0 - 0.5 / m, m)
+        return u, v
 
     # Public API --------------------------------------------------------
     def estimate_density_from_samples(
@@ -433,92 +201,55 @@ class DiffusionCopulaModel:
         m_cfg = int(self.config.get("data", {}).get("m", 64))
         m_eff = int(m) if m is not None else m_cfg
 
-        # Histogram on [0,1]^2; we use a uniform grid here on purpose.
-        hist = points_to_histogram(u, m=m_eff)
-        hist = np.clip(hist, 1e-12, 1e6)
-        du = dv = 1.0 / m_eff
-        hist = hist / (hist.sum() * du * dv)  # Normalize to proper density (integral = 1)
+        # This library wrapper currently uses the shared `sample_density_grid()` path.
+        # It does not require special histogram-conditioning channels.
 
-        # Determine CFG scale (adaptive or fixed)
-        if adaptive_cfg:
-            effective_cfg = adaptive_cfg_scale(hist, base_cfg=2.0, max_cfg=5.0)
-        else:
-            effective_cfg = cfg_scale
-
-        # Prepare histogram tensor for conditioning
-        hist_tensor = torch.from_numpy(hist).float().unsqueeze(0).unsqueeze(0).to(self.device)
-        
-        # Ensemble inference: run multiple times with different random seeds
-        ensemble_densities = []
-        for i in range(num_ensemble):
-            # Set different random seed for each ensemble member
+        ensemble = []
+        # Heuristic: if the UNet expects 2 channels, treat it as histogram-conditioned.
+        use_histogram_conditioning = bool(getattr(self.model, "conv_in").in_channels > 1)
+        for i in range(max(1, int(num_ensemble))):
             torch.manual_seed(42 + i * 1000)
-            
-            if use_cfg:
-                # Use CFG sampling from pure noise (recommended for V2 models)
-                density_tensor = sample_with_cfg(
-                    self.model,
-                    self.diffusion,
-                    hist_tensor,
-                    self.device,
-                    num_steps=num_diffusion_steps,
-                    cfg_scale=effective_cfg,
-                )
-                density_i = density_tensor[0, 0].cpu().numpy()
-            else:
-                # Legacy method: denoise from histogram
-                log_density_grid = np.log(hist)
-                step = noise_step if noise_step is not None else 300
-                density_i = self._denoise_from_log_density(
-                    log_density_grid, 
-                    noise_step=step, 
-                    projection_iters=0,
-                    num_diffusion_steps=num_diffusion_steps,
-                )
-            
-            ensemble_densities.append(density_i)
-        
-        # Aggregate ensemble predictions
-        ensemble_densities = np.stack(ensemble_densities, axis=0)  # (num_ensemble, m, m)
-        
-        if num_ensemble > 1:
+            density_i = sample_density_grid(
+                model=self.model,
+                diffusion=self.diffusion,
+                samples=u,
+                m=m_eff,
+                device=self.device,
+                num_steps=num_diffusion_steps,
+                cfg_scale=cfg_scale,
+                use_histogram_conditioning=use_histogram_conditioning,
+                projection_iters=projection_iters,
+            )
+            ensemble.append(density_i)
+
+        ensemble_arr = np.stack(ensemble, axis=0)  # (E,m,m)
+        if ensemble_arr.shape[0] == 1:
+            density_pred = ensemble_arr[0]
+            density_std = None
+        else:
             if ensemble_mode == "geometric":
-                # Geometric mean (average in log-space) - preserves relative magnitudes
-                log_ensemble = np.log(np.clip(ensemble_densities, 1e-12, None))
-                density_pred = np.exp(np.mean(log_ensemble, axis=0))
+                density_pred = np.exp(np.mean(np.log(np.clip(ensemble_arr, 1e-12, None)), axis=0))
             elif ensemble_mode == "arithmetic":
-                # Arithmetic mean - smooths more aggressively
-                density_pred = np.mean(ensemble_densities, axis=0)
+                density_pred = np.mean(ensemble_arr, axis=0)
             elif ensemble_mode == "median":
-                # Median - robust to outliers
-                density_pred = np.median(ensemble_densities, axis=0)
+                density_pred = np.median(ensemble_arr, axis=0)
             else:
                 raise ValueError(f"Unknown ensemble_mode: {ensemble_mode}")
-            
-            # Compute std for uncertainty quantification
-            if return_std:
-                density_std = np.std(ensemble_densities, axis=0)
-        else:
-            density_pred = ensemble_densities[0]
-            density_std = None
+            density_std = np.std(ensemble_arr, axis=0) if return_std else None
 
-        # Apply Gaussian smoothing before projection
         if smooth_sigma > 0:
-            density_t = torch.from_numpy(density_pred).float().unsqueeze(0).unsqueeze(0).to(self.device)
-            smoothed_t = smooth_density_gaussian(density_t, sigma=smooth_sigma, preserve_mass=True)
-            density_pred = smoothed_t[0, 0].cpu().numpy()
-        
-        # Now apply copula projection
-        if projection_iters > 0:
-            density_t = torch.from_numpy(density_pred).float().unsqueeze(0).unsqueeze(0).to(self.device)
-            density_t = density_t.clamp(min=1e-12)
-            projected_t = copula_project(density_t, iters=projection_iters)
-            density_pred = projected_t[0, 0].cpu().numpy()
+            t = torch.from_numpy(density_pred).float().unsqueeze(0).unsqueeze(0).to(self.device)
+            t = smooth_density_gaussian(t, sigma=float(smooth_sigma), preserve_mass=True)
+            density_pred = t[0, 0].detach().cpu().numpy()
 
-        # Coordinates under the evaluation geometry.
-        row_coords, col_coords, _, _ = self._grid_geometry(m=m_eff)
-        
-        if return_std and num_ensemble > 1:
+        # Final projection (idempotent if already projected in sample_density_grid)
+        if projection_iters > 0:
+            t = torch.from_numpy(density_pred).float().unsqueeze(0).unsqueeze(0).to(self.device)
+            t = copula_project(t.clamp_min(1e-12), iters=int(projection_iters))
+            density_pred = t[0, 0].detach().cpu().numpy()
+
+        row_coords, col_coords = self._grid_centers(m_eff)
+        if return_std and density_std is not None:
             return density_pred, row_coords, col_coords, density_std
         return density_pred, row_coords, col_coords
 

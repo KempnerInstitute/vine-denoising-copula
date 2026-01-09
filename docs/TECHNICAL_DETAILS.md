@@ -4,6 +4,10 @@
 
 This diffusion model estimates the **copula density function** \( c(u,v) \) from bivariate pseudo-observations \( (u_i, v_i) \in [0,1]^2 \).
 
+**Repo note**: the codebase supports two inference/training families:
+- **Iterative conditional diffusion** (`diffusion_unet`): DDIM sampling in log-density space, optionally histogram-conditioned with classifier-free guidance (CFG).
+- **Single-pass estimators** (`denoiser`, `enhanced_cnn`): one forward pass from a histogram (optionally with coordinate channels), then IPFP/Sinkhorn projection.
+
 ---
 
 ## Mathematical Framework
@@ -221,8 +225,8 @@ Given real bivariate data \( \{(x_i, y_i)\}_{i=1}^n \):
    \]
 
 3. **Denoise**:
-   - Add maximum noise: \( h_T \sim \mathcal{N}(h_0, I) \)
-   - Run reverse diffusion: \( h_T \to h_{T-1} \to ... \to \hat{h}_0 \)
+   - **One-shot mode**: run a single forward pass \( \hat{c} = f_\theta(h_0, t=0) \)
+   - **Diffusion mode**: start from noise and run DDIM reverse steps to obtain \( \hat{c} \)
 
 4. **Project to copula**:
    - Ensure \( \hat{c} = \exp(\hat{h}_0) \) satisfies constraints via IPFP
@@ -245,9 +249,8 @@ Given real bivariate data \( \{(x_i, y_i)\}_{i=1}^n \):
 - Repeat for higher-dimensional vines
 
 ### 3. Uncertainty Quantification
-- Sample multiple copulas from posterior (if needed)
-- Quantify estimation uncertainty
-- Robustness to data scarcity
+- If using the diffusion mode with stochastic sampling, you can generate multiple plausible density estimates by changing the diffusion randomness.
+- We treat this as optional: the primary objective is accurate amortized density estimation for vine assembly.
 
 ---
 
@@ -265,17 +268,16 @@ density = project_to_copula(density)  # IPFP
 3. **No Curriculum**: Learns everything at once → unstable
 4. **Mode Collapse**: Tends to average out multi-modal structures
 
-**Diffusion Solves These**:
-1. Projection can be detached from gradients naturally (part of generation)
-2. Multi-scale via progressive denoising (1000 timesteps)
-3. Natural curriculum (coarse → fine via noise schedule)
-4. Posterior sampling prevents mode collapse
+**What diffusion can add (but must be validated empirically)**:
+1. Iterative refinement (coarse \(\to\) fine) via noise schedules
+2. A natural curriculum across noise levels
+3. Optional stochasticity (multiple samples) if desired
 
 ---
 
 ## Ablation Studies You Could Run
 
-To prove diffusion > CNN:
+To quantify the one-shot vs diffusion tradeoff:
 
 1. **Direct CNN baseline**:
    - Train CNN(histogram) → density

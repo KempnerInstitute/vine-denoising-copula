@@ -286,6 +286,7 @@ from vdc.vine.api import VineCopulaModel
 def fit_dvine(
     U: np.ndarray,
     diffusion_model: torch.nn.Module,
+    diffusion,
     m: int = 64,
     device: str = 'cuda',
 ) -> VineCopulaModel:
@@ -309,13 +310,13 @@ def fit_dvine(
         device=device,
     )
     
-    vine.fit(U, diffusion_model, verbose=True)
+    vine.fit(U, diffusion_model, diffusion, verbose=True)
     
     return vine
 
 # Usage
 U = np.random.uniform(0, 1, (1000, 5))  # 5D data
-vine = fit_dvine(U, model)
+vine = fit_dvine(U, model, diffusion)
 
 # Print summary
 print(vine.summary())

@@ -109,7 +109,7 @@ from vdc.vine.api import VineCopulaModel
 U = np.random.uniform(0, 1, (1000, 5))  # 5-dimensional copula samples
 
 vine = VineCopulaModel(vine_type='dvine', m=64, device='cuda')
-vine.fit(U, model)  # Uses the diffusion model for pair copulas
+vine.fit(U, model, diffusion)  # Uses the diffusion model + diffusion process
 
 # Evaluate and sample
 logpdf = vine.logpdf(U[:100])  # Log-density at points
@@ -215,9 +215,9 @@ rho = 0.6
 U_train = generate_gaussian_vine(n_train, d, rho=rho, seed=42)
 U_test = generate_gaussian_vine(n_test, d, rho=rho, seed=123)
 
-# Fit D-vine (need trained diffusion model)
+# Fit D-vine (need trained diffusion model + diffusion process)
 # vine = VineCopulaModel(vine_type='dvine')
-# vine.fit(U_train, diffusion_model)
+# vine.fit(U_train, diffusion_model, diffusion_process)
 # loglik = vine.logpdf(U_test)
 # print(f"Mean log-likelihood: {loglik.mean():.2f}")
 ```

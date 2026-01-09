@@ -128,12 +128,13 @@ def build_model(model_type: str, config: Dict, device: torch.device):
                               output_mode=mcfg.get('output_mode','log')).to(device)
     if model_type == 'diffusion_unet':
         return GridUNet(m=m,
-                        in_channels=1,
+                        in_channels=mcfg.get('in_channels', 1),
                         base_channels=mcfg.get('base_channels',64),
                         channel_mults=tuple(mcfg.get('channel_mults',[1,2,3,4])),
                         num_res_blocks=mcfg.get('num_res_blocks',2),
                         attention_resolutions=tuple(mcfg.get('attention_resolutions',[16,8])),
-                        dropout=mcfg.get('dropout',0.1)).to(device)
+                        dropout=mcfg.get('dropout',0.1),
+                        time_emb_dim=mcfg.get('time_emb_dim', 256)).to(device)
     raise ValueError(f"Unknown model_type {model_type}")
 
 
@@ -417,15 +418,16 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
         samples = samples.to(device)
     B, _, m, _ = density_raw.shape
     dtype = density_raw.dtype
-    if geometry is not None:
-        area = geometry['area'].to(device=device, dtype=dtype)
-        row_widths_bc = geometry['row_widths_bc'].to(device=device, dtype=dtype)
-        col_widths_bc = geometry['col_widths_bc'].to(device=device, dtype=dtype)
-        row_widths_vec = geometry['row_widths'].to(device=device, dtype=dtype)
-        col_widths_vec = geometry['col_widths'].to(device=device, dtype=dtype)
-        row_coords_geom = geometry['row_coords'].to(device=device, dtype=dtype)
-        col_coords_geom = geometry['col_coords'].to(device=device, dtype=dtype)
-        nonuniform = geometry.get('mode', 'uniform') != 'uniform'
+    geometry_local = geometry
+    if geometry_local is not None:
+        area = geometry_local['area'].to(device=device, dtype=dtype)
+        row_widths_bc = geometry_local['row_widths_bc'].to(device=device, dtype=dtype)
+        col_widths_bc = geometry_local['col_widths_bc'].to(device=device, dtype=dtype)
+        row_widths_vec = geometry_local['row_widths'].to(device=device, dtype=dtype)
+        col_widths_vec = geometry_local['col_widths'].to(device=device, dtype=dtype)
+        row_coords_geom = geometry_local['row_coords'].to(device=device, dtype=dtype)
+        col_coords_geom = geometry_local['col_coords'].to(device=device, dtype=dtype)
+        nonuniform = geometry_local.get('mode', 'uniform') != 'uniform'
     else:
         width = torch.full((m,), 1.0 / m, device=device, dtype=dtype)
         row_widths_vec = col_widths_vec = width
@@ -435,6 +437,17 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
         row_coords_geom = torch.linspace(0.5/m, 1-0.5/m, m, device=device, dtype=dtype)
         col_coords_geom = row_coords_geom
         nonuniform = False
+        # Ensure downstream loss code always gets a geometry dict (tests often pass None).
+        geometry_local = {
+            'area': area,
+            'row_widths_bc': row_widths_bc,
+            'col_widths_bc': col_widths_bc,
+            'row_widths': row_widths_vec,
+            'col_widths': col_widths_vec,
+            'row_coords': row_coords_geom,
+            'col_coords': col_coords_geom,
+            'mode': 'uniform',
+        }
 
     def normalize_grid(grid: torch.Tensor) -> torch.Tensor:
         if grid is None:
@@ -453,11 +466,11 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
     training = config['training']
     loss_weights = training['loss_weights'].copy()
     tail_tau = training.get('tail_tau', 0.15)
-    tail_mask = geometry.get('tail_mask') if geometry is not None else None
+    tail_mask = geometry_local.get('tail_mask') if geometry_local is not None else None
     if tail_mask is None or tail_mask.device != device:
         tail_mask = _build_tail_mask(m, tail_tau, device, row_coords=row_coords_geom, col_coords=col_coords_geom)
-        if geometry is not None:
-            geometry['tail_mask'] = tail_mask
+        if geometry_local is not None:
+            geometry_local['tail_mask'] = tail_mask
 
     curriculum_weight = _get_curriculum_weight(training, step)
     for key in ('ce', 'ise', 'tail', 'ms', 'marg_kl'):
@@ -478,7 +491,7 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
     use_coords = config['model'].get('use_coordinates', False)
     use_probit_coords = config['model'].get('use_probit_coords', False)  # Coordinate transformation
     transform_to_probit_space = config['model'].get('transform_to_probit_space', False)  # Density transformation
-    time_cond = config['model'].get('time_conditioning', False)
+    time_cond = config['model'].get('time_conditioning', False) or (model_type == 'denoiser')
     use_amp = training.get('use_amp', True)
     # Optionally recompute target via anti-aliased histogram
     if training.get('use_antialiased_hist', False) and samples is not None:
@@ -498,6 +511,24 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
         input_hist = base_density.clone()
 
     input_hist = input_hist.to(device)
+    # Optional diffusion-style corruption of the conditioning histogram (single-pass denoiser training).
+    # This is ONLY meaningful when the model consumes `x_in` (denoiser/enhanced_cnn); for diffusion_unet
+    # it is used only as an optional conditioning channel.
+    hist_noise_cfg = training.get('hist_noise', {})
+    # We'll build t_scalar early if needed for noise conditioning.
+    t_scalar = torch.rand(B, device=device) if time_cond else None
+    if hist_noise_cfg.get('enable', False):
+        # Mix towards the uniform density as noise level increases.
+        max_strength = float(hist_noise_cfg.get('max_strength', 0.75))
+        power = float(hist_noise_cfg.get('power', 1.0))
+        if t_scalar is None:
+            t_scalar = torch.rand(B, device=device)
+        strength = (t_scalar.clamp(0, 1) ** power) * max_strength
+        strength = strength.view(B, 1, 1, 1)
+        uniform = torch.ones_like(input_hist)
+        uniform = normalize_grid(uniform)
+        input_hist = (1.0 - strength) * input_hist + strength * uniform
+        input_hist = normalize_grid(input_hist)
     input_noise_std = training.get('input_noise_std', 0.0)
     if input_noise_std:
         input_hist = (input_hist + torch.randn_like(input_hist) * input_noise_std).clamp_min(0.0)
@@ -547,7 +578,20 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
             
             real_noise = torch.randn_like(target_log)
             noisy = diffusion.q_sample(target_log, t, real_noise)
-            pred_noise = model(noisy, t.float()/diffusion.timesteps)
+            # Optional histogram conditioning (CFG-style) if model expects 2 channels.
+            log_n = torch.full((B,), float(np.log(samples.shape[1])) if samples is not None else 6.9, device=device, dtype=noisy.dtype)
+            if getattr(model, "conv_in").in_channels > 1:
+                # Conditioning channel = log histogram density
+                cond = torch.log(input_hist.clamp(min=1e-12))
+                # Classifier-free dropout: randomly drop conditioning during training
+                p_drop = float(training.get('cfg_dropout_prob', 0.1))
+                if p_drop > 0:
+                    drop_mask = (torch.rand(B, device=device) < p_drop).view(B, 1, 1, 1)
+                    cond = torch.where(drop_mask, torch.zeros_like(cond), cond)
+                model_in = torch.cat([noisy, cond], dim=1)
+            else:
+                model_in = noisy
+            pred_noise = model(model_in, t.float()/diffusion.timesteps, log_n)
             
             # Check for NaN in predictions
             if torch.isnan(pred_noise).any():
@@ -597,7 +641,7 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
                 proj_copula,
                 density,
                 training,
-                geometry,
+                geometry_local,
                 loss_weights_eff,
                 tail_mask,
                 model_output=None,
@@ -621,7 +665,6 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
             except Exception:
                 pass
         else:
-            t_scalar = torch.rand(B, device=device) if time_cond else None
             out = model(x_in, t_scalar) if t_scalar is not None else model(x_in)
             if isinstance(out, dict):
                 if 'density' in out:
@@ -753,7 +796,7 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
                 proj_copula,
                 density,
                 training,
-                geometry,
+                geometry_local,
                 loss_weights_eff,
                 tail_mask,
                 model_output=model_output,
@@ -1270,6 +1313,10 @@ def main():
         n_samples_per_batch=config['data']['n_samples_per_copula'],
         m=m,
         families=config['data']['copula_families'],
+        param_ranges=config['data'].get('param_ranges'),
+        rotation_prob=float(config['data'].get('rotation_prob', 0.3)),
+        mixture_prob=float(config['data'].get('mixture_prob', 0.0)),
+        n_mixture_components=tuple(config['data'].get('n_mixture_components', (2, 3))),
         transform_to_probit_space=config['model'].get('transform_to_probit_space', False),
         seed=42 + rank
     )
