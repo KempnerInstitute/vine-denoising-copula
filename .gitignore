@@ -43,7 +43,8 @@ ENV/
 *.ipynb
 
 # Data and outputs
-/data/
+/data/*
+!/data/.gitkeep
 outputs/
 logs/
 wandb/
