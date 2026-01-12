@@ -485,7 +485,7 @@ class VineCopulaModel:
         hist = scatter_to_hist(pair_data, m=self.m, reflect=True)
         hist_t = torch.from_numpy(hist).float().unsqueeze(0).unsqueeze(0).to(self.device)
 
-        # Determine whether the model expects coordinate channels
+        # Determine whether the model expects extra conditioning channels.
         in_ch: Optional[int] = None
         if hasattr(model, "in_conv"):
             in_ch = int(getattr(model, "in_conv").in_channels)
@@ -498,13 +498,42 @@ class VineCopulaModel:
             in_ch = int(getattr(model, "conv_in").in_channels)
 
         x = hist_t
-        if in_ch is not None and in_ch >= 3:
+
+        # Prefer explicit metadata set by build_model(); fall back to channel-count heuristics.
+        use_log_n = bool(getattr(model, "vdc_use_log_n", False))
+        use_coords = bool(getattr(model, "vdc_use_coordinates", False))
+        use_probit_coords = bool(getattr(model, "vdc_use_probit_coords", False))
+        probit_coord_eps = float(getattr(model, "vdc_probit_coord_eps", 1e-4))
+
+        if in_ch is not None and not hasattr(model, "vdc_use_log_n"):
+            if in_ch in (2, 4):
+                use_log_n = True
+        if in_ch is not None and not hasattr(model, "vdc_use_coordinates"):
+            if in_ch in (3, 4):
+                use_coords = True
+
+        if use_log_n:
+            ln = float(np.log(max(1, pair_data.shape[0])))
+            ln_chan = torch.full((1, 1, self.m, self.m), ln, device=self.device, dtype=x.dtype)
+            x = torch.cat([x, ln_chan], dim=1)
+
+        if use_coords:
             m = self.m
-            u = torch.linspace(0.5 / m, 1.0 - 0.5 / m, m, device=self.device)
-            v = torch.linspace(0.5 / m, 1.0 - 0.5 / m, m, device=self.device)
+            u = torch.linspace(0.5 / m, 1.0 - 0.5 / m, m, device=self.device, dtype=x.dtype)
+            v = torch.linspace(0.5 / m, 1.0 - 0.5 / m, m, device=self.device, dtype=x.dtype)
             uu, vv = torch.meshgrid(u, v, indexing="ij")
+            if use_probit_coords:
+                eps = max(probit_coord_eps, 1.0 / (m * m))
+                uu = torch.erfinv(2 * uu.clamp(eps, 1 - eps) - 1) * (2.0 ** 0.5)
+                vv = torch.erfinv(2 * vv.clamp(eps, 1 - eps) - 1) * (2.0 ** 0.5)
             coords = torch.stack([uu, vv], dim=0).unsqueeze(0)  # (1,2,m,m)
             x = torch.cat([x, coords], dim=1)
+
+        if in_ch is not None and x.shape[1] != in_ch:
+            raise ValueError(
+                f"Single-pass inference input channel mismatch: built x has C={x.shape[1]} but model expects C_in={in_ch}. "
+                f"(use_log_n={use_log_n}, use_coords={use_coords}, use_probit_coords={use_probit_coords})"
+            )
 
         # Forward: denoiser is time-conditioned, CNNs are not
         try:

@@ -57,7 +57,8 @@ fi
 export MASTER_ADDR=$(hostname)
 export MASTER_PORT=$(python -c "import socket; s=socket.socket(); s.bind(('',0)); print(s.getsockname()[1]); s.close()")
 export NCCL_DEBUG=INFO
-export NCCL_ASYNC_ERROR_HANDLING=1
+# New env var name (old one is deprecated in recent PyTorch)
+export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
 
 echo "Master: $MASTER_ADDR:$MASTER_PORT"
 

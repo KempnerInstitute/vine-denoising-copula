@@ -68,9 +68,16 @@ cd "${REPO_ROOT}"
 
 export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-16}"
 export MKL_NUM_THREADS="${SLURM_CPUS_PER_TASK:-16}"
-export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
-export NCCL_ASYNC_ERROR_HANDLING=1
+# New env var names (old ones are deprecated in recent PyTorch)
+export PYTORCH_ALLOC_CONF=expandable_segments:True
+export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
 export NCCL_DEBUG=${NCCL_DEBUG:-WARN}
+
+# Some cluster images don't have system libbz2; ensure we can load it from conda.
+# (Fixes: ImportError: libbz2.so.1.0: cannot open shared object file)
+if [ -n "${CONDA_PREFIX:-}" ] && [ -d "${CONDA_PREFIX}/lib" ]; then
+  export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
+fi
 
 {
   echo "CONDA_DEFAULT_ENV=${CONDA_DEFAULT_ENV:-}"

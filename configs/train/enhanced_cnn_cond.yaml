@@ -16,15 +16,21 @@ model:
 
   use_coordinates: true
   use_probit_coords: true
+  use_log_n: true
   time_conditioning: false
   time_emb_dim: 256
 
 data:
   m: 64
-  n_samples_per_copula: 1000
+  n_samples_per_copula:
+    mode: "log_uniform"
+    min: 200
+    max: 5000
   copula_families: ["gaussian", "student", "clayton", "gumbel", "frank", "joe", "independence"]
   binning: "uniform"
   num_workers: 4
+  mixture_prob: 0.30
+  n_mixture_components: [2, 4]
 
   param_ranges:
     gaussian_rho: [-0.95, 0.95]

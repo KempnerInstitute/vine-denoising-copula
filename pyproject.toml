@@ -24,7 +24,7 @@ dependencies = [
     "pandas>=2.0.0",
     "seaborn>=0.12.0",
     "scikit-learn>=1.2.0",
-    "pyvinecopulib>=0.6.0",
+    "pyvinecopulib>=0.7.5",
     "diffusers>=0.21.0",
     "typer>=0.9.0",
     "rich>=13.0.0",
@@ -45,6 +45,12 @@ dev = [
 
 r-baselines = [
     "rpy2>=3.5.0",
+]
+
+paper-baselines = [
+    "copulas>=0.13.0",
+    "ennemi>=1.4.0",
+    "pytorch-lightning>=2.1.0",
 ]
 
 [project.scripts]

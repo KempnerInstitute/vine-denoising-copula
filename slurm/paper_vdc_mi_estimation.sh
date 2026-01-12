@@ -1,25 +1,28 @@
 #!/bin/bash
-#SBATCH --job-name=vdc_paper_select
-#SBATCH --output=logs/vdc_paper_select_%j.out
-#SBATCH --error=logs/vdc_paper_select_%j.err
+#SBATCH --job-name=vdc_paper_mi
+#SBATCH --output=logs/vdc_paper_mi_%j.out
+#SBATCH --error=logs/vdc_paper_mi_%j.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=16
-#SBATCH --time=2:00:00
+#SBATCH --time=6:00:00
 #SBATCH --mem=64GB
 #SBATCH --partition=kempner_h100
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Diffusion Copula (ICML 2026) - MODEL SELECTION / EVAL JOB
+# Vine Diffusion Copula (ICML 2026) - MI ESTIMATION JOB
 # ============================================================================
 # Usage:
-#   sbatch slurm/paper_vdc_model_selection.sh /path/to/ckpt1.pt /path/to/ckpt2.pt ...
+#   sbatch slurm/paper_vdc_mi_estimation.sh <estimator>
 #
-# Creates a timestamped run directory under OUTPUT_BASE and writes:
-#   results/model_selection.json
-#   results/model_selection.csv
+# estimator must be one of:
+#   - ksg
+#   - minde
+#
+# Writes:
+#   results/mi_estimation.json
 # ============================================================================
 
 set -euo pipefail
@@ -27,27 +30,29 @@ set -euo pipefail
 REPO_ROOT="/n/holylabs/kempner_dev/Users/hsafaai/Code/vine_diffusion_copula"
 OUTPUT_BASE="${OUTPUT_BASE:-/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula}"
 
-if [ "$#" -lt 1 ]; then
-  echo "ERROR: No checkpoints provided."
-  echo "Usage: sbatch slurm/paper_vdc_model_selection.sh /path/to/ckpt1.pt [/path/to/ckpt2.pt ...]"
+if [ "$#" -ne 1 ]; then
+  echo "ERROR: expected exactly 1 estimator argument."
+  echo "Usage: sbatch slurm/paper_vdc_mi_estimation.sh <ksg|minde>"
   exit 2
 fi
 
+EST="$1"
+METHOD="mi_${EST}"
+
 echo "============================================================================"
-echo "Vine Diffusion Copula PAPER EVAL: model_selection"
+echo "Vine Diffusion Copula PAPER MI ESTIMATION"
 echo "============================================================================"
 echo "Job ID: ${SLURM_JOB_ID:-}"
 echo "Node: $(hostname)"
 echo "Start time: $(date)"
-echo "GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader | head -1 || true)"
+echo "Estimator: ${EST}"
 echo "Output Base: ${OUTPUT_BASE}"
 
-# Repo-local logs directory for SLURM stdout/err targets (must exist)
 mkdir -p "${REPO_ROOT}/logs"
 
 TS="$(date +%Y%m%d_%H%M%S)"
-RUN_DIR="${OUTPUT_BASE}/vdc_paper_model_selection_${TS}_${SLURM_JOB_ID:-nojobid}"
-mkdir -p "${RUN_DIR}/"{results,logs,figures,checkpoints,analysis}
+RUN_DIR="${OUTPUT_BASE}/vdc_paper_${METHOD}_${TS}_${SLURM_JOB_ID:-nojobid}"
+mkdir -p "${RUN_DIR}/"{results,logs,analysis}
 
 echo "Run Dir: ${RUN_DIR}"
 echo ""
@@ -61,11 +66,8 @@ cd "${REPO_ROOT}"
 
 export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-16}"
 export MKL_NUM_THREADS="${SLURM_CPUS_PER_TASK:-16}"
-# New env var name (old one is deprecated in recent PyTorch)
 export PYTORCH_ALLOC_CONF=expandable_segments:True
 
-# Some cluster images don't have system libbz2; ensure we can load it from conda.
-# (Fixes: ImportError: libbz2.so.1.0: cannot open shared object file)
 if [ -n "${CONDA_PREFIX:-}" ] && [ -d "${CONDA_PREFIX}/lib" ]; then
   export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 fi
@@ -79,21 +81,20 @@ fi
 
 cp "$0" "${RUN_DIR}/analysis/slurm_script.sh"
 
-EVAL_LOG="${RUN_DIR}/logs/model_selection.log"
-
-python scripts/model_selection.py \
-  --checkpoints "$@" \
-  --n-samples 2000 \
+python scripts/mi_estimation.py \
+  --estimator "${EST}" \
+  --n-samples 5000 \
+  --m-true 256 \
+  --seed 123 \
   --device cuda \
-  --out-json "${RUN_DIR}/results/model_selection.json" \
-  --out-csv "${RUN_DIR}/results/model_selection.csv" \
-  2>&1 | tee "${EVAL_LOG}"
+  --out-json "${RUN_DIR}/results/mi_estimation.json" \
+  2>&1 | tee "${RUN_DIR}/logs/mi_estimation.log"
 
 echo ""
 echo "============================================================================"
-echo "DONE: model_selection completed at $(date)"
+echo "DONE: MI estimation completed at $(date)"
 echo "============================================================================"
 echo "Run Dir: ${RUN_DIR}"
-echo "Results: ${RUN_DIR}/results/model_selection.json"
+echo "Results: ${RUN_DIR}/results/mi_estimation.json"
 echo ""
 

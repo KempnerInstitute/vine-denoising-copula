@@ -18,16 +18,25 @@ model:
   # Conditioning helpers
   use_coordinates: true
   use_probit_coords: true
+  use_log_n: true
   time_conditioning: true
   output_mode: "log"
   transform_to_probit_space: false
 
 data:
   m: 64
-  n_samples_per_copula: 1000
+  # Train on a range of sample sizes so the estimator can adapt to uncertainty.
+  # log_uniform covers small-n and large-n fairly.
+  n_samples_per_copula:
+    mode: "log_uniform"
+    min: 200
+    max: 5000
   copula_families: ["gaussian", "student", "clayton", "gumbel", "frank", "joe", "independence"]
   binning: "uniform"
   num_workers: 4
+  # Mixture augmentation (convex mixtures of copula densities are still valid copulas)
+  mixture_prob: 0.30
+  n_mixture_components: [2, 4]
 
   param_ranges:
     gaussian_rho: [-0.95, 0.95]

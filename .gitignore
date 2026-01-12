@@ -58,6 +58,10 @@ archive/
 results/
 slurm_logs/
 
+# External repos / vendored baseline code (kept out of git)
+external/
+third_party/
+
 # OS
 .DS_Store
 Thumbs.db

@@ -129,3 +129,41 @@ def aggregate_metrics(pred: torch.Tensor, target: torch.Tensor, samples: Optiona
         except Exception:
             pass
     return metrics
+
+
+def mutual_information_from_density_grid(d: torch.Tensor, eps: float = 1e-12) -> torch.Tensor:
+    """
+    Approximate mutual information for a (bi)variate copula density on a grid.
+
+    For a copula density c(u,v) with uniform marginals:
+        I(U;V) = ∫∫ c(u,v) log c(u,v) du dv
+
+    This function expects a *density grid* (not log-density). If `d` is not perfectly
+    normalized, it will be normalized internally.
+
+    Args:
+        d: Tensor shaped (m,m), (B,m,m), or (B,1,m,m).
+        eps: Clamp for log stability.
+
+    Returns:
+        Scalar tensor (mean over batch if B>1).
+    """
+    if d.dim() == 2:
+        d_ = d.unsqueeze(0).unsqueeze(0)  # (1,1,m,m)
+    elif d.dim() == 3:
+        d_ = d.unsqueeze(1)  # (B,1,m,m)
+    elif d.dim() == 4:
+        d_ = d
+    else:
+        raise ValueError(f"d must have 2/3/4 dims, got shape={tuple(d.shape)}")
+
+    B, _, m, _ = d_.shape
+    du = 1.0 / m
+    d_n = _safe_normalize(d_.clamp_min(eps), eps=eps)
+    mi = (d_n * torch.log(d_n + eps)).sum(dim=(-2, -1)) * (du * du)  # (B,1)
+    return mi.mean()
+
+
+def copula_entropy_from_density_grid(d: torch.Tensor, eps: float = 1e-12) -> torch.Tensor:
+    """Copula entropy H_c = -∫ c log c = -I(U;V) for bivariate copulas."""
+    return -mutual_information_from_density_grid(d, eps=eps)

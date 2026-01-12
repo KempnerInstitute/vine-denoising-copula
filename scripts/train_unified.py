@@ -102,32 +102,54 @@ def build_model(model_type: str, config: Dict, device: torch.device):
     m = config['data']['m']
     mcfg = config.get('model', {})
     if model_type == 'baseline_cnn':
-        return CopulaDensityCNN(m=m,
+        model = CopulaDensityCNN(m=m,
                                 base_channels=mcfg.get('base_channels',128),
                                 n_blocks=mcfg.get('n_blocks',3),
                                 dropout=mcfg.get('dropout',0.1)).to(device)
+        # Metadata for downstream inference utilities
+        model.vdc_use_coordinates = bool(mcfg.get('use_coordinates', False))
+        model.vdc_use_probit_coords = bool(mcfg.get('use_probit_coords', False))
+        model.vdc_use_log_n = bool(mcfg.get('use_log_n', False))
+        model.vdc_probit_coord_eps = float(mcfg.get('probit_coord_eps', 1e-4))
+        return model
     if model_type == 'enhanced_cnn':
-        return EnhancedCopulaDensityCNN(m=m,
+        use_coords = bool(mcfg.get('use_coordinates', True))
+        use_log_n = bool(mcfg.get('use_log_n', False))
+        input_ch = 1 + (1 if use_log_n else 0) + (2 if use_coords else 0)
+        model = EnhancedCopulaDensityCNN(m=m,
                         base_channels=mcfg.get('base_channels',128),
                         n_blocks=mcfg.get('n_blocks',3),
                         dropout=mcfg.get('dropout',0.1),
-                        input_channels=1 + (2 if mcfg.get('use_coordinates', True) else 0),
+                        input_channels=input_ch,
                         output_mode=mcfg.get('output_mode','log'),
                         time_conditioning=mcfg.get('time_conditioning', False),
                         time_emb_dim=mcfg.get('time_emb_dim',256),
                         multi_scale_aux=mcfg.get('multi_scale_aux', False),
                         aux_scales=tuple(mcfg.get('aux_scales',[2,4]))).to(device)
+        model.vdc_use_coordinates = use_coords
+        model.vdc_use_probit_coords = bool(mcfg.get('use_probit_coords', False))
+        model.vdc_use_log_n = use_log_n
+        model.vdc_probit_coord_eps = float(mcfg.get('probit_coord_eps', 1e-4))
+        return model
     if model_type == 'denoiser':
-        return CopulaDenoiser(m=m,
-                              input_channels=1 + (2 if mcfg.get('use_coordinates', True) else 0),
+        use_coords = bool(mcfg.get('use_coordinates', True))
+        use_log_n = bool(mcfg.get('use_log_n', False))
+        input_ch = 1 + (1 if use_log_n else 0) + (2 if use_coords else 0)
+        model = CopulaDenoiser(m=m,
+                              input_channels=input_ch,
                               base_channels=mcfg.get('base_channels',128),
                               depth=mcfg.get('depth',4),
                               blocks_per_level=mcfg.get('blocks_per_level',2),
                               time_emb_dim=mcfg.get('time_emb_dim',256),
                               dropout=mcfg.get('dropout',0.1),
                               output_mode=mcfg.get('output_mode','log')).to(device)
+        model.vdc_use_coordinates = use_coords
+        model.vdc_use_probit_coords = bool(mcfg.get('use_probit_coords', False))
+        model.vdc_use_log_n = use_log_n
+        model.vdc_probit_coord_eps = float(mcfg.get('probit_coord_eps', 1e-4))
+        return model
     if model_type == 'diffusion_unet':
-        return GridUNet(m=m,
+        model = GridUNet(m=m,
                         in_channels=mcfg.get('in_channels', 1),
                         base_channels=mcfg.get('base_channels',64),
                         channel_mults=tuple(mcfg.get('channel_mults',[1,2,3,4])),
@@ -135,6 +157,11 @@ def build_model(model_type: str, config: Dict, device: torch.device):
                         attention_resolutions=tuple(mcfg.get('attention_resolutions',[16,8])),
                         dropout=mcfg.get('dropout',0.1),
                         time_emb_dim=mcfg.get('time_emb_dim', 256)).to(device)
+        model.vdc_use_coordinates = False
+        model.vdc_use_probit_coords = False
+        model.vdc_use_log_n = True  # GridUNet supports log_n embedding
+        model.vdc_probit_coord_eps = float(mcfg.get('probit_coord_eps', 1e-4))
+        return model
     raise ValueError(f"Unknown model_type {model_type}")
 
 
@@ -416,8 +443,29 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
     samples = batch.get('samples')
     if samples is not None:
         samples = samples.to(device)
+    hist = batch.get('hist')
+    if hist is not None:
+        hist = hist.to(device)
     B, _, m, _ = density_raw.shape
     dtype = density_raw.dtype
+
+    # log(n) conditioning (sample size). This enables variable-n training without
+    # returning variable-length `samples` tensors from the dataset.
+    log_n = batch.get('log_n')
+    if isinstance(log_n, torch.Tensor):
+        log_n = log_n.to(device=device, dtype=dtype).reshape(-1)
+        if log_n.numel() == 1:
+            log_n = log_n.expand(B)
+        elif log_n.numel() != B:
+            raise ValueError(f"batch['log_n'] has {log_n.numel()} elements but batch size is {B}")
+    elif log_n is not None:
+        log_n = torch.full((B,), float(log_n), device=device, dtype=dtype)
+    else:
+        if samples is not None:
+            log_n = torch.full((B,), float(np.log(samples.shape[1])), device=device, dtype=dtype)
+        else:
+            # Default: log(1000) ≈ 6.9
+            log_n = torch.full((B,), 6.9, device=device, dtype=dtype)
     geometry_local = geometry
     if geometry_local is not None:
         area = geometry_local['area'].to(device=device, dtype=dtype)
@@ -500,8 +548,15 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
         density = normalize_grid(_sanitize_density(density))
         is_log_density = False
 
-    # Construct conditioning input (histogram of samples or fallback to target density)
-    if samples is not None:
+    # Construct conditioning input (histogram observation).
+    # Prefer dataset-provided `hist` so we can support variable-n training without
+    # having to return variable-length raw sample tensors.
+    if hist is not None:
+        input_hist = hist
+        if input_hist.dim() == 3:
+            input_hist = input_hist.unsqueeze(1)
+        input_hist = normalize_grid(_sanitize_density(input_hist))
+    elif samples is not None:
         input_hist_sigma = training.get('input_hist_sigma', training.get('hist_sigma', 0.0))
         if input_hist_sigma is None:
             input_hist_sigma = 0.0
@@ -535,11 +590,23 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
     input_hist = normalize_grid(input_hist)
 
     x_in = input_hist
+    use_log_n_channel = bool(config['model'].get('use_log_n', False))
+    if model_type in ['enhanced_cnn', 'denoiser'] and use_log_n_channel:
+        ln_chan = log_n.view(B, 1, 1, 1).expand(B, 1, m, m)
+        x_in = torch.cat([x_in, ln_chan], dim=1)
     if model_type in ['enhanced_cnn','denoiser'] and use_coords:
         coord_eps = config['model'].get('probit_coord_eps', 1e-4)
         # Adaptive probit coordinate epsilon to soften extreme tails based on sample size (rank-style smoothing)
-        if config['model'].get('adaptive_probit_coords', False) and samples is not None:
-            coord_eps = max(coord_eps, 1.0/(samples.shape[1] + 1))  # ensures clamp grows if sample count small
+        if config['model'].get('adaptive_probit_coords', False):
+            if samples is not None:
+                coord_eps = max(coord_eps, 1.0/(samples.shape[1] + 1))  # ensures clamp grows if sample count small
+            else:
+                # Variable-n training does not return samples; use log_n as proxy.
+                try:
+                    n_min = float(torch.exp(log_n.detach()).min().item())
+                    coord_eps = max(coord_eps, 1.0 / (n_min + 1.0))
+                except Exception:
+                    pass
         coords = build_coordinates(B, m, device, probit=use_probit_coords, eps=coord_eps)
         x_in = torch.cat([x_in, coords], dim=1)
 
@@ -579,7 +646,7 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
             real_noise = torch.randn_like(target_log)
             noisy = diffusion.q_sample(target_log, t, real_noise)
             # Optional histogram conditioning (CFG-style) if model expects 2 channels.
-            log_n = torch.full((B,), float(np.log(samples.shape[1])) if samples is not None else 6.9, device=device, dtype=noisy.dtype)
+            log_n_model = log_n.to(device=device, dtype=noisy.dtype)
             if getattr(model, "conv_in").in_channels > 1:
                 # Conditioning channel = log histogram density
                 cond = torch.log(input_hist.clamp(min=1e-12))
@@ -591,7 +658,7 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
                 model_in = torch.cat([noisy, cond], dim=1)
             else:
                 model_in = noisy
-            pred_noise = model(model_in, t.float()/diffusion.timesteps, log_n)
+            pred_noise = model(model_in, t.float()/diffusion.timesteps, log_n_model)
             
             # Check for NaN in predictions
             if torch.isnan(pred_noise).any():
@@ -1558,10 +1625,7 @@ def main():
             #         rank=rank
             #     )
             
-            # Plot training history (only on rank 0, but synchronize all ranks first)
-            if dist.is_initialized():
-                dist.barrier()  # Ensure all ranks finish training before plotting
-            
+            # Plot training history (only on rank 0)
             if loss_history and rank == 0:
                 print("Plotting training history...")
                 try:
