@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=vdc_paper_select
-#SBATCH --output=logs/vdc_paper_select_%j.out
-#SBATCH --error=logs/vdc_paper_select_%j.err
+#SBATCH --job-name=vdc_paper_rerun_select
+#SBATCH --output=logs/vdc_paper_rerun_select_%j.out
+#SBATCH --error=logs/vdc_paper_rerun_select_%j.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --gres=gpu:1
@@ -12,45 +12,48 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Diffusion Copula (ICML 2026) - MODEL SELECTION / EVAL JOB
+# Vine Diffusion Copula (ICML 2026) - RERUN MODEL SELECTION INTO AN EXISTING RUN
 # ============================================================================
-# Usage:
-#   sbatch slurm/paper_vdc_model_selection.sh /path/to/ckpt1.pt /path/to/ckpt2.pt ...
+# Motivation:
+#   Sometimes a training run finishes but the post-hoc model_selection step fails
+#   (e.g., transient NaNs). This script reruns evaluation and writes results into
+#   an existing RUN_DIR under OUTPUT_BASE.
 #
-# Creates a timestamped run directory under OUTPUT_BASE and writes:
-#   results/model_selection.json
-#   results/model_selection.csv
+# Usage:
+#   sbatch slurm/paper_rerun_model_selection.sh /path/to/RUN_DIR /path/to/ckpt.pt [/path/to/ckpt2.pt ...]
+#
+# Writes:
+#   RUN_DIR/results/model_selection.json
+#   RUN_DIR/results/model_selection.csv
+#   RUN_DIR/logs/model_selection_rerun.log
 # ============================================================================
 
 set -euo pipefail
 
 REPO_ROOT="/n/holylabs/kempner_dev/Users/hsafaai/Code/vine_diffusion_copula"
-OUTPUT_BASE="${OUTPUT_BASE:-/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula}"
 
-if [ "$#" -lt 1 ]; then
-  echo "ERROR: No checkpoints provided."
-  echo "Usage: sbatch slurm/paper_vdc_model_selection.sh /path/to/ckpt1.pt [/path/to/ckpt2.pt ...]"
+if [ "$#" -lt 2 ]; then
+  echo "ERROR: Need RUN_DIR and at least one checkpoint."
+  echo "Usage: sbatch slurm/paper_rerun_model_selection.sh /path/to/RUN_DIR /path/to/ckpt.pt [/path/to/ckpt2.pt ...]"
   exit 2
 fi
 
+RUN_DIR="$1"
+shift
+
 echo "============================================================================"
-echo "Vine Diffusion Copula PAPER EVAL: model_selection"
+echo "Vine Diffusion Copula PAPER EVAL (rerun): model_selection"
 echo "============================================================================"
 echo "Job ID: ${SLURM_JOB_ID:-}"
 echo "Node: $(hostname)"
 echo "Start time: $(date)"
 echo "GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader | head -1 || true)"
-echo "Output Base: ${OUTPUT_BASE}"
-
-# Repo-local logs directory for SLURM stdout/err targets (must exist)
-mkdir -p "${REPO_ROOT}/logs"
-
-TS="$(date +%Y%m%d_%H%M%S)"
-RUN_DIR="${OUTPUT_BASE}/vdc_paper_model_selection_${TS}_${SLURM_JOB_ID:-nojobid}"
-mkdir -p "${RUN_DIR}/"{results,logs,figures,checkpoints,analysis}
-
 echo "Run Dir: ${RUN_DIR}"
+echo "Checkpoints: $*"
 echo ""
+
+mkdir -p "${REPO_ROOT}/logs"
+mkdir -p "${RUN_DIR}/"{results,logs,analysis,figures}
 
 module purge
 module load cuda/12.2.0-fasrc01
@@ -61,11 +64,8 @@ cd "${REPO_ROOT}"
 
 export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-16}"
 export MKL_NUM_THREADS="${SLURM_CPUS_PER_TASK:-16}"
-# New env var name (old one is deprecated in recent PyTorch)
 export PYTORCH_ALLOC_CONF=expandable_segments:True
 
-# Some cluster images don't have system libbz2; ensure we can load it from conda.
-# (Fixes: ImportError: libbz2.so.1.0: cannot open shared object file)
 if [ -n "${CONDA_PREFIX:-}" ] && [ -d "${CONDA_PREFIX}/lib" ]; then
   export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 fi
@@ -75,11 +75,11 @@ fi
   echo "Python: $(which python)"
   python -c "import torch; print('torch', torch.__version__, 'cuda', torch.version.cuda)"
   nvidia-smi || true
-} | tee "${RUN_DIR}/logs/env.txt"
+} | tee "${RUN_DIR}/logs/env_rerun_model_selection.txt"
 
-cp "$0" "${RUN_DIR}/analysis/slurm_script.sh"
+cp "$0" "${RUN_DIR}/analysis/slurm_rerun_model_selection.sh"
 
-EVAL_LOG="${RUN_DIR}/logs/model_selection.log"
+EVAL_LOG="${RUN_DIR}/logs/model_selection_rerun.log"
 
 python scripts/model_selection.py \
   --checkpoints "$@" \
@@ -99,7 +99,7 @@ python scripts/model_selection.py \
 
 echo ""
 echo "============================================================================"
-echo "DONE: model_selection completed at $(date)"
+echo "DONE: model_selection rerun completed at $(date)"
 echo "============================================================================"
 echo "Run Dir: ${RUN_DIR}"
 echo "Results: ${RUN_DIR}/results/model_selection.json"

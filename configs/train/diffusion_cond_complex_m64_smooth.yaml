@@ -1,15 +1,16 @@
 # =============================================================================
 # Histogram-Conditioned Diffusion (iterative DDIM inference)
+# + Complex synthetic copulas (X / ring / double-banana)
+# m=64 + smoothness regularization
 # =============================================================================
 experiment:
-  name: "copula_diffusion_cond"
-  description: "Conditional diffusion model: (histogram) -> copula density via DDIM+CFG"
+  name: "copula_diffusion_cond_complex_m64_smooth"
+  description: "Diffusion UNet at m=64 trained on parametric + complex synthetic copulas, with multi-scale + TV(log) regularization"
   seed: 42
 
 model:
   type: "diffusion_unet"
   grid_size: 64
-  # 2 channels: [x_t (noisy log-density), log_histogram (conditioning)]
   in_channels: 2
   base_channels: 64
   channel_mults: [1, 2, 3, 4]
@@ -21,10 +22,7 @@ model:
 diffusion:
   timesteps: 1000
   noise_schedule: "cosine"
-  # Inference defaults for smoother/higher-fidelity densities.
-  # (Training does not depend on this; it is used by evaluation/plotting.)
   sampling_steps: 200
-  # Used at inference time when use_histogram_conditioning=True
   cfg_scale: 4.0
 
 data:
@@ -33,13 +31,24 @@ data:
     mode: "log_uniform"
     min: 200
     max: 5000
-  copula_families: ["gaussian", "student", "clayton", "gumbel", "frank", "joe", "independence"]
+
+  copula_families:
+    gaussian: 0.18
+    student: 0.08
+    clayton: 0.12
+    gumbel: 0.12
+    frank: 0.08
+    joe: 0.08
+    independence: 0.04
+    complex_x: 0.10
+    complex_ring: 0.10
+    complex_double_banana: 0.10
+
   binning: "uniform"
   num_workers: 4
   mixture_prob: 0.30
   n_mixture_components: [2, 4]
 
-  # Parameter ranges (explicit + reproducible)
   param_ranges:
     gaussian_rho: [-0.95, 0.95]
     student_rho: [-0.9, 0.9]
@@ -50,23 +59,34 @@ data:
     joe_theta: [1.1, 8.0]
 
 training:
-  max_steps: 150000
+  max_steps: 200000
   batch_size: 32
   learning_rate: 1.0e-4
   weight_decay: 0.01
   gradient_clip: 1.0
 
-  # Classifier-free dropout probability for training conditional diffusion
-  # (probability of zeroing the histogram conditioning channel)
   cfg_dropout_prob: 0.10
 
-  # Loss suite on projected density (in addition to diffusion noise MSE)
+  # Optional: smooth the conditioning histogram (augmentation) to reduce sensitivity
+  # to bin-level speckle. Set to 0 to disable.
+  cond_hist_smooth_sigma: 0.30
+  cond_hist_smooth_random: true
+
   loss_weights:
     ce: 1.0
     ise: 0.0
     tail: 0.1
-    ms: 0.0
+    ms: 0.15
     marg_kl: 0.0
+    tv: 0.01
+
+  tv_in_log_space: true
+
+  multi_scale:
+    enable: true
+    scales: [2, 4, 8]
+    ce_weight: 0.5
+    ise_weight: 0.25
 
   projection_iters: 30
   detach_projection: false

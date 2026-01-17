@@ -40,6 +40,44 @@ def _require() -> Any:
         ) from e
 
 
+def _family_set_parametric(pv: Any) -> Sequence[Any]:
+    """Return a robust list of parametric bicop families (plus independence).
+
+    Note: `pyvinecopulib` exposes `BicopFamily` as an Enum; it does *not* provide
+    the `BicopFamily.parametric` / `BicopFamily.nonparametric` convenience sets
+    in all builds. We therefore build explicit lists for compatibility.
+    """
+    names = [
+        "indep",
+        "gaussian",
+        "student",
+        "clayton",
+        "gumbel",
+        "frank",
+        "joe",
+        "bb1",
+        "bb6",
+        "bb7",
+        "bb8",
+        "tawn",
+    ]
+    fams = []
+    for n in names:
+        if hasattr(pv.BicopFamily, n):
+            fams.append(getattr(pv.BicopFamily, n))
+    return fams
+
+
+def _family_set_nonparametric(pv: Any) -> Sequence[Any]:
+    """Return a robust list of nonparametric families (TLL + independence)."""
+    names = ["indep", "tll"]
+    fams = []
+    for n in names:
+        if hasattr(pv.BicopFamily, n):
+            fams.append(getattr(pv.BicopFamily, n))
+    return fams
+
+
 @dataclass(frozen=True)
 class BicopFitResult:
     """Thin wrapper for a fitted bivariate copula model."""
@@ -84,12 +122,11 @@ def fit_bicop(
 
     mode_l = str(mode).lower()
     if mode_l in {"parametric", "param"}:
-        fam_set = pv.BicopFamily.parametric
         family_label = "pyvinecopulib_parametric"
+        fam_set = _family_set_parametric(pv)
     elif mode_l in {"nonparametric", "nonpar", "tll"}:
-        # includes indep + tll
-        fam_set = pv.BicopFamily.nonparametric
         family_label = "pyvinecopulib_nonparametric"
+        fam_set = _family_set_nonparametric(pv)
     else:
         raise ValueError(f"Unknown mode '{mode}'. Use 'parametric' or 'nonparametric'.")
 
@@ -103,7 +140,8 @@ def fit_bicop(
         nonparametric_grid_size=int(nonparametric_grid_size),
     )
 
-    model = pv.Bicop(x, controls=controls)
+    # In pyvinecopulib, fitting is done via `from_data` (constructor does not take data).
+    model = pv.Bicop.from_data(x, controls=controls)
     return BicopFitResult(model=model, family=family_label)
 
 
@@ -129,9 +167,9 @@ def fit_vinecop(
 
     mode_l = str(mode).lower()
     if mode_l in {"parametric", "param"}:
-        fam_set = pv.BicopFamily.parametric
+        fam_set = _family_set_parametric(pv)
     elif mode_l in {"nonparametric", "nonpar", "tll"}:
-        fam_set = pv.BicopFamily.nonparametric
+        fam_set = _family_set_nonparametric(pv)
     else:
         raise ValueError(f"Unknown mode '{mode}'. Use 'parametric' or 'nonparametric'.")
 
@@ -149,5 +187,6 @@ def fit_vinecop(
         nonparametric_mult=float(nonparametric_mult),
         nonparametric_grid_size=int(nonparametric_grid_size),
     )
-    return pv.Vinecop(x, controls=controls)
+    # In pyvinecopulib, fitting is done via `from_data` (constructor takes only dimension).
+    return pv.Vinecop.from_data(x, controls=controls)
 

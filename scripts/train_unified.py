@@ -111,6 +111,7 @@ def build_model(model_type: str, config: Dict, device: torch.device):
         model.vdc_use_probit_coords = bool(mcfg.get('use_probit_coords', False))
         model.vdc_use_log_n = bool(mcfg.get('use_log_n', False))
         model.vdc_probit_coord_eps = float(mcfg.get('probit_coord_eps', 1e-4))
+        model.vdc_transform_to_probit_space = bool(mcfg.get('transform_to_probit_space', False))
         return model
     if model_type == 'enhanced_cnn':
         use_coords = bool(mcfg.get('use_coordinates', True))
@@ -130,6 +131,7 @@ def build_model(model_type: str, config: Dict, device: torch.device):
         model.vdc_use_probit_coords = bool(mcfg.get('use_probit_coords', False))
         model.vdc_use_log_n = use_log_n
         model.vdc_probit_coord_eps = float(mcfg.get('probit_coord_eps', 1e-4))
+        model.vdc_transform_to_probit_space = bool(mcfg.get('transform_to_probit_space', False))
         return model
     if model_type == 'denoiser':
         use_coords = bool(mcfg.get('use_coordinates', True))
@@ -147,6 +149,7 @@ def build_model(model_type: str, config: Dict, device: torch.device):
         model.vdc_use_probit_coords = bool(mcfg.get('use_probit_coords', False))
         model.vdc_use_log_n = use_log_n
         model.vdc_probit_coord_eps = float(mcfg.get('probit_coord_eps', 1e-4))
+        model.vdc_transform_to_probit_space = bool(mcfg.get('transform_to_probit_space', False))
         return model
     if model_type == 'diffusion_unet':
         model = GridUNet(m=m,
@@ -156,11 +159,13 @@ def build_model(model_type: str, config: Dict, device: torch.device):
                         num_res_blocks=mcfg.get('num_res_blocks',2),
                         attention_resolutions=tuple(mcfg.get('attention_resolutions',[16,8])),
                         dropout=mcfg.get('dropout',0.1),
-                        time_emb_dim=mcfg.get('time_emb_dim', 256)).to(device)
+                        time_emb_dim=mcfg.get('time_emb_dim', 256),
+                        upsample_mode=mcfg.get('upsample_mode', 'transpose')).to(device)
         model.vdc_use_coordinates = False
         model.vdc_use_probit_coords = False
         model.vdc_use_log_n = True  # GridUNet supports log_n embedding
         model.vdc_probit_coord_eps = float(mcfg.get('probit_coord_eps', 1e-4))
+        model.vdc_transform_to_probit_space = bool(mcfg.get('transform_to_probit_space', False))
         return model
     raise ValueError(f"Unknown model_type {model_type}")
 
@@ -359,7 +364,9 @@ def compute_density_losses(
 
     ms_cfg = training_cfg.get('multi_scale', {'enable': True})
     loss_ms_per = None
-    if ms_cfg.get('enable', True) and model_output is not None and loss_weights.get('ms', 0.0) > 0.0:
+    # Multi-scale loss encourages scale-consistent structure and reduces high-frequency artifacts.
+    # This does *not* require auxiliary model outputs; we compute it by downsampling densities.
+    if ms_cfg.get('enable', True) and loss_weights.get('ms', 0.0) > 0.0:
         loss_ms_per = pred_density.new_zeros(B)
         scales = ms_cfg.get('scales', [2, 4])
         ce_w = ms_cfg.get('ce_weight', 0.5)
@@ -385,6 +392,24 @@ def compute_density_losses(
     else:
         metrics['ms'] = 0.0
         component_losses['ms'] = pred_density.new_zeros(())
+
+    # Smoothness prior: total variation regularization (optionally in log-space).
+    # This helps reduce "patchy" high-frequency artifacts on the density grid,
+    # especially at higher resolutions (e.g., m=128).
+    tv_w = float(loss_weights.get('tv', 0.0) or 0.0)
+    tv_in_log = bool(training_cfg.get('tv_in_log_space', True))
+    if tv_w > 0.0:
+        z = torch.log(pred_density.clamp(min=1e-12)) if tv_in_log else pred_density
+        # z: (B,1,m,m). Compute per-sample TV in grid index space.
+        diff_h = torch.abs(z[..., :, 1:] - z[..., :, :-1])
+        diff_v = torch.abs(z[..., 1:, :] - z[..., :-1, :])
+        tv_tensor = (diff_h.mean(dim=(-2, -1)) + diff_v.mean(dim=(-2, -1))).view(B)
+        metrics['tv'] = float(tv_tensor.mean().item())
+        component_losses['tv'] = apply_weight(tv_tensor)
+        total_loss = total_loss + tv_w * component_losses['tv']
+    else:
+        metrics['tv'] = 0.0
+        component_losses['tv'] = pred_density.new_zeros(())
 
     row_marg = (pred_density * col_widths_bc).sum(-1).clamp_min(1e-12)
     col_marg = (pred_density * row_widths_bc).sum(-2).clamp_min(1e-12)
@@ -448,6 +473,11 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
         hist = hist.to(device)
     B, _, m, _ = density_raw.shape
     dtype = density_raw.dtype
+    # Whether the *model space* target is in probit/normal-score coordinates.
+    # In this mode, the dataset provides log f_Z(z_u,z_v) where z = Φ^{-1}(u),
+    # but we still compute copula losses/projection in copula space.
+    transform_to_probit_space = bool(config.get('model', {}).get('transform_to_probit_space', False))
+    probit_mode = bool(transform_to_probit_space and is_log_density)
 
     # log(n) conditioning (sample size). This enables variable-n training without
     # returning variable-length `samples` tensors from the dataset.
@@ -504,12 +534,27 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
         mass = (grid * area).sum(dim=(-2, -1), keepdim=True).clamp_min(1e-12)
         grid = grid / mass
         return _sanitize_density(grid)
-    if is_log_density:
-        density = torch.exp(density_raw).clamp(min=1e-12, max=1e6)
+    # ------------------------------------------------------------------
+    # Targets
+    #
+    # - `target_log_model`: log-density in the model's training space
+    #    - copula-space (default): log c(u,v)
+    #    - probit-space (if transform_to_probit_space=True): log f_Z(z_u,z_v)
+    # - `density` / `density_log`: copula-space density target for losses/projection: c(u,v)
+    # ------------------------------------------------------------------
+    target_log_model = density_raw.clamp(min=-20, max=20) if is_log_density else torch.log(_sanitize_density(density_raw).clamp_min(1e-12))
+
+    if probit_mode:
+        # Convert probit joint log-density back to copula log-density: log c = log f_Z - log φ(z_u) - log φ(z_v)
+        target_log_copula = probit_logdensity_to_copula_logdensity(target_log_model, m)
+        density = torch.exp(target_log_copula.clamp(min=-20, max=20)).clamp(min=1e-12, max=1e6)
+    elif is_log_density:
+        # Log-density already corresponds to copula space
+        density = torch.exp(target_log_model).clamp(min=1e-12, max=1e6)
     else:
         density = _sanitize_density(density_raw)
     density = normalize_grid(density)
-    density_log = torch.log(density.clamp(min=1e-12))
+    density_log = torch.log(density.clamp_min(1e-12))
 
     training = config['training']
     loss_weights = training['loss_weights'].copy()
@@ -538,7 +583,6 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
         projection_iters = int(min_iters + frac * (max_iters - min_iters))
     use_coords = config['model'].get('use_coordinates', False)
     use_probit_coords = config['model'].get('use_probit_coords', False)  # Coordinate transformation
-    transform_to_probit_space = config['model'].get('transform_to_probit_space', False)  # Density transformation
     time_cond = config['model'].get('time_conditioning', False) or (model_type == 'denoiser')
     use_amp = training.get('use_amp', True)
     # Optionally recompute target via anti-aliased histogram
@@ -547,6 +591,10 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
         density = anti_aliased_hist(samples, m, sigma=sigma, normalize=True)
         density = normalize_grid(_sanitize_density(density))
         is_log_density = False
+        # Keep diffusion's target in sync with the overridden density (copula space).
+        target_log_model = torch.log(density.clamp_min(1e-12))
+        density_log = target_log_model
+        probit_mode = False
 
     # Construct conditioning input (histogram observation).
     # Prefer dataset-provided `hist` so we can support variable-n training without
@@ -562,8 +610,8 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
             input_hist_sigma = 0.0
         input_hist = anti_aliased_hist(samples, m, sigma=input_hist_sigma, normalize=True)
     else:
-        base_density = torch.exp(density.clamp(min=-15, max=15)) if is_log_density else density
-        input_hist = base_density.clone()
+        # Fallback: if neither hist nor samples are available, use the (copula-space) target density.
+        input_hist = density.clone()
 
     input_hist = input_hist.to(device)
     # Optional diffusion-style corruption of the conditioning histogram (single-pass denoiser training).
@@ -637,11 +685,8 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
             
             aux_loss_weights_scalar = (1.0 - t.float() / diffusion.timesteps).clamp(min=0.0) ** 2
 
-            # Target is already in log-space if transform_to_probit_space=True
-            if is_log_density:
-                target_log = density_log  # Already log-density
-            else:
-                target_log = torch.log(density.clamp(min=1e-10))
+            # Target log-density in the model's training space (copula by default; probit if enabled).
+            target_log = target_log_model
             
             real_noise = torch.randn_like(target_log)
             noisy = diffusion.q_sample(target_log, t, real_noise)
@@ -649,7 +694,26 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
             log_n_model = log_n.to(device=device, dtype=noisy.dtype)
             if getattr(model, "conv_in").in_channels > 1:
                 # Conditioning channel = log histogram density
-                cond = torch.log(input_hist.clamp(min=1e-12))
+                cond_hist = input_hist
+                # Optional: smooth the conditioning histogram before taking log.
+                # This reduces sensitivity to histogram speckle at high resolution (e.g., m=128),
+                # and typically makes DDIM outputs less "patchy".
+                cond_sigma = float(training.get("cond_hist_smooth_sigma", 0.0) or 0.0)
+                if cond_sigma > 0.0:
+                    from vdc.utils.smoothing import smooth_density_gaussian
+
+                    # Optionally randomize sigma per batch for robustness.
+                    if bool(training.get("cond_hist_smooth_random", True)):
+                        # Use CPU RNG to avoid a device sync from `.item()` on a CUDA tensor.
+                        cond_sigma_eff = cond_sigma * float(torch.rand(()).item())
+                    else:
+                        cond_sigma_eff = cond_sigma
+                    cond_hist = smooth_density_gaussian(cond_hist.clamp_min(1e-12), sigma=float(cond_sigma_eff), preserve_mass=True)
+
+                cond = torch.log(cond_hist.clamp(min=1e-12))
+                if probit_mode:
+                    # Convert log copula histogram to probit-space joint log-density for conditioning.
+                    cond = copula_logdensity_to_probit_logdensity(cond, m)
                 # Classifier-free dropout: randomly drop conditioning during training
                 p_drop = float(training.get('cfg_dropout_prob', 0.1))
                 if p_drop > 0:

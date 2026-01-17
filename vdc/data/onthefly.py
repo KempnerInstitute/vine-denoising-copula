@@ -15,8 +15,10 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 from vdc.data.generators import sample_bicop, analytic_logpdf_grid
+from vdc.data.complex_copulas import complex_copula_density_grid
 from vdc.inference.density import scatter_to_hist
 from vdc.utils.probit_transform import copula_logdensity_to_probit_logdensity
+from vdc.vine.copula_diffusion import DiffusionCopulaModel
 
 
 class OnTheFlyCopulaDataset(Dataset):
@@ -193,6 +195,53 @@ class OnTheFlyCopulaDataset(Dataset):
         probs = probs / probs.sum()  # Normalize in case weights don't sum to 1
         family = rng.choice(fams, p=probs)
         params = {}
+
+        # ---------------------------------------------------------------------
+        # Complex synthetic families (optional; only used if included in config)
+        #
+        # Supported naming:
+        #   - "complex:x", "complex:ring", "complex:double_banana"
+        #   - "complex_x", "complex_ring", "complex_double_banana"
+        #   - "complex" (randomly chooses one of the above kinds)
+        # ---------------------------------------------------------------------
+        if str(family).startswith("complex"):
+            fam_str = str(family)
+            if fam_str == "complex":
+                kind = str(rng.choice(["x", "ring", "double_banana"]))
+            elif fam_str.startswith("complex:"):
+                kind = fam_str.split("complex:", 1)[1]
+            elif fam_str.startswith("complex_"):
+                kind = fam_str.split("complex_", 1)[1]
+            else:
+                kind = fam_str
+            kind = str(kind).lower().strip()
+
+            # Sample a small range of shape parameters.
+            if kind in {"x", "xshape", "x_shape"}:
+                params = {
+                    "sigma": float(rng.uniform(0.02, 0.06)),
+                    "w2": float(rng.uniform(0.5, 2.0)),
+                }
+                family = "complex:x"
+            elif kind in {"ring", "o", "circle"}:
+                params = {
+                    "r0": float(rng.uniform(0.20, 0.36)),
+                    "sigma": float(rng.uniform(0.02, 0.06)),
+                }
+                family = "complex:ring"
+            elif kind in {"double_banana", "doublebanana", "banana2"}:
+                params = {
+                    "amp": float(rng.uniform(0.10, 0.22)),
+                    "offset": float(rng.uniform(0.08, 0.25)),
+                    "sigma": float(rng.uniform(0.02, 0.06)),
+                }
+                family = "complex:double_banana"
+            else:
+                raise ValueError(f"Unknown complex family kind '{kind}' from '{fam_str}'")
+
+            # Rotation is not used for these grid-constructed copulas.
+            rotation = 0
+            return family, params, rotation
         
         if family == 'gaussian':
             lo, hi = self.param_ranges.get('gaussian_rho', [-0.95, 0.95])
@@ -237,7 +286,12 @@ class OnTheFlyCopulaDataset(Dataset):
         all_samples = []
         all_density = []
         for i, w in enumerate(weights):
-            family, params, rotation = self._sample_family()
+            # Avoid complex families inside mixtures by default (they're expensive to sample
+            # and mixtures are primarily meant for parametric augmentation).
+            for _attempt in range(50):
+                family, params, rotation = self._sample_family()
+                if not str(family).startswith("complex"):
+                    break
             n_k = int(w * n_total)
             if i == k - 1:
                 n_k = n_total - sum(len(s) for s in all_samples)
@@ -271,18 +325,29 @@ class OnTheFlyCopulaDataset(Dataset):
             samples, density_grid = self._generate_mixture(n_total=n)
         else:
             family, params, rotation = self._sample_family()
-            samples = sample_bicop(family, params, n, rotation=rotation)
-            try:
-                lg = analytic_logpdf_grid(family if family!='student' else 'student_t', params, self.m, rotation=rotation)
-                # Clip log-density BEFORE exponentiation to prevent overflow
-                # log(1e6) ≈ 13.8, so clamp to [-20, 20] gives density range [2e-9, 4.8e8]
-                # Use wider range to preserve natural peak structure
-                lg = np.clip(lg, -20, 20)
-                density_grid = np.exp(lg)
-                # Additional safety clip (should rarely trigger after log clipping)
-                density_grid = np.clip(density_grid, 1e-12, 1e6)
-            except Exception:
-                density_grid = scatter_to_hist(samples, self.m, reflect=True)
+            if str(family).startswith("complex:"):
+                # Build projected copula density and sample from it.
+                kind = str(family).split("complex:", 1)[1]
+                density_grid = complex_copula_density_grid(kind, params, m=self.m, device=torch.device("cpu"), projection_iters=80)
+                seed = int(rng.randint(0, 2**31 - 1))
+                samples = DiffusionCopulaModel.sample_from_density(
+                    density=density_grid,
+                    n_samples=int(n),
+                    rng=np.random.default_rng(seed),
+                )
+            else:
+                samples = sample_bicop(family, params, n, rotation=rotation)
+                try:
+                    lg = analytic_logpdf_grid(family if family!='student' else 'student_t', params, self.m, rotation=rotation)
+                    # Clip log-density BEFORE exponentiation to prevent overflow
+                    # log(1e6) ≈ 13.8, so clamp to [-20, 20] gives density range [2e-9, 4.8e8]
+                    # Use wider range to preserve natural peak structure
+                    lg = np.clip(lg, -20, 20)
+                    density_grid = np.exp(lg)
+                    # Additional safety clip (should rarely trigger after log clipping)
+                    density_grid = np.clip(density_grid, 1e-12, 1e6)
+                except Exception:
+                    density_grid = scatter_to_hist(samples, self.m, reflect=True)
         
         # Conditioning histogram (density integrating to 1)
         hist_grid = scatter_to_hist(samples, m=self.m, reflect=True)

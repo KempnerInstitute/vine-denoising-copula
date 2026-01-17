@@ -8,7 +8,7 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --time=10:00:00
 #SBATCH --mem=320GB
-#SBATCH --partition=kempner_eng
+#SBATCH --partition=kempner_h100_priority3
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
@@ -147,13 +147,60 @@ echo "Running model selection evaluation..."
 echo ""
 
 EVAL_LOG="${RUN_DIR}/logs/model_selection.log"
+mkdir -p "${RUN_DIR}/figures/examples"
+
+# NOTE: evaluation is helpful but should not fail the overall training job.
+set +e
 python scripts/model_selection.py \
   --checkpoints "${CKPT}" \
   --n-samples 2000 \
   --device cuda \
+  --diffusion-steps "${DIFFUSION_STEPS:-200}" \
+  --diffusion-cfg-scale "${DIFFUSION_CFG_SCALE:-4.0}" \
+  --diffusion-ensemble "${DIFFUSION_ENSEMBLE:-1}" \
+  --diffusion-ensemble-mode "${DIFFUSION_ENSEMBLE_MODE:-geometric}" \
+  --diffusion-smooth-sigma "${DIFFUSION_SMOOTH_SIGMA:-0.0}" \
+  --diffusion-pred-noise-clip "${DIFFUSION_PRED_NOISE_CLIP:-10.0}" \
+  --write-examples \
+  --examples-dir "${RUN_DIR}/figures/examples" \
   --out-json "${RUN_DIR}/results/model_selection.json" \
   --out-csv "${RUN_DIR}/results/model_selection.csv" \
   2>&1 | tee "${EVAL_LOG}"
+EVAL_RC=${PIPESTATUS[0]}
+set -e
+if [ "${EVAL_RC}" -ne 0 ]; then
+  echo "WARNING: standard-suite model_selection failed (exit ${EVAL_RC}). You can rerun with slurm/paper_rerun_model_selection.sh" | tee -a "${EVAL_LOG}"
+fi
+
+echo ""
+echo "Running model selection evaluation (COMPLEX suite)..."
+echo ""
+
+EVAL_COMPLEX_LOG="${RUN_DIR}/logs/model_selection_complex.log"
+mkdir -p "${RUN_DIR}/figures/examples_complex"
+
+set +e
+python scripts/model_selection.py \
+  --suite complex \
+  --checkpoints "${CKPT}" \
+  --n-samples 2000 \
+  --device cuda \
+  --diffusion-steps "${DIFFUSION_STEPS:-200}" \
+  --diffusion-cfg-scale "${DIFFUSION_CFG_SCALE:-4.0}" \
+  --diffusion-ensemble "${DIFFUSION_ENSEMBLE:-1}" \
+  --diffusion-ensemble-mode "${DIFFUSION_ENSEMBLE_MODE:-geometric}" \
+  --diffusion-smooth-sigma "${DIFFUSION_SMOOTH_SIGMA:-0.0}" \
+  --diffusion-pred-noise-clip "${DIFFUSION_PRED_NOISE_CLIP:-10.0}" \
+  --write-examples \
+  --examples-dir "${RUN_DIR}/figures/examples_complex" \
+  --out-json "${RUN_DIR}/results/model_selection_complex.json" \
+  --out-csv "${RUN_DIR}/results/model_selection_complex.csv" \
+  2>&1 | tee "${EVAL_COMPLEX_LOG}"
+EVAL_COMPLEX_RC=${PIPESTATUS[0]}
+set -e
+if [ "${EVAL_COMPLEX_RC}" -ne 0 ]; then
+  echo "WARNING: complex-suite model_selection failed (exit ${EVAL_COMPLEX_RC}). You can rerun with slurm/paper_rerun_model_selection_complex.sh" | tee -a "${EVAL_COMPLEX_LOG}"
+fi
 
 echo ""
 echo "============================================================================"

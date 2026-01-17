@@ -8,7 +8,7 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --time=6:00:00
 #SBATCH --mem=64GB
-#SBATCH --partition=kempner_h100
+#SBATCH --partition=kempner_h100_priority3
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
@@ -19,6 +19,10 @@
 #
 # estimator must be one of:
 #   - ksg
+#   - gaussian
+#   - infonce
+#   - nwj
+#   - mine
 #   - minde
 #
 # Writes:
@@ -32,7 +36,7 @@ OUTPUT_BASE="${OUTPUT_BASE:-/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusi
 
 if [ "$#" -ne 1 ]; then
   echo "ERROR: expected exactly 1 estimator argument."
-  echo "Usage: sbatch slurm/paper_vdc_mi_estimation.sh <ksg|minde>"
+  echo "Usage: sbatch slurm/paper_vdc_mi_estimation.sh <ksg|gaussian|infonce|nwj|mine|minde>"
   exit 2
 fi
 

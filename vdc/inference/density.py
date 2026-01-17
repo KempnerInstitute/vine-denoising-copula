@@ -52,6 +52,13 @@ def sample_density_grid(
     use_histogram_conditioning: bool = False,
     projection_iters: int = 50,
     log_n: Optional[torch.Tensor] = None,
+    pred_noise_clip: Optional[float] = 10.0,
+    # Optional smoothing knobs (all in "grid-cell units")
+    hist_smooth_sigma: float = 0.0,
+    x0_smooth_sigma: float = 0.0,
+    x0_smooth_every: int = 0,
+    final_smooth_sigma: float = 0.0,
+    transform_to_probit_space: bool = False,
 ) -> np.ndarray:
     """
     Run reverse diffusion to estimate a copula density grid.
@@ -66,6 +73,17 @@ def sample_density_grid(
         cfg_scale: Guidance scale (if histogram conditioning was trained)
         use_histogram_conditioning: If model expects histogram channel
         projection_iters: IPFP iterations to enforce copula constraints
+        pred_noise_clip: Optional clip value for predicted noise (|eps| <= clip).
+            This mirrors the training-time clamp and helps prevent spiky/unstable
+            reverse diffusion trajectories. Set to None or <=0 to disable.
+        hist_smooth_sigma: Optional Gaussian smoothing sigma applied to the *conditioning histogram*
+            (before taking log). This can reduce "speckle" artifacts when the input histogram is
+            very noisy (small n).
+        x0_smooth_sigma: Optional Gaussian smoothing sigma applied to the predicted x0 (density-space,
+            then converted back to log-space) during the reverse diffusion trajectory.
+        x0_smooth_every: Apply x0 smoothing every k DDIM steps (0 disables in-loop smoothing).
+        final_smooth_sigma: Optional Gaussian smoothing sigma applied to the final density grid
+            (after exp+mass-normalize, before copula projection).
 
     Returns:
         (m, m) numpy array of copula density
@@ -74,7 +92,18 @@ def sample_density_grid(
     du = 1.0 / m
 
     hist_tensor = torch.from_numpy(hist).float().unsqueeze(0).unsqueeze(0).to(device)
+    # Optional smoothing of the conditioning histogram (can reduce speckle on high-res grids).
+    if hist_smooth_sigma is not None and float(hist_smooth_sigma) > 0:
+        from vdc.utils.smoothing import smooth_density_gaussian
+
+        hist_tensor = smooth_density_gaussian(hist_tensor.clamp_min(1e-12), sigma=float(hist_smooth_sigma), preserve_mass=True)
     log_histogram = torch.log(hist_tensor.clamp(min=1e-12))
+    if bool(transform_to_probit_space):
+        # Convert copula log-density to probit-space *joint* log-density f_Z(z),
+        # where z = Φ^{-1}(u). This matches probit/KDE baselines and reduces edge bias.
+        from vdc.utils.probit_transform import copula_logdensity_to_probit_logdensity
+
+        log_histogram = copula_logdensity_to_probit_logdensity(log_histogram, m)
     dtype = hist_tensor.dtype
     
     # Compute log of sample size if not provided
@@ -111,12 +140,26 @@ def sample_density_grid(
         else:
             pred_noise = model(x_t, t_normalized, log_n)
 
+        # Training clamps predicted noise to avoid rare extreme values that can
+        # produce overly peaky densities at inference time. Keep inference aligned.
+        if pred_noise_clip is not None and float(pred_noise_clip) > 0:
+            c = float(pred_noise_clip)
+            pred_noise = pred_noise.clamp(min=-c, max=c)
+
         alpha_t = alphas_cumprod[t]
         sqrt_alpha_t = torch.sqrt(alpha_t)
         sqrt_one_minus_alpha_t = torch.sqrt(1 - alpha_t)
 
         pred_x0 = (x_t - sqrt_one_minus_alpha_t * pred_noise) / sqrt_alpha_t
         pred_x0 = pred_x0.clamp(-20, 20)
+        # Optional in-loop smoothing of x0 (convert to density -> smooth -> log).
+        if x0_smooth_sigma is not None and float(x0_smooth_sigma) > 0 and int(x0_smooth_every) > 0:
+            if (i % int(x0_smooth_every) == 0) or (t == 0):
+                from vdc.utils.smoothing import smooth_density_gaussian
+
+                d0 = torch.exp(pred_x0).clamp(1e-12, 1e6)
+                d0 = smooth_density_gaussian(d0, sigma=float(x0_smooth_sigma), preserve_mass=True)
+                pred_x0 = torch.log(d0.clamp_min(1e-12)).clamp(-20, 20)
 
         if t == 0:
             x_t = pred_x0
@@ -128,9 +171,30 @@ def sample_density_grid(
             dir_xt = torch.sqrt(1 - alpha_t_prev) * pred_noise
             x_t = torch.sqrt(alpha_t_prev) * pred_x0 + dir_xt
 
-    density = torch.exp(x_t).clamp(1e-12, 1e6)
+    if bool(transform_to_probit_space):
+        # Model output is log f_Z(z_u,z_v); convert back to copula density c(u,v):
+        # log c = log f_Z - log φ(z_u) - log φ(z_v)
+        from vdc.utils.probit_transform import probit_logdensity_to_copula_logdensity
+
+        log_c = probit_logdensity_to_copula_logdensity(x_t, m)
+        density = torch.exp(log_c).clamp(1e-12, 1e6)
+    else:
+        density = torch.exp(x_t).clamp(1e-12, 1e6)
+    density = torch.nan_to_num(density, nan=0.0, posinf=1e6, neginf=0.0)
     mass = (density * du * du).sum(dim=(-2, -1), keepdim=True).clamp_min(1e-12)
     density = density / mass
-    density = copula_project(density, iters=projection_iters)
+    # Optional final smoothing before projection (smoothing after projection can reintroduce small artifacts
+    # when you re-project again; smoothing-before-projection is usually cleaner).
+    if final_smooth_sigma is not None and float(final_smooth_sigma) > 0:
+        from vdc.utils.smoothing import smooth_density_gaussian
+
+        density = smooth_density_gaussian(density, sigma=float(final_smooth_sigma), preserve_mass=True)
+        density = torch.nan_to_num(density, nan=0.0, posinf=1e6, neginf=0.0)
+        mass = (density * du * du).sum(dim=(-2, -1), keepdim=True).clamp_min(1e-12)
+        density = density / mass
+
+    if int(projection_iters) > 0:
+        density = copula_project(density, iters=int(projection_iters))
+    density = torch.nan_to_num(density, nan=0.0, posinf=1e6, neginf=0.0)
 
     return density[0, 0].cpu().numpy()

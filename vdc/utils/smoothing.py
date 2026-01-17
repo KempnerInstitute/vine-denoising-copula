@@ -63,8 +63,18 @@ def smooth_density_gaussian(
     k = kernel.shape[-1]
     pad = k // 2
     
-    # Apply convolution with reflection padding
-    smoothed = F.conv2d(density, kernel, padding=pad)
+    # Apply convolution with reflection padding to avoid boundary shrinkage artifacts.
+    # (Using zero-padding biases the density near u/v≈0,1 and looks like "edge effects".)
+    if pad > 0:
+        # reflect requires pad < input size; if extremely small grids are used,
+        # fall back to replicate padding.
+        pad_mode = "reflect"
+        if pad >= density.shape[-1] or pad >= density.shape[-2]:
+            pad_mode = "replicate"
+        density_pad = F.pad(density, (pad, pad, pad, pad), mode=pad_mode)
+        smoothed = F.conv2d(density_pad, kernel)
+    else:
+        smoothed = F.conv2d(density, kernel)
     
     # Ensure non-negativity
     smoothed = smoothed.clamp(min=1e-12)

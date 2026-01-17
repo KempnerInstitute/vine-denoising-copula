@@ -9,7 +9,7 @@ from vdc.models.copula_diffusion import CopulaAwareDiffusion
 from vdc.data.onthefly import OnTheFlyCopulaDataset
 
 
-def _make_config() -> dict:
+def _make_config(*, transform_to_probit_space: bool = False, use_antialiased_hist: bool = True) -> dict:
     return {
         "data": {
             "m": 8,
@@ -24,7 +24,7 @@ def _make_config() -> dict:
             },
         },
         "model": {
-            "transform_to_probit_space": False,
+            "transform_to_probit_space": bool(transform_to_probit_space),
             "use_coordinates": False,
         },
         "training": {
@@ -36,7 +36,7 @@ def _make_config() -> dict:
             "projection_iters": 2,
             "gradient_clip": 1.0,
             "hist_sigma": 0.5,
-            "use_antialiased_hist": True,
+            "use_antialiased_hist": bool(use_antialiased_hist),
             "input_hist_sigma": 0.5,
             "input_noise_std": 0.0,
             "loss_weights": {
@@ -119,6 +119,30 @@ def test_diffusion_training_step_smoke():
 
     assert "loss" in metrics and torch.isfinite(torch.tensor(metrics["loss"])), "loss should be finite"
     assert "grad_norm" in metrics and torch.isfinite(torch.tensor(metrics["grad_norm"])), "grad norm should be finite"
+
+
+@pytest.mark.slow(reason="runs a lightweight training step in probit-space mode")
+def test_diffusion_training_step_smoke_probit():
+    # Probit-space mode should run end-to-end without NaNs and still produce copula-space losses.
+    config = _make_config(transform_to_probit_space=True, use_antialiased_hist=False)
+    device = torch.device("cpu")
+    batch = _make_batch(config, batch_size=config["training"]["batch_size"])
+    batch = {k: (v.to(device) if isinstance(v, torch.Tensor) else v) for k, v in batch.items()}
+    model, diffusion, _ = _setup_training_objects(config, device)
+
+    metrics = training_step(
+        "diffusion_unet",
+        model,
+        batch,
+        device,
+        config,
+        diffusion=diffusion,
+        scaler=None,
+        step=0,
+        profiler=None,
+    )
+
+    assert "loss" in metrics and torch.isfinite(torch.tensor(metrics["loss"])), "loss should be finite (probit)"
 
 
 @pytest.mark.slow(reason="verifies parameters update under a training step")

@@ -20,9 +20,10 @@ export OUTPUT_BASE
 
 echo "Submitting paper suite with OUTPUT_BASE=${OUTPUT_BASE}"
 
-J1=$(sbatch slurm/paper_vdc_diffusion_cond.sh | awk '{print $4}')
-J2=$(sbatch slurm/paper_vdc_denoiser_cond.sh | awk '{print $4}')
-J3=$(sbatch slurm/paper_vdc_enhanced_cnn_cond.sh | awk '{print $4}')
+PARTITION="${PARTITION:-kempner_h100_priority3}"
+J1=$(sbatch --partition="${PARTITION}" slurm/paper_vdc_diffusion_cond.sh | awk '{print $4}')
+J2=$(sbatch --partition="${PARTITION}" slurm/paper_vdc_denoiser_cond.sh | awk '{print $4}')
+J3=$(sbatch --partition="${PARTITION}" slurm/paper_vdc_enhanced_cnn_cond.sh | awk '{print $4}')
 
 echo "Submitted:"
 echo "  diffusion_cond:   ${J1}"

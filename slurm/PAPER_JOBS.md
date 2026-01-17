@@ -31,6 +31,21 @@ Each training job will automatically run `scripts/model_selection.py` on the lat
 - `results/model_selection.json`
 - `results/model_selection.csv`
 
+## Scaling job (E2)
+
+To generate the real scaling plot used in the draft (`drafts/figures/scaling_time_vs_d.pdf`), submit:
+
+```bash
+OUTPUT_BASE=/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula \
+sbatch slurm/paper_vdc_scaling.sh
+```
+
+This writes a scaling JSON under a new run directory and also updates:
+
+- `drafts/paper_outputs/e2_scaling_results.json`
+
+Then it runs `drafts/scripts/paper_artifacts.py all --force` so the paper figure is refreshed automatically.
+
 ## Evaluation-only job
 
 If you already have checkpoints and just want the standardized benchmark:
@@ -48,3 +63,12 @@ This writes one combined JSON/CSV under a fresh run directory.
 - These jobs run `scripts/train_unified.py` via `torchrun` (DDP) for training.
 - The training configs in `configs/train/*.yaml` are copied into the run directory and augmented with a top-level `checkpoint_dir` so the run is self-contained.
 
+## MI estimators (KSG / MINE / MINDE)
+
+To run MI estimation baselines:
+
+```bash
+sbatch slurm/paper_vdc_mi_estimation.sh ksg
+sbatch slurm/paper_vdc_mi_estimation.sh mine
+sbatch slurm/paper_vdc_mi_estimation.sh minde
+```

@@ -1,15 +1,15 @@
 # =============================================================================
 # Histogram-Conditioned Diffusion (iterative DDIM inference)
+# High-res grid (m=128) + smoothness regularization + anti-checkerboard upsampling
 # =============================================================================
 experiment:
-  name: "copula_diffusion_cond"
-  description: "Conditional diffusion model: (histogram) -> copula density via DDIM+CFG"
+  name: "copula_diffusion_cond_m128_smooth_bilinear"
+  description: "Conditional diffusion UNet at m=128 with multi-scale + TV(log) regularization and bilinear upsampling (reduces checkerboard artifacts)"
   seed: 42
 
 model:
   type: "diffusion_unet"
-  grid_size: 64
-  # 2 channels: [x_t (noisy log-density), log_histogram (conditioning)]
+  grid_size: 128
   in_channels: 2
   base_channels: 64
   channel_mults: [1, 2, 3, 4]
@@ -17,18 +17,17 @@ model:
   attention_resolutions: [16, 8]
   dropout: 0.1
   time_emb_dim: 256
+  # New: avoid ConvTranspose2d checkerboard artifacts
+  upsample_mode: "bilinear"
 
 diffusion:
   timesteps: 1000
   noise_schedule: "cosine"
-  # Inference defaults for smoother/higher-fidelity densities.
-  # (Training does not depend on this; it is used by evaluation/plotting.)
   sampling_steps: 200
-  # Used at inference time when use_histogram_conditioning=True
   cfg_scale: 4.0
 
 data:
-  m: 64
+  m: 128
   n_samples_per_copula:
     mode: "log_uniform"
     min: 200
@@ -38,8 +37,6 @@ data:
   num_workers: 4
   mixture_prob: 0.30
   n_mixture_components: [2, 4]
-
-  # Parameter ranges (explicit + reproducible)
   param_ranges:
     gaussian_rho: [-0.95, 0.95]
     student_rho: [-0.9, 0.9]
@@ -51,22 +48,32 @@ data:
 
 training:
   max_steps: 150000
-  batch_size: 32
+  batch_size: 8
   learning_rate: 1.0e-4
   weight_decay: 0.01
   gradient_clip: 1.0
-
-  # Classifier-free dropout probability for training conditional diffusion
-  # (probability of zeroing the histogram conditioning channel)
   cfg_dropout_prob: 0.10
 
-  # Loss suite on projected density (in addition to diffusion noise MSE)
+  # Optional: smooth the conditioning histogram (augmentation) to reduce sensitivity
+  # to bin-level speckle at high resolution. Set to 0 to disable.
+  cond_hist_smooth_sigma: 0.60
+  cond_hist_smooth_random: true
+
   loss_weights:
     ce: 1.0
     ise: 0.0
     tail: 0.1
-    ms: 0.0
+    ms: 0.15
     marg_kl: 0.0
+    tv: 0.01
+
+  tv_in_log_space: true
+
+  multi_scale:
+    enable: true
+    scales: [2, 4, 8]
+    ce_weight: 0.5
+    ise_weight: 0.25
 
   projection_iters: 30
   detach_projection: false

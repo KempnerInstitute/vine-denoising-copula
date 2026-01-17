@@ -65,6 +65,9 @@ class VineCopulaModel:
         diffusion_steps: int = 50,
         cfg_scale: float = 1.0,
         projection_iters: int = 50,
+        hfunc_use_spline: bool = True,
+        batch_edges: bool = False,
+        edge_batch_size: int = 256,
     ):
         """
         Initialize vine copula model.
@@ -78,6 +81,12 @@ class VineCopulaModel:
             diffusion_steps: DDIM steps when `diffusion` is provided to `fit`
             cfg_scale: Classifier-free guidance scale for histogram-conditioned diffusion models
             projection_iters: IPFP/Sinkhorn iterations when projecting densities to valid copulas
+            hfunc_use_spline: If True (default), build SciPy spline interpolators inside each pair-copula
+                h-function lookup. If False, use lightweight bilinear interpolation (faster/leaner for
+                high-dimensional scaling benchmarks).
+            batch_edges: If True, estimate pair-copula densities in mini-batches per tree level (single-pass
+                estimators only). This substantially reduces Python overhead and improves GPU utilization.
+            edge_batch_size: Max number of pair-copulas to process in one batch (single-pass path).
         """
         self.vine_type = vine_type.lower()
         self.order = order
@@ -87,6 +96,9 @@ class VineCopulaModel:
         self.diffusion_steps = int(diffusion_steps)
         self.cfg_scale = float(cfg_scale)
         self.projection_iters = int(projection_iters)
+        self.hfunc_use_spline = bool(hfunc_use_spline)
+        self.batch_edges = bool(batch_edges)
+        self.edge_batch_size = int(edge_batch_size)
         
         self.structure: Optional[VineStructure] = None
         self.vine: Optional[VineRecursion] = None
@@ -172,50 +184,93 @@ class VineCopulaModel:
         for tree_level in range(len(self.structure.trees)):
             tree = self.structure.trees[tree_level]
             tree_copulas: List[VinePairCopula] = []
-            
-            for edge in tree.edges:
-                i, j, cond = edge
-                # Extract correctly conditioned pair data
-                if tree_level == 0:
-                    u_data = U[:, i]
-                    v_data = U[:, j]
-                else:
-                    if prev_transforms is None:
-                        raise RuntimeError(
-                            f"Internal error: prev_transforms is None at tree_level={tree_level}."
-                        )
-                    D = frozenset(cond)
-                    try:
-                        u_data = prev_transforms[(i, D)]
-                        v_data = prev_transforms[(j, D)]
-                    except KeyError as e:
-                        raise RuntimeError(
-                            f"Missing conditional pseudo-observations for edge ({i},{j}|{sorted(D)}) "
-                            f"at tree_level={tree_level}. This indicates the structure is inconsistent "
-                            f"or transform propagation failed."
-                        ) from e
-                
-                pair_data = np.column_stack([u_data, v_data])
-                pair_data = np.clip(pair_data, 1e-6, 1.0 - 1e-6)
-                
-                density_grid = self._estimate_pair_density_from_samples(
+
+            # Optional batching (single-pass only). For diffusion-based fitting, we fall back to per-edge.
+            do_batch = bool(self.batch_edges) and (diffusion is None)
+
+            if do_batch:
+                # Build all pair_data arrays for this tree level first.
+                edges: List[Tuple[int, int, set[int]]] = []
+                pair_data_list: List[np.ndarray] = []
+                for edge in tree.edges:
+                    i, j, cond = edge
+                    if tree_level == 0:
+                        u_data = U[:, i]
+                        v_data = U[:, j]
+                    else:
+                        if prev_transforms is None:
+                            raise RuntimeError(f"Internal error: prev_transforms is None at tree_level={tree_level}.")
+                        D = frozenset(cond)
+                        try:
+                            u_data = prev_transforms[(i, D)]
+                            v_data = prev_transforms[(j, D)]
+                        except KeyError as e:
+                            raise RuntimeError(
+                                f"Missing conditional pseudo-observations for edge ({i},{j}|{sorted(D)}) "
+                                f"at tree_level={tree_level}. This indicates the structure is inconsistent "
+                                f"or transform propagation failed."
+                            ) from e
+
+                    pair_data = np.column_stack([u_data, v_data])
+                    pair_data = np.clip(pair_data, 1e-6, 1.0 - 1e-6)
+                    edges.append(edge)
+                    pair_data_list.append(pair_data)
+
+                densities = self._estimate_pair_densities_from_samples_batched(
                     model=diffusion_model,
-                    diffusion=diffusion,
-                    pair_data=pair_data,
-                    use_histogram_conditioning=use_histogram_conditioning,
+                    pair_data_list=pair_data_list,
                 )
-                hfunc = HFuncLookup(density_grid)
-                
-                copula = VinePairCopula(
-                    edge=edge,
-                    density_grid=density_grid,
-                    hfunc=hfunc,
-                    level=tree_level
-                )
-                
-                tree_copulas.append(copula)
-                self.vine.add_pair_copula(copula)
-                pbar.update(1)
+
+                for edge, density_grid in zip(edges, densities):
+                    hfunc = HFuncLookup(density_grid, use_spline=self.hfunc_use_spline)
+                    copula = VinePairCopula(edge=edge, density_grid=density_grid, hfunc=hfunc, level=tree_level)
+                    tree_copulas.append(copula)
+                    self.vine.add_pair_copula(copula)
+                    pbar.update(1)
+            else:
+                for edge in tree.edges:
+                    i, j, cond = edge
+                    # Extract correctly conditioned pair data
+                    if tree_level == 0:
+                        u_data = U[:, i]
+                        v_data = U[:, j]
+                    else:
+                        if prev_transforms is None:
+                            raise RuntimeError(
+                                f"Internal error: prev_transforms is None at tree_level={tree_level}."
+                            )
+                        D = frozenset(cond)
+                        try:
+                            u_data = prev_transforms[(i, D)]
+                            v_data = prev_transforms[(j, D)]
+                        except KeyError as e:
+                            raise RuntimeError(
+                                f"Missing conditional pseudo-observations for edge ({i},{j}|{sorted(D)}) "
+                                f"at tree_level={tree_level}. This indicates the structure is inconsistent "
+                                f"or transform propagation failed."
+                            ) from e
+                    
+                    pair_data = np.column_stack([u_data, v_data])
+                    pair_data = np.clip(pair_data, 1e-6, 1.0 - 1e-6)
+                    
+                    density_grid = self._estimate_pair_density_from_samples(
+                        model=diffusion_model,
+                        diffusion=diffusion,
+                        pair_data=pair_data,
+                        use_histogram_conditioning=use_histogram_conditioning,
+                    )
+                    hfunc = HFuncLookup(density_grid, use_spline=self.hfunc_use_spline)
+                    
+                    copula = VinePairCopula(
+                        edge=edge,
+                        density_grid=density_grid,
+                        hfunc=hfunc,
+                        level=tree_level
+                    )
+                    
+                    tree_copulas.append(copula)
+                    self.vine.add_pair_copula(copula)
+                    pbar.update(1)
             
             # After fitting this tree, compute transforms for next level
             prev_transforms = self.vine.compute_h_transforms(U, tree_level, prev_transforms)
@@ -226,6 +281,117 @@ class VineCopulaModel:
         if verbose:
             print(f"\n✓ Vine fitting complete!")
             print(f"{'='*60}\n")
+
+    @torch.no_grad()
+    def _estimate_pair_densities_from_samples_batched(
+        self,
+        *,
+        model: torch.nn.Module,
+        pair_data_list: List[np.ndarray],
+    ) -> List[np.ndarray]:
+        """
+        Batched single-pass pair-copula inference:
+          (histogram + optional channels) -> model -> density -> copula projection
+
+        This is used for scaling benchmarks and fast vine fitting.
+        """
+        if not pair_data_list:
+            return []
+
+        device = torch.device(self.device)
+        model.eval()
+        model.to(device)
+
+        # Determine whether the model expects extra conditioning channels.
+        in_ch: Optional[int] = None
+        if hasattr(model, "in_conv"):
+            in_ch = int(getattr(model, "in_conv").in_channels)
+        elif hasattr(model, "input_conv"):
+            try:
+                in_ch = int(getattr(model, "input_conv")[0].in_channels)
+            except Exception:
+                in_ch = None
+        elif hasattr(model, "conv_in"):
+            in_ch = int(getattr(model, "conv_in").in_channels)
+
+        # Prefer explicit metadata set by build_model(); fall back to channel-count heuristics.
+        use_log_n = bool(getattr(model, "vdc_use_log_n", False))
+        use_coords = bool(getattr(model, "vdc_use_coordinates", False))
+        use_probit_coords = bool(getattr(model, "vdc_use_probit_coords", False))
+        probit_coord_eps = float(getattr(model, "vdc_probit_coord_eps", 1e-4))
+
+        if in_ch is not None and not hasattr(model, "vdc_use_log_n"):
+            if in_ch in (2, 4):
+                use_log_n = True
+        if in_ch is not None and not hasattr(model, "vdc_use_coordinates"):
+            if in_ch in (3, 4):
+                use_coords = True
+
+        out: List[np.ndarray] = []
+        B_total = len(pair_data_list)
+        bs = max(1, int(self.edge_batch_size))
+
+        # Precompute coordinate channels once per batch (depends only on m).
+        m = int(self.m)
+        u = torch.linspace(0.5 / m, 1.0 - 0.5 / m, m, device=device)
+        v = torch.linspace(0.5 / m, 1.0 - 0.5 / m, m, device=device)
+        uu, vv = torch.meshgrid(u, v, indexing="ij")
+        if use_probit_coords and use_coords:
+            eps = max(float(probit_coord_eps), 1.0 / (m * m))
+            uu = torch.erfinv(2 * uu.clamp(eps, 1 - eps) - 1) * (2.0 ** 0.5)
+            vv = torch.erfinv(2 * vv.clamp(eps, 1 - eps) - 1) * (2.0 ** 0.5)
+        coords_1 = torch.stack([uu, vv], dim=0).unsqueeze(0)  # (1,2,m,m)
+
+        for start in range(0, B_total, bs):
+            chunk = pair_data_list[start : start + bs]
+
+            # Histograms (density integrating to 1).
+            hists = [scatter_to_hist(p, m=m, reflect=True) for p in chunk]
+            hist_t = torch.from_numpy(np.stack(hists, axis=0)).float().unsqueeze(1).to(device)  # (B,1,m,m)
+            x = hist_t
+
+            if use_log_n:
+                ln = np.log([max(1, int(p.shape[0])) for p in chunk]).astype(np.float32)  # (B,)
+                ln_t = torch.from_numpy(ln).to(device=device, dtype=x.dtype).view(-1, 1, 1, 1).expand(-1, 1, m, m)
+                x = torch.cat([x, ln_t], dim=1)
+
+            if use_coords:
+                coords = coords_1.expand(x.shape[0], -1, -1, -1)
+                x = torch.cat([x, coords], dim=1)
+
+            if in_ch is not None and x.shape[1] != in_ch:
+                raise ValueError(
+                    f"Single-pass batched inference input channel mismatch: built x has C={x.shape[1]} but model expects C_in={in_ch}. "
+                    f"(use_log_n={use_log_n}, use_coords={use_coords}, use_probit_coords={use_probit_coords})"
+                )
+
+            # Forward: denoiser is time-conditioned, CNNs are not
+            try:
+                out_t = model(x, torch.zeros(x.shape[0], device=device))
+            except TypeError:
+                out_t = model(x)
+
+            if isinstance(out_t, dict):
+                if "density" in out_t:
+                    d = out_t["density"]
+                elif "log_density" in out_t:
+                    d = torch.exp(out_t["log_density"].clamp(min=-20, max=20))
+                elif "residual" in out_t:
+                    d = torch.exp((torch.log(hist_t.clamp_min(1e-12)) + out_t["residual"]).clamp(min=-20, max=20))
+                else:
+                    raise ValueError(f"Unknown model output keys: {list(out_t.keys())}")
+            else:
+                d = out_t
+
+            d = torch.nan_to_num(d, nan=1e-12, posinf=1e6, neginf=1e-12).clamp(min=1e-12, max=1e6)
+            du = 1.0 / m
+            d = d / ((d * du * du).sum(dim=(-2, -1), keepdim=True).clamp_min(1e-12))
+            d = copula_project(d, iters=int(self.projection_iters))
+            d = d / ((d * du * du).sum(dim=(-2, -1), keepdim=True).clamp_min(1e-12))
+
+            out.extend([d[i, 0].detach().cpu().numpy() for i in range(d.shape[0])])
+
+        return out
 
     def _fit_rvine_dissmann(
         self,
@@ -317,7 +483,7 @@ class VineCopulaModel:
                 pair_data=pair_data,
                 use_histogram_conditioning=use_histogram_conditioning,
             )
-            hfunc = HFuncLookup(density_grid)
+            hfunc = HFuncLookup(density_grid, use_spline=self.hfunc_use_spline)
 
             self.vine.add_pair_copula(
                 VinePairCopula(edge=edge, density_grid=density_grid, hfunc=hfunc, level=0)
@@ -427,7 +593,7 @@ class VineCopulaModel:
                     pair_data=pair_data,
                     use_histogram_conditioning=use_histogram_conditioning,
                 )
-                hfunc = HFuncLookup(density_grid)
+                hfunc = HFuncLookup(density_grid, use_spline=self.hfunc_use_spline)
 
                 self.vine.add_pair_copula(
                     VinePairCopula(edge=edge, density_grid=density_grid, hfunc=hfunc, level=tree_level)
@@ -469,6 +635,7 @@ class VineCopulaModel:
         - If `diffusion` is None, uses a single forward pass histogram->density (for denoiser/CNNs).
         """
         if diffusion is not None:
+            transform_to_probit_space = bool(getattr(model, "vdc_transform_to_probit_space", False))
             return sample_density_grid(
                 model=model,
                 diffusion=diffusion,
@@ -479,6 +646,7 @@ class VineCopulaModel:
                 cfg_scale=float(self.cfg_scale),
                 use_histogram_conditioning=use_histogram_conditioning,
                 projection_iters=int(self.projection_iters),
+                transform_to_probit_space=transform_to_probit_space,
             )
 
         # Single-pass path (expects a histogram-conditioned estimator)
@@ -618,7 +786,7 @@ class VineCopulaModel:
         
         # Create h-function lookup
         density_np = D_copula[0, 0].detach().cpu().numpy()
-        hfunc = HFuncLookup(density_np)
+        hfunc = HFuncLookup(density_np, use_spline=self.hfunc_use_spline)
         
         return density_np, hfunc
     

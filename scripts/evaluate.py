@@ -104,6 +104,7 @@ def estimate_pair_copula(
 ) -> Tuple[np.ndarray, HFuncLookup]:
     """Estimate bivariate copula density from pair samples (shared sampler)."""
     use_histogram_conditioning = bool(getattr(model, "conv_in").in_channels > 1)
+    transform_to_probit_space = bool(config.get("model", {}).get("transform_to_probit_space", False))
     density_np = sample_density_grid(
         model=model,
         diffusion=diffusion,
@@ -114,6 +115,7 @@ def estimate_pair_copula(
         cfg_scale=1.0,
         use_histogram_conditioning=use_histogram_conditioning,
         projection_iters=50,
+        transform_to_probit_space=transform_to_probit_space,
     )
     hfunc = HFuncLookup(density_np)
     return density_np, hfunc

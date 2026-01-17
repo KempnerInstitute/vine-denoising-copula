@@ -196,6 +196,7 @@ class UpBlock(nn.Module):
         num_res_blocks: int = 2,
         use_attention: bool = False,
         upsample: bool = True,
+        upsample_mode: str = "transpose",
     ):
         super().__init__()
         
@@ -213,15 +214,30 @@ class UpBlock(nn.Module):
         else:
             self.attn = None
         
+        self.upsample_mode = str(upsample_mode).lower().strip()
+        self.upsample = None
+        self.upsample_conv = None
         if upsample:
-            self.upsample = nn.ConvTranspose2d(out_channels, out_channels, 4, stride=2, padding=1)
-        else:
-            self.upsample = None
+            if self.upsample_mode in ("transpose", "convtranspose", "deconv"):
+                # Classic choice, but can introduce checkerboard artifacts.
+                self.upsample = nn.ConvTranspose2d(out_channels, out_channels, 4, stride=2, padding=1)
+            elif self.upsample_mode in ("bilinear", "nearest"):
+                # Anti-checkerboard: resize + conv.
+                self.upsample = None
+                self.upsample_conv = nn.Conv2d(out_channels, out_channels, 3, padding=1)
+            else:
+                raise ValueError(f"Unknown upsample_mode: {upsample_mode}")
     
     def forward(self, x: torch.Tensor, skip: torch.Tensor, t_emb: torch.Tensor):
         # Upsample BEFORE concatenating with skip
         if self.upsample is not None:
             x = self.upsample(x)
+        elif self.upsample_conv is not None:
+            if self.upsample_mode == "bilinear":
+                x = F.interpolate(x, scale_factor=2, mode="bilinear", align_corners=False)
+            else:
+                x = F.interpolate(x, scale_factor=2, mode=self.upsample_mode)
+            x = self.upsample_conv(x)
         
         # Now concatenate skip connection (both should have same spatial size)
         x = torch.cat([x, skip], dim=1)
@@ -257,6 +273,7 @@ class GridUNet(nn.Module):
         attention_resolutions: tuple = (16, 8),
         dropout: float = 0.1,
         time_emb_dim: int = 256,
+        upsample_mode: str = "transpose",
     ):
         super().__init__()
         
@@ -341,6 +358,7 @@ class GridUNet(nn.Module):
                         num_res_blocks=1,
                         use_attention=use_attn,
                         upsample=(j == num_res_blocks and i < len(channel_mults) - 1),
+                        upsample_mode=str(upsample_mode),
                     )
                 )
                 now_channels = out_channels

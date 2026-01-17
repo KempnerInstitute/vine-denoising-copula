@@ -39,6 +39,7 @@ class HFuncLookup:
         u_grid: Optional[np.ndarray] = None,
         v_grid: Optional[np.ndarray] = None,
         interp_method: str = 'linear',
+        use_spline: bool = True,
     ):
         assert density_grid.ndim == 2, "Expected 2D density grid"
         m_u, m_v = density_grid.shape
@@ -64,7 +65,13 @@ class HFuncLookup:
         
         # Build interpolators
         self.interp_method = interp_method
-        self._build_interpolators()
+        self.use_spline = bool(use_spline)
+        if self.use_spline:
+            self._build_interpolators()
+        else:
+            # Use lightweight on-the-fly bilinear interpolation (no SciPy spline objects).
+            self.h_u_given_v_interp = None
+            self.h_v_given_u_interp = None
         
     def _compute_h_functions(self):
         """Compute h-functions via cumulative integration."""
@@ -139,7 +146,7 @@ class HFuncLookup:
         else:
             # Fallback: bilinear interpolation
             return self._bilinear_interp(
-                u, v, self.h_u_given_v_grid, self.u_grid, self.v_grid
+                u, v, self.h_u_given_v_grid, clip_min=0.0, clip_max=1.0
             )
     
     def h_v_given_u(self, v: np.ndarray, u: np.ndarray) -> np.ndarray:
@@ -161,7 +168,7 @@ class HFuncLookup:
             return np.clip(result.reshape(u.shape), 0, 1)
         else:
             return self._bilinear_interp(
-                u, v, self.h_v_given_u_grid, self.u_grid, self.v_grid
+                u, v, self.h_v_given_u_grid, clip_min=0.0, clip_max=1.0
             )
     
     def hinv_u_given_v(self, q: np.ndarray, v: np.ndarray) -> np.ndarray:
@@ -285,23 +292,74 @@ class HFuncLookup:
         u: np.ndarray,
         v: np.ndarray,
         grid: np.ndarray,
-        u_grid: np.ndarray,
-        v_grid: np.ndarray,
+        clip_min: Optional[float] = None,
+        clip_max: Optional[float] = None,
     ) -> np.ndarray:
-        """Bilinear interpolation fallback."""
-        from scipy.interpolate import RegularGridInterpolator
-        
-        interp = RegularGridInterpolator(
-            (u_grid, v_grid),
-            grid,
-            method='linear',
-            bounds_error=False,
-            fill_value=None,
-        )
-        
-        points = np.stack([u.ravel(), v.ravel()], axis=-1)
-        result = interp(points)
-        return np.clip(result.reshape(u.shape), 0, 1)
+        """
+        Fast bilinear interpolation on a uniform grid (cell centers).
+
+        This intentionally avoids constructing SciPy interpolator objects, which
+        can be prohibitively expensive when fitting high-dimensional vines
+        (thousands of pair-copulas).
+        """
+        u = np.asarray(u, dtype=np.float64)
+        v = np.asarray(v, dtype=np.float64)
+
+        if grid.ndim != 2:
+            raise ValueError(f"Expected 2D grid, got shape={grid.shape}")
+        mu, mv = grid.shape
+        if mu < 2 or mv < 2:
+            # Degenerate: nearest neighbor.
+            out = np.full_like(u, float(grid[0, 0]), dtype=np.float64)
+            if clip_min is not None:
+                out = np.maximum(out, float(clip_min))
+            if clip_max is not None:
+                out = np.minimum(out, float(clip_max))
+            return out
+
+        # Flatten for vectorized gather.
+        u_flat = u.ravel()
+        v_flat = v.ravel()
+
+        # Map u,v to fractional indices in [0, mu-1] / [0, mv-1] for cell-center grids.
+        # u_grid = (0.5/m, 1.5/m, ..., (m-0.5)/m)  => u0 = u_grid[0], du = 1/m.
+        u0 = float(self.u_grid[0])
+        v0 = float(self.v_grid[0])
+        du = float(self.du) if float(self.du) > 0 else 1.0
+        dv = float(self.dv) if float(self.dv) > 0 else 1.0
+
+        # Clamp to the grid support.
+        u_flat = np.clip(u_flat, u0, float(self.u_grid[-1]))
+        v_flat = np.clip(v_flat, v0, float(self.v_grid[-1]))
+
+        iu = (u_flat - u0) / du
+        iv = (v_flat - v0) / dv
+        i0 = np.floor(iu).astype(np.int64)
+        j0 = np.floor(iv).astype(np.int64)
+
+        # Keep in-bounds for i0+1 and j0+1.
+        i0 = np.clip(i0, 0, mu - 2)
+        j0 = np.clip(j0, 0, mv - 2)
+        i1 = i0 + 1
+        j1 = j0 + 1
+
+        # Fractions
+        tu = np.clip(iu - i0, 0.0, 1.0)
+        tv = np.clip(iv - j0, 0.0, 1.0)
+
+        g00 = grid[i0, j0]
+        g10 = grid[i1, j0]
+        g01 = grid[i0, j1]
+        g11 = grid[i1, j1]
+
+        out = (1 - tu) * (1 - tv) * g00 + tu * (1 - tv) * g10 + (1 - tu) * tv * g01 + tu * tv * g11
+        out = out.reshape(u.shape)
+
+        if clip_min is not None:
+            out = np.maximum(out, float(clip_min))
+        if clip_max is not None:
+            out = np.minimum(out, float(clip_max))
+        return out
     
     def pdf(self, u: np.ndarray, v: np.ndarray) -> np.ndarray:
         """
@@ -314,7 +372,8 @@ class HFuncLookup:
         Returns:
             Density values
         """
-        return self._bilinear_interp(u, v, self.density_grid, self.u_grid, self.v_grid)
+        # Density can exceed 1.0; only clamp below for numerical stability.
+        return self._bilinear_interp(u, v, self.density_grid, clip_min=0.0, clip_max=None)
 
 
 if __name__ == "__main__":

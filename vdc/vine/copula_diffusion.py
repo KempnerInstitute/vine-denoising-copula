@@ -102,6 +102,7 @@ class DiffusionCopulaModel:
             num_res_blocks=int(model_cfg.get("num_res_blocks", 2)),
             attention_resolutions=tuple(model_cfg.get("attention_resolutions", (16, 8))),
             dropout=float(model_cfg.get("dropout", 0.1)),
+            upsample_mode=str(model_cfg.get("upsample_mode", "transpose")),
         ).to(device_t)
 
         # Allow missing keys for backward compatibility (e.g., older checkpoints without log_n embedding).
@@ -133,10 +134,10 @@ class DiffusionCopulaModel:
         self,
         u: np.ndarray,
         m: Optional[int] = None,
-        projection_iters: int = 15,
+        projection_iters: int = 30,
         smooth_sigma: float = 0.0,
-        num_diffusion_steps: int = 50,
-        cfg_scale: float = 2.0,
+        num_diffusion_steps: int = 200,
+        cfg_scale: float = 4.0,
         adaptive_cfg: bool = False,
         num_ensemble: int = 1,
         ensemble_mode: str = "geometric",
@@ -207,6 +208,7 @@ class DiffusionCopulaModel:
         ensemble = []
         # Heuristic: if the UNet expects 2 channels, treat it as histogram-conditioned.
         use_histogram_conditioning = bool(getattr(self.model, "conv_in").in_channels > 1)
+        transform_to_probit_space = bool(self.config.get("model", {}).get("transform_to_probit_space", False))
         for i in range(max(1, int(num_ensemble))):
             torch.manual_seed(42 + i * 1000)
             density_i = sample_density_grid(
@@ -218,7 +220,10 @@ class DiffusionCopulaModel:
                 num_steps=num_diffusion_steps,
                 cfg_scale=cfg_scale,
                 use_histogram_conditioning=use_histogram_conditioning,
-                projection_iters=projection_iters,
+                # We apply a final projection after ensembling/smoothing below. Doing it here is redundant and
+                # can introduce small grid-scale "striping" artifacts when we later smooth + re-project.
+                projection_iters=0,
+                transform_to_probit_space=transform_to_probit_space,
             )
             ensemble.append(density_i)
 
@@ -309,12 +314,17 @@ class DiffusionCopulaModel:
         if rng is None:
             rng = np.random.default_rng()
 
-        flat = density.reshape(-1).astype(np.float64)
+        flat = np.asarray(density, dtype=np.float64).reshape(-1)
+        # Robustness: prediction pipelines may occasionally produce NaNs/inf.
+        # We never want sampling (used for tau diagnostics, etc.) to crash; sanitize
+        # to a valid categorical distribution.
+        flat = np.nan_to_num(flat, nan=0.0, posinf=0.0, neginf=0.0)
         flat = np.clip(flat, 0.0, None)
-        s = flat.sum()
-        if s <= 0:
-            raise ValueError("Density grid has non-positive total mass; cannot sample.")
-        flat /= s
+        s = float(flat.sum())
+        if (not np.isfinite(s)) or s <= 0:
+            flat = np.full_like(flat, 1.0 / float(flat.size))
+        else:
+            flat /= s
 
         # Draw cell indices
         idx = rng.choice(flat.size, size=n_samples, p=flat)

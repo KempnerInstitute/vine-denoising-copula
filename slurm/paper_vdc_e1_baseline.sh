@@ -8,7 +8,7 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --time=1:00:00
 #SBATCH --mem=32GB
-#SBATCH --partition=kempner_h100
+#SBATCH --partition=kempner_h100_priority3
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
@@ -91,6 +91,21 @@ python scripts/model_selection.py \
   --out-json "${RUN_DIR}/results/model_selection.json" \
   --out-csv "${RUN_DIR}/results/model_selection.csv" \
   2>&1 | tee "${EVAL_LOG}"
+
+echo ""
+echo "Running baseline on COMPLEX suite..."
+echo ""
+
+EVAL_COMPLEX_LOG="${RUN_DIR}/logs/model_selection_baseline_complex.log"
+
+python scripts/model_selection.py \
+  --suite complex \
+  --baselines "${BASELINE}" \
+  --n-samples 2000 \
+  --device cpu \
+  --out-json "${RUN_DIR}/results/model_selection_complex.json" \
+  --out-csv "${RUN_DIR}/results/model_selection_complex.csv" \
+  2>&1 | tee "${EVAL_COMPLEX_LOG}"
 
 echo ""
 echo "============================================================================"
