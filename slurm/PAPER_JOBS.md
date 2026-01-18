@@ -58,6 +58,51 @@ sbatch slurm/paper_vdc_model_selection.sh \
 
 This writes one combined JSON/CSV under a fresh run directory.
 
+## New Information Estimation Jobs (ICML 2026)
+
+### MI Self-Consistency Tests
+
+Tests Data Processing Inequality, Additivity, and Monotone Invariance:
+
+```bash
+sbatch slurm/paper_mi_consistency.sh
+```
+
+Output: `drafts/tables/tab_self_consistency.tex`
+
+### MI Estimation Benchmark
+
+Compares all MI estimators (KSG, MINE, InfoNCE, NWJ, MINDE):
+
+```bash
+sbatch slurm/paper_mi_benchmark.sh
+```
+
+Output: `results/mi_benchmark_summary.json`
+
+### Total Correlation Benchmark
+
+Evaluates TC estimation across dimensions:
+
+```bash
+sbatch slurm/paper_tc_benchmark.sh
+```
+
+Output: `results/tc_benchmark.json`
+
+### Enhanced Training (Conditional + BB Families)
+
+Train with conditional copulas and two-parameter BB families for better vine estimation:
+
+```bash
+sbatch slurm/paper_train_enhanced.sh
+```
+
+This includes:
+- Conditional copulas (`conditional_gaussian`, `conditional_clayton`)
+- BB1/BB7 two-parameter families
+- Complex synthetic patterns
+
 ## Notes
 
 - These jobs run `scripts/train_unified.py` via `torchrun` (DDP) for training.

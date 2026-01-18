@@ -16,6 +16,11 @@ import torch
 from torch.utils.data import Dataset
 from vdc.data.generators import sample_bicop, analytic_logpdf_grid
 from vdc.data.complex_copulas import complex_copula_density_grid
+from vdc.data.conditional_copulas import (
+    sample_bb1, sample_bb7, bb1_density, bb7_density,
+    generate_conditional_copula_samples, h_gaussian, h_clayton,
+    H_FUNCTIONS, TWO_PARAM_SAMPLERS, TWO_PARAM_DENSITIES,
+)
 from vdc.inference.density import scatter_to_hist
 from vdc.utils.probit_transform import copula_logdensity_to_probit_logdensity
 from vdc.vine.copula_diffusion import DiffusionCopulaModel
@@ -59,18 +64,23 @@ class OnTheFlyCopulaDataset(Dataset):
         if families is None:
             self.families: Dict[str, float] = {
             # Elliptical (symmetric)
-            'gaussian': 0.20,
-            'student': 0.10,
+            'gaussian': 0.18,
+            'student': 0.08,
             # Archimedean (asymmetric tails)
-            'clayton': 0.15,
-            'gumbel': 0.15,
-            'frank': 0.10,
-            'joe': 0.10,
-            # Two-parameter families
-            'bb1': 0.05,
-            'bb7': 0.05,
+            'clayton': 0.12,
+            'gumbel': 0.12,
+            'frank': 0.08,
+            'joe': 0.08,
+            # Two-parameter families (better tail modeling)
+            'bb1': 0.06,
+            'bb7': 0.06,
+            # Conditional copulas (for vine higher trees)
+            'conditional_gaussian': 0.05,
+            'conditional_clayton': 0.05,
             # Independence
             'independence': 0.05,
+            # Complex synthetic
+            'complex': 0.07,
             }
         elif isinstance(families, dict):
             self.families = {str(k): float(v) for k, v in families.items()}
@@ -267,6 +277,27 @@ class OnTheFlyCopulaDataset(Dataset):
             params['theta'] = rng.uniform(lo, hi)
             lo, hi = self.param_ranges.get(delta_key, [1.0, 5.0])
             params['delta'] = rng.uniform(lo, hi)
+        elif family.startswith('conditional_'):
+            # Conditional copulas for vine higher-tree training
+            # e.g., conditional_gaussian, conditional_clayton
+            base_family = family.replace('conditional_', '')
+            # Sample conditioning value uniformly
+            params['v_condition'] = float(rng.uniform(0.1, 0.9))
+            if base_family == 'gaussian':
+                lo, hi = self.param_ranges.get('gaussian_rho', [-0.95, 0.95])
+                params['rho'] = rng.uniform(lo, hi)
+            elif base_family == 'clayton':
+                lo, hi = self.param_ranges.get('clayton_theta', [0.2, 12.0])
+                params['theta'] = rng.uniform(lo, hi)
+            elif base_family == 'student':
+                lo, hi = self.param_ranges.get('student_rho', [-0.95, 0.95])
+                params['rho'] = rng.uniform(lo, hi)
+                lo, hi = self.param_ranges.get('student_df', [2.5, 30.0])
+                params['df'] = float(rng.uniform(lo, hi))
+            else:
+                # Default to Gaussian-like
+                params['rho'] = rng.uniform(-0.9, 0.9)
+            family = f"conditional_{base_family}"
         elif family == 'independence':
             pass  # No parameters needed
         
@@ -335,6 +366,71 @@ class OnTheFlyCopulaDataset(Dataset):
                     n_samples=int(n),
                     rng=np.random.default_rng(seed),
                 )
+            elif str(family).startswith("conditional_"):
+                # Conditional copulas for vine higher-tree training
+                base_family = str(family).replace("conditional_", "")
+                v_cond = float(params.get("v_condition", 0.5))
+                seed = int(rng.randint(0, 2**31 - 1))
+                
+                # Generate samples from the conditional distribution
+                samples = generate_conditional_copula_samples(
+                    base_family, params, v_cond, n, seed=seed
+                )
+                
+                # Build density grid: for conditional copulas, we create a 2D grid
+                # showing how the conditional density varies with v
+                m = self.m
+                u_grid = np.linspace(0.5/m, 1 - 0.5/m, m)
+                v_grid = np.linspace(0.5/m, 1 - 0.5/m, m)
+                U, V = np.meshgrid(u_grid, v_grid, indexing='ij')
+                
+                # Use h-function to get conditional structure
+                if base_family in H_FUNCTIONS:
+                    h_func = H_FUNCTIONS[base_family]
+                    if base_family in ['gaussian', 'student']:
+                        rho = params.get('rho', 0.5)
+                        df = int(params.get('df', params.get('nu', 5)))
+                        if base_family == 'gaussian':
+                            h_vals = h_func(U, V, rho)
+                        else:
+                            h_vals = h_func(U, V, rho, df)
+                    else:
+                        theta = params.get('theta', 2.0)
+                        h_vals = h_func(U, V, theta)
+                    # Density from h-function: |∂h/∂u|
+                    density_grid = np.abs(np.gradient(h_vals, axis=0)) * m
+                    density_grid = np.clip(density_grid, 1e-10, 1e6)
+                else:
+                    density_grid = np.ones((m, m))
+                
+                # Normalize
+                du = 1.0 / m
+                density_grid = density_grid / (density_grid.sum() * du * du + 1e-12)
+                
+            elif family in TWO_PARAM_SAMPLERS:
+                # BB1, BB7 two-parameter families
+                theta = float(params.get('theta', 2.0))
+                delta = float(params.get('delta', 2.0))
+                seed = int(rng.randint(0, 2**31 - 1))
+                samples = TWO_PARAM_SAMPLERS[family](n, theta, delta, seed=seed)
+                
+                # Compute density
+                m = self.m
+                u_grid = np.linspace(0.5/m, 1 - 0.5/m, m)
+                v_grid = np.linspace(0.5/m, 1 - 0.5/m, m)
+                U, V = np.meshgrid(u_grid, v_grid, indexing='ij')
+                
+                if family in TWO_PARAM_DENSITIES:
+                    density_grid = TWO_PARAM_DENSITIES[family](U, V, theta, delta)
+                    density_grid = np.clip(density_grid, 1e-10, 1e6)
+                else:
+                    # Fallback to histogram
+                    density_grid = scatter_to_hist(samples, m, reflect=True)
+                
+                # Normalize
+                du = 1.0 / m
+                density_grid = density_grid / (density_grid.sum() * du * du + 1e-12)
+                
             else:
                 samples = sample_bicop(family, params, n, rotation=rotation)
                 try:
