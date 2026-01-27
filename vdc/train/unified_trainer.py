@@ -192,13 +192,27 @@ def build_model(model_type: str, config: Dict, device: torch.device):
         ).to(device)
     
     if model_type == 'denoiser':
-        return CopulaDenoiser(
+        # Compute input_channels: 1 (base) + coordinates (2) + log_n (1)
+        use_coords = bool(mcfg.get('use_coordinates', True))
+        use_log_n = bool(mcfg.get('use_log_n', False))
+        input_ch = 1 + (1 if use_log_n else 0) + (2 if use_coords else 0)
+        model = CopulaDenoiser(
             m=m,
+            input_channels=input_ch,
             base_channels=mcfg.get('base_channels', 128),
-            n_blocks=mcfg.get('n_blocks', 4),
+            depth=mcfg.get('depth', mcfg.get('n_blocks', 4)),
+            blocks_per_level=mcfg.get('blocks_per_level', 2),
             dropout=mcfg.get('dropout', 0.1),
-            time_emb_dim=mcfg.get('time_emb_dim', 256)
+            time_emb_dim=mcfg.get('time_emb_dim', 256),
+            output_mode=mcfg.get('output_mode', 'log'),
         ).to(device)
+        # Metadata for downstream inference
+        model.vdc_use_coordinates = use_coords
+        model.vdc_use_probit_coords = bool(mcfg.get('use_probit_coords', False))
+        model.vdc_use_log_n = use_log_n
+        model.vdc_probit_coord_eps = float(mcfg.get('probit_coord_eps', 1e-4))
+        model.vdc_transform_to_probit_space = bool(mcfg.get('transform_to_probit_space', False))
+        return model
     
     if model_type == 'diffusion_unet':
         # Diffusion UNet supports optional conditioning channels (e.g., log-histogram),

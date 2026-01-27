@@ -37,6 +37,9 @@ mkdir -p "${REPO_ROOT}/logs"
 # Environment setup
 module purge
 module load cuda/12.2.0-fasrc01
+
+# Fix libffi issue
+export LD_LIBRARY_PATH="/n/sw/Mambaforge-23.11.0-0/lib:${LD_LIBRARY_PATH:-}"
 eval "$(conda shell.bash hook)" || true
 conda activate vdc 2>/dev/null || conda activate diffuse_vine_cop 2>/dev/null || true
 

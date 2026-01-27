@@ -1,0 +1,112 @@
+# =============================================================================
+# Noise-Conditioned Single-Pass Denoiser (one forward pass at t=0)
+# Enhanced copula zoo:
+#   - Conditional copulas (for vine higher-tree pair distributions)
+#   - Two-parameter BB families (BB1/BB7)
+#   - Complex synthetic patterns (X / ring / double-banana)
+# =============================================================================
+experiment:
+  name: "copula_denoiser_cond_enhanced"
+  description: "Denoiser trained on parametric + conditional + BB + complex copulas"
+  seed: 42
+
+model:
+  type: "denoiser"
+  grid_size: 64
+  base_channels: 128
+  depth: 4
+  blocks_per_level: 2
+  dropout: 0.1
+  time_emb_dim: 256
+
+  # Conditioning helpers
+  use_coordinates: true
+  use_probit_coords: true
+  use_log_n: true
+  time_conditioning: true
+  output_mode: "log"
+  transform_to_probit_space: false
+
+data:
+  m: 64
+  n_samples_per_copula:
+    mode: "log_uniform"
+    min: 200
+    max: 5000
+
+  # Weighted family mix. Conditional/BB/complex entries are handled by vdc/data/onthefly.py.
+  copula_families:
+    gaussian: 0.14
+    student: 0.06
+    clayton: 0.10
+    gumbel: 0.10
+    frank: 0.06
+    joe: 0.06
+    bb1: 0.06
+    bb7: 0.06
+    conditional_gaussian: 0.08
+    conditional_clayton: 0.08
+    independence: 0.04
+    complex_x: 0.06
+    complex_ring: 0.05
+    complex_double_banana: 0.05
+
+  binning: "uniform"
+  num_workers: 4
+
+  # Mixture augmentation (parametric mixtures; complex families are excluded from mixture sampling)
+  mixture_prob: 0.25
+  n_mixture_components: [2, 4]
+
+  param_ranges:
+    gaussian_rho: [-0.95, 0.95]
+    student_rho: [-0.9, 0.9]
+    student_df: [2, 30]
+    clayton_theta: [0.1, 12.0]
+    gumbel_theta: [1.1, 10.0]
+    frank_theta: [-15.0, 15.0]
+    joe_theta: [1.1, 10.0]
+    bb1_theta: [0.1, 5.0]
+    bb1_delta: [1.0, 5.0]
+    bb7_theta: [1.0, 5.0]
+    bb7_delta: [0.1, 5.0]
+
+training:
+  max_steps: 200000
+  batch_size: 32
+  learning_rate: 1.0e-4
+  weight_decay: 0.01
+  gradient_clip: 1.0
+
+  # Diffusion-inspired histogram corruption schedule for robustness.
+  hist_noise:
+    enable: true
+    max_strength: 0.75
+    power: 1.0
+
+  loss_weights:
+    ce: 1.0
+    ise: 0.0
+    tail: 0.1
+    ms: 0.0
+    marg_kl: 0.0
+
+  projection_iters: 30
+  detach_projection: false
+  skip_projection: false
+  use_amp: true
+
+  log_every: 100
+  save_every: 10000
+  viz_every: 5000
+
+output:
+  base_dir: "results"
+  checkpoint_dir: "checkpoints"
+  include_timestamp: true
+  include_job_id: true
+
+hardware:
+  device: "cuda"
+  mixed_precision: true
+
