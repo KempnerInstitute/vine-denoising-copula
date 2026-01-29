@@ -73,8 +73,11 @@ git rev-parse HEAD 2>/dev/null | tee "${RUN_DIR}/analysis/git_commit.txt" || tru
 
 OUT_JSON="${RUN_DIR}/results/e3_var_results.json"
 
+CKPT="${E3_CHECKPOINT:-/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_diffusion_cond_m64_tuned_probit_bilinear_20260117_021859_55563037/checkpoints/model_step_150000.pt}"
+
 python drafts/scripts/e3_var_backtest.py \
   --output-base "${OUTPUT_BASE}" \
+  --checkpoint "${CKPT}" \
   --device cuda \
   --window "${E3_WINDOW:-252}" \
   --refit-every "${E3_REFIT_EVERY:-5}" \
