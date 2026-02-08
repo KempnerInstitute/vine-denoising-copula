@@ -65,6 +65,7 @@ class VineCopulaModel:
         diffusion_steps: int = 50,
         cfg_scale: float = 1.0,
         projection_iters: int = 50,
+        pred_noise_clip: Optional[float] = 10.0,
         hfunc_use_spline: bool = True,
         batch_edges: bool = False,
         edge_batch_size: int = 256,
@@ -81,6 +82,8 @@ class VineCopulaModel:
             diffusion_steps: DDIM steps when `diffusion` is provided to `fit`
             cfg_scale: Classifier-free guidance scale for histogram-conditioned diffusion models
             projection_iters: IPFP/Sinkhorn iterations when projecting densities to valid copulas
+            pred_noise_clip: Clip predicted diffusion noise to [-clip, clip] during reverse diffusion.
+                Set <=0 to disable clipping.
             hfunc_use_spline: If True (default), build SciPy spline interpolators inside each pair-copula
                 h-function lookup. If False, use lightweight bilinear interpolation (faster/leaner for
                 high-dimensional scaling benchmarks).
@@ -96,6 +99,7 @@ class VineCopulaModel:
         self.diffusion_steps = int(diffusion_steps)
         self.cfg_scale = float(cfg_scale)
         self.projection_iters = int(projection_iters)
+        self.pred_noise_clip = None if pred_noise_clip is None or float(pred_noise_clip) <= 0 else float(pred_noise_clip)
         self.hfunc_use_spline = bool(hfunc_use_spline)
         self.batch_edges = bool(batch_edges)
         self.edge_batch_size = int(edge_batch_size)
@@ -646,12 +650,19 @@ class VineCopulaModel:
                 cfg_scale=float(self.cfg_scale),
                 use_histogram_conditioning=use_histogram_conditioning,
                 projection_iters=int(self.projection_iters),
+                pred_noise_clip=self.pred_noise_clip,
                 transform_to_probit_space=transform_to_probit_space,
             )
 
         # Single-pass path (expects a histogram-conditioned estimator)
         hist = scatter_to_hist(pair_data, m=self.m, reflect=True)
         hist_t = torch.from_numpy(hist).float().unsqueeze(0).unsqueeze(0).to(self.device)
+        transform_to_probit_space = bool(getattr(model, "vdc_transform_to_probit_space", False))
+        if transform_to_probit_space:
+            from vdc.utils.probit_transform import copula_logdensity_to_probit_logdensity
+
+            log_hist = torch.log(hist_t.clamp_min(1e-12))
+            hist_t = torch.exp(copula_logdensity_to_probit_logdensity(log_hist, self.m)).clamp(min=1e-12, max=1e6)
 
         # Determine whether the model expects extra conditioning channels.
         in_ch: Optional[int] = None
@@ -721,6 +732,14 @@ class VineCopulaModel:
         else:
             d = out
 
+        if transform_to_probit_space:
+            from vdc.utils.probit_transform import probit_logdensity_to_copula_logdensity
+
+            logd = torch.log(d.clamp_min(1e-12))
+            logc = probit_logdensity_to_copula_logdensity(logd, self.m)
+            d = torch.exp(logc.clamp(min=-20, max=20)).clamp(min=1e-12, max=1e6)
+
+        d = torch.nan_to_num(d, nan=0.0, posinf=1e6, neginf=0.0)
         d = d.clamp(min=1e-12, max=1e6)
         du = 1.0 / self.m
         d = d / ((d * du * du).sum(dim=(-2, -1), keepdim=True).clamp_min(1e-12))

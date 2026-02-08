@@ -808,6 +808,9 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
                     raise ValueError('Unknown output dict keys')
             else:
                 pred_density = out
+            if not torch.isfinite(pred_density).all():
+                bad_frac = float((~torch.isfinite(pred_density)).float().mean().item())
+                raise RuntimeError(f"Non-finite pred_density at step {step} (frac={bad_frac:.6f})")
             pred_density = _sanitize_density(pred_density)
             # Independence shortcut: if empirical Kendall tau below threshold, skip expensive projection and use independence density
             indep_thresh = training.get('independence_tau_thresh', None)
@@ -919,6 +922,9 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
                 
                 proj_time = time.time() - proj_start
             
+            if not torch.isfinite(proj_copula).all():
+                bad_frac = float((~torch.isfinite(proj_copula)).float().mean().item())
+                raise RuntimeError(f"Non-finite proj_copula at step {step} (frac={bad_frac:.6f})")
             # Convert projected density for loss computation
             proj_copula = normalize_grid(proj_copula)
             proj_copula_display = normalize_grid(proj_copula_display)
@@ -1521,6 +1527,10 @@ def main():
     es_min_delta = es_cfg.get('min_delta', 0.0)
     es_best = float('inf')
     es_best_step = 0
+    nonfinite_abort = bool(config['training'].get('abort_on_nonfinite', True))
+    nonfinite_patience = int(max(1, config['training'].get('nonfinite_patience', 3)))
+    nonfinite_count = 0
+    force_stop_nonfinite = False
     # Distributed early stop flag
     stop_flag = torch.tensor(0, device=device, dtype=torch.int32)
     try:
@@ -1564,11 +1574,30 @@ def main():
                 try:
                     metrics = training_step(args.model_type, model.module if hasattr(model,'module') else model, batch, device, config, diffusion=diffusion, scaler=scaler, step=step, profiler=profiler, geometry=geometry)
                     metrics = _filter_metrics_dict(metrics)
+                    nonfinite_count = 0
                 except RuntimeError as e:
                     if 'NaN in pred_noise' in str(e):
                         if rank == 0:
                             print(f"[WARNING] {e} at step {step}, skipping batch")
                             sys.stdout.flush()
+                        loader_fetch_start = time.time()
+                        continue
+                    if 'Non-finite pred_density' in str(e) or 'Non-finite proj_copula' in str(e):
+                        nonfinite_count += 1
+                        if rank == 0:
+                            print(
+                                f"[WARNING] {e}; consecutive non-finite batches={nonfinite_count}/{nonfinite_patience}"
+                            )
+                            sys.stdout.flush()
+                        if nonfinite_abort and nonfinite_count >= nonfinite_patience:
+                            force_stop_nonfinite = True
+                            if rank == 0:
+                                print(
+                                    "[ERROR] Stopping training due to repeated non-finite outputs. "
+                                    "Use saved checkpoints from before collapse."
+                                )
+                                sys.stdout.flush()
+                            break
                         loader_fetch_start = time.time()
                         continue
                     else:
@@ -1666,11 +1695,15 @@ def main():
             epoch += 1
             if es_enable and stop_flag.item() == 1:
                 break
+            if force_stop_nonfinite:
+                break
     finally:
         if rank==0:
             pbar.close()
             if es_enable and stop_flag.item() == 1:
                 print(f"Training finished early at step {step} (best {es_metric}={es_best:.4f} at step {es_best_step})")
+            elif force_stop_nonfinite:
+                print(f"Training stopped early at step {step} due to repeated non-finite outputs.")
             else:
                 print(f"Training finished at step {step}")
             

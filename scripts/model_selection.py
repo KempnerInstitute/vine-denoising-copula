@@ -306,6 +306,7 @@ def estimate_density_diffusion(
     ensemble_mode: str = "geometric",
     smooth_sigma: float = 0.0,
     pred_noise_clip: Optional[float] = 10.0,
+    seed_base: int = 123,
     transform_to_probit_space: bool = False,
 ) -> np.ndarray:
     """
@@ -316,8 +317,8 @@ def estimate_density_diffusion(
     """
     E = max(1, int(num_ensemble))
     ensemble = []
-    # Fixed base seed for determinism (the only stochasticity is x_T ~ N(0,I)).
-    base_seed = 123
+    # Deterministic base seed for reproducibility (x_T ~ N(0,I) is the only stochasticity).
+    base_seed = int(seed_base)
     for k in range(E):
         s = int(base_seed + 1000 * k)
         torch.manual_seed(s)
@@ -575,6 +576,7 @@ def evaluate_checkpoint(
     diffusion_ensemble_mode: str = "geometric",
     diffusion_smooth_sigma: float = 0.0,
     diffusion_pred_noise_clip: Optional[float] = 10.0,
+    diffusion_seed_base: int = 123,
     write_examples: bool = False,
     examples_dir: Optional[Path] = None,
     examples_all: bool = False,
@@ -587,7 +589,8 @@ def evaluate_checkpoint(
     """
     ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
     config = ckpt.get("config", {})
-    model_type = str(config.get("model", {}).get("type", "diffusion_unet"))
+    model_type_raw = str(config.get("model", {}).get("type", "diffusion_unet"))
+    model_type = "diffusion_unet" if model_type_raw.startswith("diffusion_unet") else model_type_raw
 
     # Build model
     model = build_model(model_type, config, device)
@@ -681,6 +684,7 @@ def evaluate_checkpoint(
                 ensemble_mode=str(diffusion_ensemble_mode),
                 smooth_sigma=float(diffusion_smooth_sigma),
                 pred_noise_clip=diffusion_pred_noise_clip,
+                seed_base=int(diffusion_seed_base),
                 transform_to_probit_space=transform_to_probit_space,
             )
         else:
@@ -820,6 +824,7 @@ def evaluate_checkpoint(
             "ensemble_mode": str(diffusion_ensemble_mode),
             "smooth_sigma": float(diffusion_smooth_sigma),
             "pred_noise_clip": diffusion_pred_noise_clip,
+            "seed_base": int(diffusion_seed_base),
         }
 
     if write_examples and example_records:
@@ -1122,6 +1127,12 @@ def main() -> None:
         default=10.0,
         help="Clip predicted diffusion noise to [-clip,clip] during sampling; set <=0 to disable (default: 10).",
     )
+    parser.add_argument(
+        "--diffusion-seed-base",
+        type=int,
+        default=123,
+        help="Base RNG seed for diffusion x_T initialization (ensemble uses base + 1000*k).",
+    )
     # Qualitative visualizations (density + h-functions)
     parser.add_argument(
         "--write-examples",
@@ -1170,6 +1181,7 @@ def main() -> None:
                 diffusion_ensemble_mode=str(args.diffusion_ensemble_mode),
                 diffusion_smooth_sigma=float(args.diffusion_smooth_sigma),
                 diffusion_pred_noise_clip=pred_clip,
+                diffusion_seed_base=int(args.diffusion_seed_base),
                 write_examples=bool(args.write_examples),
                 examples_dir=examples_dir if bool(args.write_examples) else None,
                 examples_all=bool(args.examples_all),
@@ -1238,4 +1250,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

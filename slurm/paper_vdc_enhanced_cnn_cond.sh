@@ -29,7 +29,11 @@
 
 set -euo pipefail
 
-REPO_ROOT="/n/holylabs/kempner_dev/Users/hsafaai/Code/vine_diffusion_copula"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+if [ -n "${SLURM_SUBMIT_DIR:-}" ] && [ -f "${SLURM_SUBMIT_DIR}/scripts/train_unified.py" ]; then
+  REPO_ROOT="${SLURM_SUBMIT_DIR}"
+fi
 CONFIG_SRC="${REPO_ROOT}/configs/train/enhanced_cnn_cond.yaml"
 MODEL_TYPE="enhanced_cnn"
 METHOD_TAG="enhanced_cnn_cond"
@@ -62,7 +66,26 @@ echo ""
 module purge
 module load cuda/12.2.0-fasrc01
 eval "$(conda shell.bash hook)" || true
-conda activate vdc 2>/dev/null || conda activate diffuse_vine_cop 2>/dev/null || true
+set +u
+if [ -n "${VDC_PYTHON_BIN:-}" ]; then
+  PYTHON_BIN="${VDC_PYTHON_BIN}"
+elif [ -n "${VDC_CONDA_ENV_PATH:-}" ]; then
+  conda activate "${VDC_CONDA_ENV_PATH}"
+  PYTHON_BIN="python"
+elif conda activate vdc 2>/dev/null; then
+  PYTHON_BIN="python"
+elif conda activate diffuse_vine_cop 2>/dev/null; then
+  PYTHON_BIN="python"
+else
+  echo "ERROR: failed to activate conda env. Set VDC_CONDA_ENV_PATH or VDC_PYTHON_BIN."
+  exit 3
+fi
+set -u
+
+if [ "${PYTHON_BIN}" != "python" ] && [ ! -x "${PYTHON_BIN}" ]; then
+  echo "ERROR: VDC_PYTHON_BIN is not executable: ${PYTHON_BIN}"
+  exit 3
+fi
 
 cd "${REPO_ROOT}"
 
@@ -72,6 +95,8 @@ export MKL_NUM_THREADS="${SLURM_CPUS_PER_TASK:-16}"
 export PYTORCH_ALLOC_CONF=expandable_segments:True
 export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
 export NCCL_DEBUG=${NCCL_DEBUG:-WARN}
+export PYTHONNOUSERSITE="${PYTHONNOUSERSITE:-1}"
+unset PYTHONHOME || true
 
 # Some cluster images don't have system libbz2; ensure we can load it from conda.
 # (Fixes: ImportError: libbz2.so.1.0: cannot open shared object file)
@@ -81,8 +106,8 @@ fi
 
 {
   echo "CONDA_DEFAULT_ENV=${CONDA_DEFAULT_ENV:-}"
-  echo "Python: $(which python)"
-  python -c "import torch; print('torch', torch.__version__, 'cuda', torch.version.cuda, 'nccl', torch.cuda.nccl.version() if torch.cuda.is_available() else None)"
+  echo "Python: ${PYTHON_BIN}"
+  "${PYTHON_BIN}" -c "import torch; print('torch', torch.__version__, 'cuda', torch.version.cuda, 'nccl', torch.cuda.nccl.version() if torch.cuda.is_available() else None)"
   nvidia-smi || true
 } | tee "${RUN_DIR}/logs/env.txt"
 
@@ -94,7 +119,7 @@ git status --porcelain 2>/dev/null | tee "${RUN_DIR}/analysis/git_status_porcela
 # Write an exact config copy with a top-level checkpoint_dir (used by scripts/train_unified.py)
 CONFIG_OUT="${RUN_DIR}/analysis/train_config.yaml"
 export CONFIG_SRC CONFIG_OUT CHECKPOINT_DIR
-python - <<PY
+"${PYTHON_BIN}" - <<PY
 import os
 from pathlib import Path
 import yaml
@@ -115,7 +140,7 @@ GPUS="${SLURM_GPUS_ON_NODE:-${SLURM_GPUS_PER_NODE:-4}}"
 TRAIN_LOG="${RUN_DIR}/logs/train.log"
 
 set +e
-torchrun --standalone --nproc_per_node="${GPUS}" \
+"${PYTHON_BIN}" -m torch.distributed.run --standalone --nproc_per_node="${GPUS}" \
   scripts/train_unified.py \
   --config "${CONFIG_OUT}" \
   --model-type "${MODEL_TYPE}" \
@@ -133,14 +158,170 @@ if [ -d "${CHECKPOINT_DIR}/visualizations" ]; then
   ln -s "${CHECKPOINT_DIR}/visualizations" "${RUN_DIR}/figures/training_visualizations" 2>/dev/null || true
 fi
 
-# Pick latest checkpoint
-CKPT="$(ls -1 "${CHECKPOINT_DIR}"/model_step_*.pt 2>/dev/null | sort -V | tail -1)"
-if [ -z "${CKPT}" ]; then
+# Collect checkpoints
+mapfile -t CKPTS < <(ls -1 "${CHECKPOINT_DIR}"/model_step_*.pt 2>/dev/null | sort -V)
+if [ "${#CKPTS[@]}" -eq 0 ]; then
   echo "ERROR: no checkpoint found in ${CHECKPOINT_DIR}" | tee -a "${TRAIN_LOG}"
   exit 2
 fi
-echo "${CKPT}" > "${RUN_DIR}/results/checkpoint_path.txt"
+CKPT="${CKPTS[$((${#CKPTS[@]}-1))]}"
 echo "Latest checkpoint: ${CKPT}"
+
+# Optional checkpoint sweep: select by standard, complex, or joint score.
+SELECT_BEST_CKPT="${SELECT_BEST_CKPT:-1}"
+SELECT_BEST_MODE="${SELECT_BEST_MODE:-joint}"   # standard|complex|joint
+JOINT_COMPLEX_WEIGHT="${JOINT_COMPLEX_WEIGHT:-1.0}"
+if [ "${SELECT_BEST_CKPT}" = "1" ] && [ "${#CKPTS[@]}" -gt 1 ]; then
+  echo ""
+  echo "Running checkpoint sweeps (${#CKPTS[@]} checkpoints) to select best model..."
+  echo ""
+
+  SWEEP_STD_LOG="${RUN_DIR}/logs/model_selection_sweep.log"
+  SWEEP_STD_JSON="${RUN_DIR}/results/model_selection_sweep.json"
+  SWEEP_STD_CSV="${RUN_DIR}/results/model_selection_sweep.csv"
+  SWEEP_COMPLEX_LOG="${RUN_DIR}/logs/model_selection_sweep_complex.log"
+  SWEEP_COMPLEX_JSON="${RUN_DIR}/results/model_selection_sweep_complex.json"
+  SWEEP_COMPLEX_CSV="${RUN_DIR}/results/model_selection_sweep_complex.csv"
+
+  # Standard suite sweep
+  set +e
+  "${PYTHON_BIN}" scripts/model_selection.py \
+    --checkpoints "${CKPTS[@]}" \
+    --n-samples 2000 \
+    --device cuda \
+    --diffusion-steps "${DIFFUSION_STEPS:-200}" \
+    --diffusion-cfg-scale "${DIFFUSION_CFG_SCALE:-4.0}" \
+    --diffusion-ensemble "${DIFFUSION_ENSEMBLE:-1}" \
+    --diffusion-ensemble-mode "${DIFFUSION_ENSEMBLE_MODE:-geometric}" \
+    --diffusion-smooth-sigma "${DIFFUSION_SMOOTH_SIGMA:-0.0}" \
+    --diffusion-pred-noise-clip "${DIFFUSION_PRED_NOISE_CLIP:-10.0}" \
+    --out-json "${SWEEP_STD_JSON}" \
+    --out-csv "${SWEEP_STD_CSV}" \
+    2>&1 | tee "${SWEEP_STD_LOG}"
+  SWEEP_STD_RC=${PIPESTATUS[0]}
+  set -e
+  if [ "${SWEEP_STD_RC}" -ne 0 ]; then
+    echo "WARNING: standard sweep failed (exit ${SWEEP_STD_RC})." | tee -a "${SWEEP_STD_LOG}"
+  fi
+
+  # Complex suite sweep
+  set +e
+  "${PYTHON_BIN}" scripts/model_selection.py \
+    --suite complex \
+    --checkpoints "${CKPTS[@]}" \
+    --n-samples 2000 \
+    --device cuda \
+    --diffusion-steps "${DIFFUSION_STEPS:-200}" \
+    --diffusion-cfg-scale "${DIFFUSION_CFG_SCALE:-4.0}" \
+    --diffusion-ensemble "${DIFFUSION_ENSEMBLE:-1}" \
+    --diffusion-ensemble-mode "${DIFFUSION_ENSEMBLE_MODE:-geometric}" \
+    --diffusion-smooth-sigma "${DIFFUSION_SMOOTH_SIGMA:-0.0}" \
+    --diffusion-pred-noise-clip "${DIFFUSION_PRED_NOISE_CLIP:-10.0}" \
+    --out-json "${SWEEP_COMPLEX_JSON}" \
+    --out-csv "${SWEEP_COMPLEX_CSV}" \
+    2>&1 | tee "${SWEEP_COMPLEX_LOG}"
+  SWEEP_COMPLEX_RC=${PIPESTATUS[0]}
+  set -e
+  if [ "${SWEEP_COMPLEX_RC}" -ne 0 ]; then
+    echo "WARNING: complex sweep failed (exit ${SWEEP_COMPLEX_RC})." | tee -a "${SWEEP_COMPLEX_LOG}"
+  fi
+
+  BEST_CKPT="$("${PYTHON_BIN}" - <<PY
+import json
+import math
+from pathlib import Path
+
+mode = str("${SELECT_BEST_MODE}").strip().lower()
+joint_w = float("${JOINT_COMPLEX_WEIGHT}")
+std_path = Path("${SWEEP_STD_JSON}")
+cx_path = Path("${SWEEP_COMPLEX_JSON}")
+
+def load_rows(path: Path):
+    if not path.exists():
+        return []
+    try:
+        obj = json.loads(path.read_text())
+        rows = obj.get("results", [])
+        return rows if isinstance(rows, list) else []
+    except Exception:
+        return []
+
+def f(row, key, default=1e9):
+    try:
+        v = float(row.get(key, default))
+        return v if math.isfinite(v) else default
+    except Exception:
+        return default
+
+def best_single(rows):
+    if not rows:
+        return ""
+    best = min(
+        rows,
+        key=lambda r: (
+            f(r, "mean_mi_err"),
+            f(r, "mean_tau_err"),
+            f(r, "mean_hfunc_mae"),
+            f(r, "mean_ise"),
+        ),
+    )
+    return str(best.get("checkpoint", ""))
+
+std_rows = load_rows(std_path)
+cx_rows = load_rows(cx_path)
+
+if mode == "standard":
+    print(best_single(std_rows))
+    raise SystemExit(0)
+if mode == "complex":
+    print(best_single(cx_rows))
+    raise SystemExit(0)
+
+# joint mode (default): if both sweeps are available, rank by summed errors.
+if std_rows and cx_rows:
+    cx_by_ckpt = {str(r.get("checkpoint", "")): r for r in cx_rows}
+    joint_rows = []
+    for s in std_rows:
+        ck = str(s.get("checkpoint", ""))
+        c = cx_by_ckpt.get(ck)
+        if c is None:
+            continue
+        joint_rows.append(
+            (
+                (
+                    f(s, "mean_mi_err") + joint_w * f(c, "mean_mi_err"),
+                    f(s, "mean_tau_err") + joint_w * f(c, "mean_tau_err"),
+                    f(s, "mean_hfunc_mae") + joint_w * f(c, "mean_hfunc_mae"),
+                    f(s, "mean_ise") + joint_w * f(c, "mean_ise"),
+                ),
+                ck,
+            )
+        )
+    if joint_rows:
+        joint_rows.sort(key=lambda x: x[0])
+        print(joint_rows[0][1])
+        raise SystemExit(0)
+
+# Fallbacks when one sweep is missing/failed.
+if std_rows:
+    print(best_single(std_rows))
+elif cx_rows:
+    print(best_single(cx_rows))
+else:
+    print("")
+PY
+)"
+
+  if [ -n "${BEST_CKPT}" ] && [ -f "${BEST_CKPT}" ]; then
+    CKPT="${BEST_CKPT}"
+    echo "Selected best checkpoint (${SELECT_BEST_MODE}) : ${CKPT}" | tee -a "${SWEEP_STD_LOG}" "${SWEEP_COMPLEX_LOG}"
+  else
+    echo "WARNING: sweeps did not return a valid checkpoint; using latest checkpoint." | tee -a "${SWEEP_STD_LOG}" "${SWEEP_COMPLEX_LOG}"
+  fi
+fi
+
+echo "${CKPT}" > "${RUN_DIR}/results/checkpoint_path.txt"
+echo "Checkpoint used for paper evaluation: ${CKPT}"
 
 echo ""
 echo "Running model selection evaluation..."
@@ -151,7 +332,7 @@ mkdir -p "${RUN_DIR}/figures/examples"
 
 # NOTE: evaluation is helpful but should not fail the overall training job.
 set +e
-python scripts/model_selection.py \
+"${PYTHON_BIN}" scripts/model_selection.py \
   --checkpoints "${CKPT}" \
   --n-samples 2000 \
   --device cuda \
@@ -180,7 +361,7 @@ EVAL_COMPLEX_LOG="${RUN_DIR}/logs/model_selection_complex.log"
 mkdir -p "${RUN_DIR}/figures/examples_complex"
 
 set +e
-python scripts/model_selection.py \
+"${PYTHON_BIN}" scripts/model_selection.py \
   --suite complex \
   --checkpoints "${CKPT}" \
   --n-samples 2000 \
@@ -210,4 +391,3 @@ echo "Run Dir: ${RUN_DIR}"
 echo "Checkpoint: ${CKPT}"
 echo "Results: ${RUN_DIR}/results/model_selection.json"
 echo ""
-

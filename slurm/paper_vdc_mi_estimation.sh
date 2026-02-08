@@ -19,11 +19,13 @@
 #
 # estimator must be one of:
 #   - ksg
+#   - dcd
 #   - gaussian
 #   - infonce
 #   - nwj
 #   - mine
 #   - minde
+#   - mist
 #
 # Writes:
 #   results/mi_estimation.json
@@ -31,12 +33,13 @@
 
 set -euo pipefail
 
-REPO_ROOT="/n/holylabs/kempner_dev/Users/hsafaai/Code/vine_diffusion_copula"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 OUTPUT_BASE="${OUTPUT_BASE:-/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula}"
 
 if [ "$#" -ne 1 ]; then
   echo "ERROR: expected exactly 1 estimator argument."
-  echo "Usage: sbatch slurm/paper_vdc_mi_estimation.sh <ksg|gaussian|infonce|nwj|mine|minde>"
+  echo "Usage: sbatch slurm/paper_vdc_mi_estimation.sh <ksg|dcd|gaussian|infonce|nwj|mine|minde|mist>"
   exit 2
 fi
 
@@ -87,6 +90,7 @@ cp "$0" "${RUN_DIR}/analysis/slurm_script.sh"
 
 python scripts/mi_estimation.py \
   --estimator "${EST}" \
+  --output-base "${OUTPUT_BASE}" \
   --n-samples 5000 \
   --m-true 256 \
   --seed 123 \
@@ -101,4 +105,3 @@ echo "==========================================================================
 echo "Run Dir: ${RUN_DIR}"
 echo "Results: ${RUN_DIR}/results/mi_estimation.json"
 echo ""
-

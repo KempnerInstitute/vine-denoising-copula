@@ -178,18 +178,26 @@ def build_model(model_type: str, config: Dict, device: torch.device):
         ).to(device)
     
     if model_type == 'enhanced_cnn':
-        return EnhancedCopulaDensityCNN(
+        use_coords = bool(mcfg.get('use_coordinates', True))
+        model = EnhancedCopulaDensityCNN(
             m=m,
             base_channels=mcfg.get('base_channels', 128),
             n_blocks=mcfg.get('n_blocks', 3),
             dropout=mcfg.get('dropout', 0.1),
-            input_channels=1 + (2 if mcfg.get('use_coordinates', True) else 0),
+            input_channels=1 + (2 if use_coords else 0),
             output_mode=mcfg.get('output_mode', 'log'),
             time_conditioning=mcfg.get('time_conditioning', False),
             time_emb_dim=mcfg.get('time_emb_dim', 256),
             multi_scale_aux=mcfg.get('multi_scale_aux', False),
             aux_scales=tuple(mcfg.get('aux_scales', [2, 4]))
         ).to(device)
+        # Metadata for downstream inference
+        model.vdc_use_coordinates = use_coords
+        model.vdc_use_probit_coords = bool(mcfg.get('use_probit_coords', False))
+        model.vdc_use_log_n = bool(mcfg.get('use_log_n', False))
+        model.vdc_probit_coord_eps = float(mcfg.get('probit_coord_eps', 1e-4))
+        model.vdc_transform_to_probit_space = bool(mcfg.get('transform_to_probit_space', False))
+        return model
     
     if model_type == 'denoiser':
         # Compute input_channels: 1 (base) + coordinates (2) + log_n (1)
@@ -218,7 +226,7 @@ def build_model(model_type: str, config: Dict, device: torch.device):
         # Diffusion UNet supports optional conditioning channels (e.g., log-histogram),
         # controlled via config['model']['in_channels'].
         # Default remains 1 for backward compatibility.
-        return GridUNet(
+        model = GridUNet(
             m=m,
             in_channels=mcfg.get('in_channels', 1),
             base_channels=mcfg.get('base_channels', 128),
@@ -228,6 +236,13 @@ def build_model(model_type: str, config: Dict, device: torch.device):
             dropout=mcfg.get('dropout', 0.1),
             time_emb_dim=mcfg.get('time_emb_dim', 256)
         ).to(device)
+        # Metadata for downstream inference
+        model.vdc_use_coordinates = bool(mcfg.get('use_coordinates', False))
+        model.vdc_use_probit_coords = bool(mcfg.get('use_probit_coords', False))
+        model.vdc_use_log_n = bool(mcfg.get('use_log_n', False))
+        model.vdc_probit_coord_eps = float(mcfg.get('probit_coord_eps', 1e-4))
+        model.vdc_transform_to_probit_space = bool(mcfg.get('transform_to_probit_space', False))
+        return model
     
     raise ValueError(f"Unknown model type: {model_type}")
 
@@ -862,4 +877,3 @@ def train(
                 print(f"Loss history saved to: {csv_path}")
         
         cleanup_distributed()
-

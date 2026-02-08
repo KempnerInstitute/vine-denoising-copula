@@ -21,7 +21,8 @@
 
 set -euo pipefail
 
-REPO_ROOT="/n/holylabs/kempner_dev/Users/hsafaai/Code/vine_diffusion_copula"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 OUTPUT_BASE="${OUTPUT_BASE:-/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula}"
 
 mkdir -p "${REPO_ROOT}/logs"
@@ -53,4 +54,3 @@ export DIFFUSION_ENSEMBLE_MODE="${DIFFUSION_ENSEMBLE_MODE:-geometric}"
 python drafts/scripts/paper_artifacts.py all --output-base "${OUTPUT_BASE}" --force
 
 echo "Done generating paper artifacts."
-

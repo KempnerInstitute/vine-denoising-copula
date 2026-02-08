@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -36,6 +37,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
 from vdc.data.generators import analytic_logpdf_grid, sample_bicop  # noqa: E402
+from vdc.inference.density import sample_density_grid  # noqa: E402
 from vdc.models.projection import copula_project  # noqa: E402
 from vdc.utils.information import ksg_mutual_information  # noqa: E402
 
@@ -85,6 +87,275 @@ def _mi_true_from_analytic(family: str, params: Dict[str, Any], rotation: int, m
     d = _project_density_np(d, iters=50, device=device)
     d = _normalize_density_np(d)
     return _mi_from_density_grid(d)
+
+
+@dataclass(frozen=True)
+class _LoadedModel:
+    model: Any
+    model_type: str
+    config: Dict[str, Any]
+
+
+def _load_checkpoint_model(ckpt_path: Path, device: torch.device) -> _LoadedModel:
+    from vdc.train.unified_trainer import build_model
+
+    ckpt = torch.load(str(ckpt_path), map_location="cpu")
+    if not isinstance(ckpt, dict):
+        raise RuntimeError(f"Unexpected checkpoint type: {type(ckpt)}")
+    config = ckpt.get("config", {})
+    if not isinstance(config, dict):
+        raise RuntimeError("Checkpoint missing config dict.")
+
+    model_type_raw = str(config.get("model", {}).get("type", "diffusion_unet"))
+    model_type = "diffusion_unet" if model_type_raw.startswith("diffusion_unet") else model_type_raw
+    model = build_model(model_type, config, device)
+    model.load_state_dict(ckpt.get("model_state_dict", {}), strict=False)
+    model.eval()
+    return _LoadedModel(model=model, model_type=model_type, config=config)
+
+
+def _resolve_dcd_checkpoint(
+    *,
+    explicit_checkpoint: Optional[Path],
+    output_bases: List[Path],
+    preferred_methods: List[str],
+) -> Path:
+    def _checkpoint_model_type(path: Path) -> Optional[str]:
+        try:
+            ckpt = torch.load(str(path), map_location="cpu")
+            if isinstance(ckpt, dict):
+                cfg = ckpt.get("config", {})
+                if isinstance(cfg, dict):
+                    return str(cfg.get("model", {}).get("type", ""))
+        except Exception:
+            return None
+        return None
+
+    def _is_supported(path: Path) -> bool:
+        mt = _checkpoint_model_type(path)
+        return bool(
+            mt in {"denoiser", "enhanced_cnn", "diffusion_unet"}
+            or (isinstance(mt, str) and mt.startswith("diffusion_unet"))
+        )
+
+    if explicit_checkpoint is not None:
+        ckpt = Path(explicit_checkpoint)
+        if not ckpt.exists():
+            raise FileNotFoundError(f"Checkpoint not found: {ckpt}")
+        if not _is_supported(ckpt):
+            mt = _checkpoint_model_type(ckpt)
+            raise RuntimeError(
+                f"Unsupported checkpoint model type for estimator=dcd: {mt}. "
+                "Use a denoiser/enhanced_cnn/diffusion_unet checkpoint."
+            )
+        return ckpt
+
+    bases = list(output_bases)
+    if not bases and os.environ.get("OUTPUT_BASE"):
+        bases = [Path(os.environ["OUTPUT_BASE"])]
+    if not bases:
+        bases = [Path("/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula")]
+
+    from vdc.utils.paper import choose_best_checkpoint
+
+    ckpt = choose_best_checkpoint(
+        output_bases=bases,
+        preferred_methods=[str(x).strip() for x in preferred_methods if str(x).strip()],
+        metric="mean_ise",
+    )
+    if ckpt is not None and ckpt.exists() and _is_supported(ckpt):
+        return ckpt
+
+    # Fallback: discover latest checkpoint directly from run directories.
+    preferred = [str(x).strip() for x in preferred_methods if str(x).strip()]
+    for method in preferred:
+        candidates: List[Path] = []
+        for base in bases:
+            if not base.exists():
+                continue
+            for run_dir in sorted(base.glob(f"vdc_paper_{method}_*"), reverse=True):
+                ck_dir = run_dir / "checkpoints"
+                if not ck_dir.exists():
+                    continue
+                for p in ck_dir.glob("model_step_*.pt"):
+                    candidates.append(p)
+        if candidates:
+            for cand in sorted(candidates, key=lambda p: p.stat().st_mtime, reverse=True):
+                if _is_supported(cand):
+                    return cand
+
+    # Last resort: any denoiser/enhanced single-pass run.
+    fallback: List[Path] = []
+    for base in bases:
+        if not base.exists():
+            continue
+        for run_dir in sorted(base.glob("vdc_paper_*"), reverse=True):
+            name = run_dir.name.lower()
+            if ("denoiser" not in name) and ("enhanced_cnn" not in name):
+                continue
+            ck_dir = run_dir / "checkpoints"
+            if not ck_dir.exists():
+                continue
+            for p in ck_dir.glob("model_step_*.pt"):
+                fallback.append(p)
+    if fallback:
+        for cand in sorted(fallback, key=lambda p: p.stat().st_mtime, reverse=True):
+            if _is_supported(cand):
+                return cand
+
+    # Local repository fallback: scan checkpoints/ when paper run directories
+    # are not available in OUTPUT_BASE.
+    repo_root = Path(__file__).resolve().parent.parent
+    local_candidates: List[Path] = []
+    for root_name in ("checkpoints", "archive/checkpoints", "archive/checkpoints_old"):
+        root = repo_root / root_name
+        if root.exists():
+            local_candidates.extend(root.glob("**/model_step_*.pt"))
+    if local_candidates:
+        for cand in sorted(local_candidates, key=lambda p: p.stat().st_mtime, reverse=True):
+            if _is_supported(cand):
+                return cand
+
+    raise RuntimeError(
+        "No DCD checkpoint found. Pass --checkpoint or provide --output-base with completed paper runs."
+    )
+
+
+class _DCDMIEstimator:
+    """DCD-Vine bivariate MI estimator from predicted copula densities."""
+
+    def __init__(
+        self,
+        *,
+        checkpoint: Path,
+        device: torch.device,
+        diffusion_steps: Optional[int] = None,
+        diffusion_cfg_scale: Optional[float] = None,
+        diffusion_ensemble: int = 1,
+        diffusion_ensemble_mode: str = "geometric",
+        diffusion_smooth_sigma: float = 0.0,
+        diffusion_pred_noise_clip: Optional[float] = 10.0,
+        projection_iters: Optional[int] = None,
+        seed_base: int = 123,
+    ):
+        from vdc.vine.api import VineCopulaModel
+
+        self.checkpoint = Path(checkpoint)
+        self.loaded = _load_checkpoint_model(self.checkpoint, device=device)
+
+        m = int(self.loaded.config.get("data", {}).get("m", 64))
+        proj_iters = int(self.loaded.config.get("training", {}).get("projection_iters", 30))
+        self.model_type = str(self.loaded.model_type)
+        self.m = m
+        self.proj_iters = int(projection_iters) if projection_iters is not None else int(proj_iters)
+        self.diffusion = None
+        self.use_histogram_conditioning = False
+        self.transform_to_probit_space = bool(
+            self.loaded.config.get("model", {}).get("transform_to_probit_space", False)
+        )
+
+        self.diffusion_steps = (
+            int(diffusion_steps)
+            if diffusion_steps is not None
+            else int(self.loaded.config.get("diffusion", {}).get("sampling_steps", 50))
+        )
+        self.diffusion_cfg_scale = (
+            float(diffusion_cfg_scale)
+            if diffusion_cfg_scale is not None
+            else float(self.loaded.config.get("diffusion", {}).get("cfg_scale", 1.0))
+        )
+        self.diffusion_ensemble = max(1, int(diffusion_ensemble))
+        self.diffusion_ensemble_mode = str(diffusion_ensemble_mode).lower().strip()
+        self.diffusion_smooth_sigma = float(diffusion_smooth_sigma)
+        self.diffusion_pred_noise_clip = diffusion_pred_noise_clip
+        self.seed_base = int(seed_base)
+
+        if str(self.loaded.model_type) == "diffusion_unet":
+            from vdc.models.copula_diffusion import CopulaAwareDiffusion
+
+            diff_cfg = self.loaded.config.get("diffusion", {})
+            self.diffusion = CopulaAwareDiffusion(
+                timesteps=int(diff_cfg.get("timesteps", 1000)),
+                beta_schedule=str(diff_cfg.get("noise_schedule", "cosine")),
+            ).to(device)
+            conv_in = getattr(self.loaded.model, "conv_in", None)
+            if conv_in is not None and hasattr(conv_in, "in_channels"):
+                self.use_histogram_conditioning = int(conv_in.in_channels) > 1
+
+        self.loaded.model.to(device)
+        self.loaded.model.eval()
+
+        self._vine_helper = VineCopulaModel(
+            vine_type="dvine",
+            m=int(m),
+            device=str(device),
+            projection_iters=int(proj_iters),
+            hfunc_use_spline=False,
+            batch_edges=False,
+        )
+
+    def _aggregate_density_ensemble(self, ensemble: np.ndarray) -> np.ndarray:
+        if ensemble.ndim != 3:
+            raise ValueError(f"Expected ensemble shape (E,m,m), got {ensemble.shape}")
+        if ensemble.shape[0] == 1:
+            return ensemble[0]
+        mode = self.diffusion_ensemble_mode
+        if mode == "geometric":
+            return np.exp(np.mean(np.log(np.clip(ensemble, 1e-12, None)), axis=0))
+        if mode == "arithmetic":
+            return np.mean(ensemble, axis=0)
+        if mode == "median":
+            return np.median(ensemble, axis=0)
+        raise ValueError(f"Unknown diffusion_ensemble_mode: {mode}")
+
+    def estimate_mi(self, pts: np.ndarray) -> float:
+        pair_data = np.asarray(pts, dtype=np.float64)
+        pair_data = np.clip(pair_data, 1e-6, 1.0 - 1e-6)
+
+        if self.diffusion is not None:
+            # Match model-selection diffusion inference: deterministic seeds and
+            # a single final projection after ensemble aggregation.
+            ensemble = []
+            for k in range(self.diffusion_ensemble):
+                s = int(self.seed_base + 1000 * k)
+                torch.manual_seed(s)
+                if torch.cuda.is_available():
+                    torch.cuda.manual_seed_all(s)
+                d_k = sample_density_grid(
+                    model=self.loaded.model,
+                    diffusion=self.diffusion,
+                    samples=pair_data,
+                    m=int(self.m),
+                    device=next(self.loaded.model.parameters()).device,
+                    num_steps=int(self.diffusion_steps),
+                    cfg_scale=float(self.diffusion_cfg_scale),
+                    use_histogram_conditioning=bool(self.use_histogram_conditioning),
+                    projection_iters=0,
+                    pred_noise_clip=self.diffusion_pred_noise_clip,
+                    transform_to_probit_space=bool(self.transform_to_probit_space),
+                )
+                ensemble.append(np.asarray(d_k, dtype=np.float64))
+
+            d = self._aggregate_density_ensemble(np.stack(ensemble, axis=0))
+            if self.diffusion_smooth_sigma > 0:
+                from vdc.utils.smoothing import smooth_density_gaussian
+
+                t = torch.from_numpy(d).float().unsqueeze(0).unsqueeze(0).to(next(self.loaded.model.parameters()).device)
+                t = smooth_density_gaussian(t, sigma=float(self.diffusion_smooth_sigma), preserve_mass=True)
+                d = t[0, 0].detach().cpu().numpy()
+            d = _normalize_density_np(d)
+            d = _project_density_np(d, iters=int(self.proj_iters), device=next(self.loaded.model.parameters()).device)
+            d = _normalize_density_np(d)
+        else:
+            d = self._vine_helper._estimate_pair_density_from_samples(
+                model=self.loaded.model,
+                diffusion=None,
+                pair_data=pair_data,
+                use_histogram_conditioning=bool(self.use_histogram_conditioning),
+            )
+            d = _normalize_density_np(np.asarray(d, dtype=np.float64))
+
+        return _mi_from_density_grid(d)
 
 
 def _maybe_clone_repo(dest: Path, url: str) -> None:
@@ -574,12 +845,76 @@ def _nwj_estimate_mi(
 
 def main() -> None:
     p = argparse.ArgumentParser(description="Mutual information estimation benchmark (bivariate copulas)")
-    p.add_argument("--estimator", type=str, choices=["ksg", "gaussian", "infonce", "nwj", "mine", "minde", "mist"], required=True)
+    p.add_argument("--estimator", type=str, choices=["ksg", "gaussian", "infonce", "nwj", "mine", "minde", "mist", "dcd"], required=True)
     p.add_argument("--n-samples", type=int, default=5000)
     p.add_argument("--m-true", type=int, default=256, help="Grid resolution used to compute MI_true")
     p.add_argument("--seed", type=int, default=123)
     p.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
     p.add_argument("--out-json", type=Path, required=True)
+    p.add_argument("--checkpoint", type=Path, default=None, help="Checkpoint path for estimator=dcd.")
+    p.add_argument(
+        "--output-base",
+        type=Path,
+        action="append",
+        default=[],
+        help="Paper OUTPUT_BASE path(s) to scan for checkpoints when estimator=dcd and --checkpoint is omitted.",
+    )
+    p.add_argument(
+        "--preferred-methods",
+        type=str,
+        nargs="+",
+        default=["denoiser_cond_enhanced", "denoiser_cond", "enhanced_cnn_cond"],
+        help="Method priority for auto checkpoint selection (estimator=dcd).",
+    )
+    p.add_argument(
+        "--dcd-diffusion-steps",
+        type=int,
+        default=4,
+        help="DDIM steps for diffusion checkpoints in estimator=dcd.",
+    )
+    p.add_argument(
+        "--dcd-diffusion-cfg-scale",
+        type=float,
+        default=1.0,
+        help="CFG scale for histogram-conditioned diffusion in estimator=dcd.",
+    )
+    p.add_argument(
+        "--dcd-diffusion-ensemble",
+        type=int,
+        default=1,
+        help="Number of diffusion samples to ensemble for estimator=dcd.",
+    )
+    p.add_argument(
+        "--dcd-diffusion-ensemble-mode",
+        type=str,
+        default="geometric",
+        choices=["geometric", "arithmetic", "median"],
+        help="How to aggregate diffusion ensemble samples for estimator=dcd.",
+    )
+    p.add_argument(
+        "--dcd-diffusion-smooth-sigma",
+        type=float,
+        default=0.0,
+        help="Optional Gaussian smoothing sigma on aggregated density for estimator=dcd.",
+    )
+    p.add_argument(
+        "--dcd-pred-noise-clip",
+        type=float,
+        default=10.0,
+        help="Clip predicted diffusion noise to [-clip,clip]; <=0 disables clipping.",
+    )
+    p.add_argument(
+        "--dcd-projection-iters",
+        type=int,
+        default=None,
+        help="Override copula projection iterations for estimator=dcd (default: checkpoint/config).",
+    )
+    p.add_argument(
+        "--dcd-seed-base",
+        type=int,
+        default=None,
+        help="Base RNG seed for diffusion x_T initialization (defaults to --seed).",
+    )
 
     # Neural MI options (used for mine / infonce / nwj)
     p.add_argument("--mine-steps", type=int, default=2000)
@@ -609,14 +944,38 @@ def main() -> None:
 
     device = torch.device(args.device)
     est = str(args.estimator).lower()
+    dcd_estimator: Optional[_DCDMIEstimator] = None
+    dcd_checkpoint: Optional[Path] = None
 
     if est == "minde" and args.clone_minde:
         _maybe_clone_minde(args.minde_repo)
     if est == "mist" and args.clone_mist:
         _maybe_clone_mist(args.mist_repo)
+    if est == "dcd":
+        dcd_checkpoint = _resolve_dcd_checkpoint(
+            explicit_checkpoint=args.checkpoint,
+            output_bases=list(args.output_base),
+            preferred_methods=list(args.preferred_methods),
+        )
+        pred_noise_clip = None if float(args.dcd_pred_noise_clip) <= 0 else float(args.dcd_pred_noise_clip)
+        dcd_estimator = _DCDMIEstimator(
+            checkpoint=dcd_checkpoint,
+            device=device,
+            diffusion_steps=int(args.dcd_diffusion_steps),
+            diffusion_cfg_scale=float(args.dcd_diffusion_cfg_scale),
+            diffusion_ensemble=int(args.dcd_diffusion_ensemble),
+            diffusion_ensemble_mode=str(args.dcd_diffusion_ensemble_mode),
+            diffusion_smooth_sigma=float(args.dcd_diffusion_smooth_sigma),
+            diffusion_pred_noise_clip=pred_noise_clip,
+            projection_iters=int(args.dcd_projection_iters) if args.dcd_projection_iters is not None else None,
+            seed_base=int(args.seed) if args.dcd_seed_base is None else int(args.dcd_seed_base),
+        )
+        print(f"Using DCD checkpoint: {dcd_checkpoint}")
 
     records: List[Dict[str, Any]] = []
-    for family, params, rotation, name in DEFAULT_TEST_COPULAS:
+    n_cases = len(DEFAULT_TEST_COPULAS)
+    for idx_case, (family, params, rotation, name) in enumerate(DEFAULT_TEST_COPULAS, start=1):
+        print(f"[{idx_case}/{n_cases}] {est}: {name}", flush=True)
         pts = sample_bicop(family, params, n=int(args.n_samples), rotation=int(rotation), seed=int(args.seed))
         mi_true = _mi_true_from_analytic(
             family=family,
@@ -692,6 +1051,10 @@ def main() -> None:
                 hidden_dim=int(args.mist_hidden_dim),
                 num_layers=int(args.mist_num_layers),
             )
+        elif est == "dcd":
+            if dcd_estimator is None:
+                raise RuntimeError("Internal error: DCD estimator was not initialized.")
+            mi_est = dcd_estimator.estimate_mi(pts)
         else:
             # MINDE expects (n,dx), (n,dy)
             x = pts[:, 0:1]
@@ -709,7 +1072,7 @@ def main() -> None:
             )
         dt_s = float(perf_counter() - t0)
 
-        records.append(
+        rec = (
             {
                 "name": name,
                 "family": family,
@@ -720,6 +1083,12 @@ def main() -> None:
                 "mi_err": float(abs(mi_est - mi_true)),
                 "time_s": dt_s,
             }
+        )
+        records.append(rec)
+        print(
+            f"  mi_true={rec['mi_true']:.4f} mi_est={rec['mi_est']:.4f} "
+            f"|err|={rec['mi_err']:.4f} time={rec['time_s']:.2f}s",
+            flush=True,
         )
 
     payload = {
@@ -736,6 +1105,19 @@ def main() -> None:
             "minde_url": "https://github.com/MustaphaBounoua/minde",
             "mist_repo": str(args.mist_repo) if est == "mist" else None,
             "mist_url": "https://github.com/gritsai/mist",
+            "dcd_checkpoint": str(dcd_checkpoint) if est == "dcd" and dcd_checkpoint is not None else None,
+            "dcd_model_type": str(dcd_estimator.model_type) if est == "dcd" and dcd_estimator is not None else None,
+            "dcd_grid_size": int(dcd_estimator.m) if est == "dcd" and dcd_estimator is not None else None,
+            "dcd_projection_iters": int(dcd_estimator.proj_iters) if est == "dcd" and dcd_estimator is not None else None,
+            "dcd_diffusion_steps": int(dcd_estimator.diffusion_steps) if est == "dcd" and dcd_estimator is not None else None,
+            "dcd_diffusion_cfg_scale": float(dcd_estimator.diffusion_cfg_scale) if est == "dcd" and dcd_estimator is not None else None,
+            "dcd_diffusion_ensemble": int(dcd_estimator.diffusion_ensemble) if est == "dcd" and dcd_estimator is not None else None,
+            "dcd_diffusion_ensemble_mode": str(dcd_estimator.diffusion_ensemble_mode) if est == "dcd" and dcd_estimator is not None else None,
+            "dcd_diffusion_smooth_sigma": float(dcd_estimator.diffusion_smooth_sigma) if est == "dcd" and dcd_estimator is not None else None,
+            "dcd_pred_noise_clip": float(dcd_estimator.diffusion_pred_noise_clip)
+            if est == "dcd" and dcd_estimator is not None and dcd_estimator.diffusion_pred_noise_clip is not None
+            else None,
+            "dcd_seed_base": int(dcd_estimator.seed_base) if est == "dcd" and dcd_estimator is not None else None,
         },
     }
 
@@ -746,4 +1128,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

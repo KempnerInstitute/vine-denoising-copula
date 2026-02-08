@@ -24,8 +24,15 @@
 
 set -euo pipefail
 
-REPO_ROOT="/n/holylabs/kempner_dev/Users/hsafaai/Code/vine_diffusion_copula"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+if [ -n "${SLURM_SUBMIT_DIR:-}" ] && [ -f "${SLURM_SUBMIT_DIR}/scripts/model_selection.py" ]; then
+  REPO_ROOT="${SLURM_SUBMIT_DIR}"
+fi
 OUTPUT_BASE="${OUTPUT_BASE:-/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula}"
+SUITE="${SUITE:-standard}"
+N_SAMPLES="${N_SAMPLES:-2000}"
+WRITE_EXAMPLES="${WRITE_EXAMPLES:-1}"
 
 if [ "$#" -lt 1 ]; then
   echo "ERROR: No checkpoints provided."
@@ -55,7 +62,26 @@ echo ""
 module purge
 module load cuda/12.2.0-fasrc01
 eval "$(conda shell.bash hook)" || true
-conda activate vdc 2>/dev/null || conda activate diffuse_vine_cop 2>/dev/null || true
+set +u
+if [ -n "${VDC_PYTHON_BIN:-}" ]; then
+  PYTHON_BIN="${VDC_PYTHON_BIN}"
+elif [ -n "${VDC_CONDA_ENV_PATH:-}" ]; then
+  conda activate "${VDC_CONDA_ENV_PATH}"
+  PYTHON_BIN="python"
+elif conda activate vdc 2>/dev/null; then
+  PYTHON_BIN="python"
+elif conda activate diffuse_vine_cop 2>/dev/null; then
+  PYTHON_BIN="python"
+else
+  echo "ERROR: failed to activate conda env. Set VDC_CONDA_ENV_PATH or VDC_PYTHON_BIN."
+  exit 3
+fi
+set -u
+
+if [ "${PYTHON_BIN}" != "python" ] && [ ! -x "${PYTHON_BIN}" ]; then
+  echo "ERROR: VDC_PYTHON_BIN is not executable: ${PYTHON_BIN}"
+  exit 3
+fi
 
 cd "${REPO_ROOT}"
 
@@ -63,6 +89,8 @@ export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-16}"
 export MKL_NUM_THREADS="${SLURM_CPUS_PER_TASK:-16}"
 # New env var name (old one is deprecated in recent PyTorch)
 export PYTORCH_ALLOC_CONF=expandable_segments:True
+export PYTHONNOUSERSITE="${PYTHONNOUSERSITE:-1}"
+unset PYTHONHOME || true
 
 # Some cluster images don't have system libbz2; ensure we can load it from conda.
 # (Fixes: ImportError: libbz2.so.1.0: cannot open shared object file)
@@ -72,18 +100,23 @@ fi
 
 {
   echo "CONDA_DEFAULT_ENV=${CONDA_DEFAULT_ENV:-}"
-  echo "Python: $(which python)"
-  python -c "import torch; print('torch', torch.__version__, 'cuda', torch.version.cuda)"
+  echo "Python: ${PYTHON_BIN}"
+  "${PYTHON_BIN}" -c "import torch; print('torch', torch.__version__, 'cuda', torch.version.cuda)"
   nvidia-smi || true
 } | tee "${RUN_DIR}/logs/env.txt"
 
 cp "$0" "${RUN_DIR}/analysis/slurm_script.sh"
 
 EVAL_LOG="${RUN_DIR}/logs/model_selection.log"
+EXAMPLE_ARGS=()
+if [ "${WRITE_EXAMPLES}" = "1" ]; then
+  EXAMPLE_ARGS=(--write-examples --examples-dir "${RUN_DIR}/figures/examples")
+fi
 
-python scripts/model_selection.py \
+"${PYTHON_BIN}" scripts/model_selection.py \
   --checkpoints "$@" \
-  --n-samples 2000 \
+  --suite "${SUITE}" \
+  --n-samples "${N_SAMPLES}" \
   --device cuda \
   --diffusion-steps "${DIFFUSION_STEPS:-200}" \
   --diffusion-cfg-scale "${DIFFUSION_CFG_SCALE:-4.0}" \
@@ -91,8 +124,8 @@ python scripts/model_selection.py \
   --diffusion-ensemble-mode "${DIFFUSION_ENSEMBLE_MODE:-geometric}" \
   --diffusion-smooth-sigma "${DIFFUSION_SMOOTH_SIGMA:-0.0}" \
   --diffusion-pred-noise-clip "${DIFFUSION_PRED_NOISE_CLIP:-10.0}" \
-  --write-examples \
-  --examples-dir "${RUN_DIR}/figures/examples" \
+  --diffusion-seed-base "${DIFFUSION_SEED_BASE:-123}" \
+  "${EXAMPLE_ARGS[@]}" \
   --out-json "${RUN_DIR}/results/model_selection.json" \
   --out-csv "${RUN_DIR}/results/model_selection.csv" \
   2>&1 | tee "${EVAL_LOG}"
@@ -104,4 +137,3 @@ echo "==========================================================================
 echo "Run Dir: ${RUN_DIR}"
 echo "Results: ${RUN_DIR}/results/model_selection.json"
 echo ""
-

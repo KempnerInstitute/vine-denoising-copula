@@ -25,35 +25,73 @@ data:
   n_samples_per_copula:
     mode: "log_uniform"
     min: 200
-    max: 5000
-  copula_families: ["gaussian", "student", "clayton", "gumbel", "frank", "joe", "independence"]
+    max: 8000
+  # Match the enhanced denoiser's training zoo so the CNN baseline is fairly
+  # compared on conditional/complex regimes.
+  copula_families:
+    gaussian: 0.12
+    student: 0.08
+    clayton: 0.10
+    gumbel: 0.12
+    frank: 0.05
+    joe: 0.12
+    bb1: 0.08
+    bb7: 0.08
+    conditional_gaussian: 0.07
+    conditional_clayton: 0.07
+    independence: 0.03
+    complex_x: 0.03
+    complex_ring: 0.03
+    complex_double_banana: 0.02
   binning: "uniform"
   num_workers: 4
-  mixture_prob: 0.30
+  mixture_prob: 0.20
   n_mixture_components: [2, 4]
 
   param_ranges:
     gaussian_rho: [-0.95, 0.95]
     student_rho: [-0.9, 0.9]
     student_df: [2, 30]
-    clayton_theta: [0.1, 10.0]
-    gumbel_theta: [1.1, 8.0]
+    clayton_theta: [0.1, 14.0]
+    gumbel_theta: [1.1, 12.0]
     frank_theta: [-15.0, 15.0]
-    joe_theta: [1.1, 8.0]
+    joe_theta: [1.1, 12.0]
+    bb1_theta: [0.1, 5.0]
+    bb1_delta: [1.0, 5.0]
+    bb7_theta: [1.0, 5.0]
+    bb7_delta: [0.1, 5.0]
 
 training:
-  max_steps: 150000
+  max_steps: 240000
   batch_size: 32
-  learning_rate: 1.0e-4
+  learning_rate: 8.0e-5
   weight_decay: 0.01
   gradient_clip: 1.0
+  grad_anomaly_threshold: 100.0
+  abort_on_nonfinite: true
+  nonfinite_patience: 3
+
+  grad_sanitation:
+    enable: true
+    max_grad_value: 5.0
+    max_report_norm: 500.0
+    lr_skip_patience: 10
+    lr_decay_factor: 0.5
+    min_lr: 1.0e-6
+    verbose: true
+
+  # Mild histogram corruption for robustness.
+  hist_noise:
+    enable: true
+    max_strength: 0.65
+    power: 1.0
 
   loss_weights:
     ce: 1.0
     ise: 0.0
-    tail: 0.1
+    tail: 0.2
     ms: 0.0
-    marg_kl: 0.0
+    marg_kl: 0.02
 
   projection_iters: 30
   detach_projection: false
@@ -61,7 +99,7 @@ training:
   use_amp: true
 
   log_every: 100
-  save_every: 10000
+  save_every: 5000
   viz_every: 5000
 
 output:
@@ -73,4 +111,3 @@ output:
 hardware:
   device: "cuda"
   mixed_precision: true
-

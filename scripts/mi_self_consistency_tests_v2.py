@@ -83,7 +83,8 @@ def _load_checkpoint_model(ckpt_path: Path, device: str) -> _LoadedModel:
     if not isinstance(config, dict):
         raise RuntimeError("Checkpoint missing config dict.")
 
-    model_type = str(config.get("model", {}).get("type", "diffusion_unet"))
+    model_type_raw = str(config.get("model", {}).get("type", "diffusion_unet"))
+    model_type = "diffusion_unet" if model_type_raw.startswith("diffusion_unet") else model_type_raw
     dev = torch.device(device)
     model = build_model(model_type, config, dev)
     model.load_state_dict(ckpt.get("model_state_dict", {}), strict=False)
@@ -94,21 +95,59 @@ def _load_checkpoint_model(ckpt_path: Path, device: str) -> _LoadedModel:
 class _DCDVineMI:
     """Bivariate MI via predicted copula density grid; 4D additivity via TC (D-vine)."""
 
-    def __init__(self, ckpt: Path, device: str):
+    def __init__(
+        self,
+        ckpt: Path,
+        device: str,
+        *,
+        diffusion_steps: int = 4,
+        diffusion_cfg_scale: float = 1.0,
+        diffusion_pred_noise_clip: Optional[float] = 1.0,
+        truncation_level: Optional[int] = 1,
+    ):
+        import torch
+
         self.device = str(device)
         self.loaded = _load_checkpoint_model(Path(ckpt), device=self.device)
         self.m = int(self.loaded.config.get("data", {}).get("m", 64))
         self.proj_iters = int(self.loaded.config.get("training", {}).get("projection_iters", 30))
+        self.diffusion_steps = int(diffusion_steps)
+        self.diffusion_cfg_scale = float(diffusion_cfg_scale)
+        self.diffusion_pred_noise_clip = (
+            None if diffusion_pred_noise_clip is None or float(diffusion_pred_noise_clip) <= 0 else float(diffusion_pred_noise_clip)
+        )
+        self.truncation_level = int(truncation_level) if truncation_level is not None else None
 
         # A lightweight VineCopulaModel instance gives us the robust single-pass
         # "samples -> density grid" path used in actual vine fitting.
         from vdc.vine.api import VineCopulaModel
 
+        self.diffusion = None
+        self.use_histogram_conditioning = False
+        if str(self.loaded.model_type) == "diffusion_unet":
+            from vdc.models.copula_diffusion import CopulaAwareDiffusion
+
+            diff_cfg = self.loaded.config.get("diffusion", {})
+            self.diffusion = CopulaAwareDiffusion(
+                timesteps=int(diff_cfg.get("timesteps", 1000)),
+                beta_schedule=str(diff_cfg.get("noise_schedule", "cosine")),
+            ).to(self.device)
+            conv_in = getattr(self.loaded.model, "conv_in", None)
+            if conv_in is not None and hasattr(conv_in, "in_channels"):
+                self.use_histogram_conditioning = int(conv_in.in_channels) > 1
+
+        self.loaded.model.to(self.device)
+        self.loaded.model.eval()
+
         self._vine_helper = VineCopulaModel(
             vine_type="dvine",
+            truncation_level=self.truncation_level,
             m=self.m,
             device=self.device,
+            diffusion_steps=self.diffusion_steps,
+            cfg_scale=self.diffusion_cfg_scale,
             projection_iters=self.proj_iters,
+            pred_noise_clip=self.diffusion_pred_noise_clip,
             hfunc_use_spline=False,
             batch_edges=False,
         )
@@ -117,9 +156,9 @@ class _DCDVineMI:
         U = _pseudo_obs(np.column_stack([x, y]))
         d = self._vine_helper._estimate_pair_density_from_samples(
             model=self.loaded.model,
-            diffusion=None,
+            diffusion=self.diffusion,
             pair_data=U,
-            use_histogram_conditioning=False,
+            use_histogram_conditioning=bool(self.use_histogram_conditioning),
         )
         return _mi_from_density_grid(d)
 
@@ -140,14 +179,18 @@ class _DCDVineMI:
 
         vine = VineCopulaModel(
             vine_type="dvine",
+            truncation_level=self.truncation_level,
             m=self.m,
             device=self.device,
+            diffusion_steps=self.diffusion_steps,
+            cfg_scale=self.diffusion_cfg_scale,
             projection_iters=self.proj_iters,
+            pred_noise_clip=self.diffusion_pred_noise_clip,
             hfunc_use_spline=False,
             batch_edges=True,
             edge_batch_size=256,
         )
-        vine.fit(U[tr], diffusion_model=self.loaded.model, diffusion=None, verbose=False)
+        vine.fit(U[tr], diffusion_model=self.loaded.model, diffusion=self.diffusion, verbose=False)
         return float(np.mean(vine.logpdf(U[te])))
 
 
@@ -356,6 +399,10 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--device", type=str, default="cuda")
     ap.add_argument("--ksg-k", type=int, default=5)
+    ap.add_argument("--dcd-diffusion-steps", type=int, default=4)
+    ap.add_argument("--dcd-diffusion-cfg-scale", type=float, default=1.0)
+    ap.add_argument("--dcd-pred-noise-clip", type=float, default=1.0)
+    ap.add_argument("--dcd-truncation-level", type=int, default=1)
     ap.add_argument("--output", type=Path, default=None, help="Write LaTeX table to this path (optional).")
     ap.add_argument("--json_output", type=Path, required=True, help="Write JSON results to this path.")
     args = ap.parse_args()
@@ -386,7 +433,15 @@ def main() -> None:
 
     # DCD-Vine (ours)
     if args.checkpoint is not None and Path(args.checkpoint).exists():
-        ours = _DCDVineMI(Path(args.checkpoint), device=str(args.device))
+        pred_noise_clip = None if float(args.dcd_pred_noise_clip) <= 0 else float(args.dcd_pred_noise_clip)
+        ours = _DCDVineMI(
+            Path(args.checkpoint),
+            device=str(args.device),
+            diffusion_steps=int(args.dcd_diffusion_steps),
+            diffusion_cfg_scale=float(args.dcd_diffusion_cfg_scale),
+            diffusion_pred_noise_clip=pred_noise_clip,
+            truncation_level=int(args.dcd_truncation_level) if args.dcd_truncation_level is not None else None,
+        )
 
         def ours_bi(x: np.ndarray, y: np.ndarray, seed: int) -> float:
             _ = seed
@@ -418,4 +473,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

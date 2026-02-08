@@ -11,7 +11,7 @@ model:
   grid_size: 64
   # 2 channels: [x_t (noisy log-density), log_histogram (conditioning)]
   in_channels: 2
-  base_channels: 64
+  base_channels: 80
   channel_mults: [1, 2, 3, 4]
   num_res_blocks: 2
   attention_resolutions: [16, 8]
@@ -32,11 +32,18 @@ data:
   n_samples_per_copula:
     mode: "log_uniform"
     min: 200
-    max: 5000
-  copula_families: ["gaussian", "student", "clayton", "gumbel", "frank", "joe", "independence"]
+    max: 8000
+  copula_families:
+    gaussian: 0.14
+    student: 0.14
+    clayton: 0.18
+    gumbel: 0.18
+    frank: 0.08
+    joe: 0.22
+    independence: 0.06
   binning: "uniform"
   num_workers: 4
-  mixture_prob: 0.30
+  mixture_prob: 0.20
   n_mixture_components: [2, 4]
 
   # Parameter ranges (explicit + reproducible)
@@ -44,29 +51,29 @@ data:
     gaussian_rho: [-0.95, 0.95]
     student_rho: [-0.9, 0.9]
     student_df: [2, 30]
-    clayton_theta: [0.1, 10.0]
-    gumbel_theta: [1.1, 8.0]
+    clayton_theta: [0.1, 12.0]
+    gumbel_theta: [1.1, 12.0]
     frank_theta: [-15.0, 15.0]
-    joe_theta: [1.1, 8.0]
+    joe_theta: [1.1, 12.0]
 
 training:
-  max_steps: 150000
+  max_steps: 200000
   batch_size: 32
-  learning_rate: 1.0e-4
+  learning_rate: 8.0e-5
   weight_decay: 0.01
   gradient_clip: 1.0
 
   # Classifier-free dropout probability for training conditional diffusion
   # (probability of zeroing the histogram conditioning channel)
-  cfg_dropout_prob: 0.10
+  cfg_dropout_prob: 0.05
 
   # Loss suite on projected density (in addition to diffusion noise MSE)
   loss_weights:
     ce: 1.0
     ise: 0.0
-    tail: 0.1
+    tail: 0.2
     ms: 0.0
-    marg_kl: 0.0
+    marg_kl: 0.02
 
   projection_iters: 30
   detach_projection: false
@@ -86,4 +93,3 @@ output:
 hardware:
   device: "cuda"
   mixed_precision: true
-

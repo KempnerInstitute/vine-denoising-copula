@@ -24,7 +24,8 @@
 
 set -euo pipefail
 
-REPO_ROOT="/n/holylabs/kempner_dev/Users/hsafaai/Code/vine_diffusion_copula"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 OUTPUT_BASE="${OUTPUT_BASE:-/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula}"
 
 echo "============================================================================"
@@ -113,4 +114,3 @@ echo "Run Dir: ${RUN_DIR}"
 echo "Scaling JSON: ${RUN_DIR}/results/e2_scaling_results.json"
 echo "Paper cache:  ${REPO_ROOT}/drafts/paper_outputs/e2_scaling_results.json"
 echo ""
-

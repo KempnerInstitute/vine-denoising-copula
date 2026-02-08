@@ -23,7 +23,11 @@
 
 set -euo pipefail
 
-REPO_ROOT="/n/holylabs/kempner_dev/Users/hsafaai/Code/vine_diffusion_copula"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+if [ -n "${SLURM_SUBMIT_DIR:-}" ] && [ -f "${SLURM_SUBMIT_DIR}/drafts/scripts/e4_imputation_benchmark.py" ]; then
+  REPO_ROOT="${SLURM_SUBMIT_DIR}"
+fi
 OUTPUT_BASE="${OUTPUT_BASE:-/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula}"
 
 echo "============================================================================"
@@ -47,7 +51,26 @@ module load cuda/12.2.0-fasrc01
 export LD_LIBRARY_PATH="/n/sw/Mambaforge-23.11.0-0/lib:${LD_LIBRARY_PATH:-}"
 
 eval "$(conda shell.bash hook)" || true
-conda activate diffuse_vine_cop 2>/dev/null || conda activate vdc 2>/dev/null || true
+set +u
+if [ -n "${VDC_PYTHON_BIN:-}" ]; then
+  PYTHON_BIN="${VDC_PYTHON_BIN}"
+elif [ -n "${VDC_CONDA_ENV_PATH:-}" ]; then
+  conda activate "${VDC_CONDA_ENV_PATH}"
+  PYTHON_BIN="python"
+elif conda activate diffuse_vine_cop 2>/dev/null; then
+  PYTHON_BIN="python"
+elif conda activate vdc 2>/dev/null; then
+  PYTHON_BIN="python"
+else
+  echo "ERROR: failed to activate conda env. Set VDC_CONDA_ENV_PATH or VDC_PYTHON_BIN."
+  exit 3
+fi
+set -u
+
+if [ "${PYTHON_BIN}" != "python" ] && [ ! -x "${PYTHON_BIN}" ]; then
+  echo "ERROR: VDC_PYTHON_BIN is not executable: ${PYTHON_BIN}"
+  exit 3
+fi
 
 if [ -n "${CONDA_PREFIX:-}" ] && [ -d "${CONDA_PREFIX}/lib" ]; then
   export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib"
@@ -61,16 +84,22 @@ export PYTORCH_ALLOC_CONF=expandable_segments:True
 
 echo "CONDA_PREFIX: ${CONDA_PREFIX:-}"
 echo "Testing Python..."
-python -c "import numpy, scipy, torch; print(f'numpy={numpy.__version__}, scipy={scipy.__version__}, torch={torch.__version__}')"
+"${PYTHON_BIN}" -c "import numpy, scipy, torch; print(f'numpy={numpy.__version__}, scipy={scipy.__version__}, torch={torch.__version__}')"
 
 
 cp "$0" "${RUN_DIR}/analysis/slurm_script.sh"
 git rev-parse HEAD 2>/dev/null | tee "${RUN_DIR}/analysis/git_commit.txt" || true
 
 OUT_JSON="${RUN_DIR}/results/e4_imputation_results.json"
+CKPT="${E4_CHECKPOINT:-${PAPER_CHECKPOINT:-}}"
+CKPT_ARGS=()
+if [ -n "${CKPT}" ]; then
+  CKPT_ARGS=(--checkpoint "${CKPT}")
+fi
 
-python drafts/scripts/e4_imputation_benchmark.py \
+"${PYTHON_BIN}" drafts/scripts/e4_imputation_benchmark.py \
   --output-base "${OUTPUT_BASE}" \
+  "${CKPT_ARGS[@]}" \
   --device cuda \
   --datasets power gas credit \
   --missing-frac "${E4_MISSING_FRAC:-0.20}" \
@@ -90,7 +119,7 @@ echo "Regenerating paper artifacts (force refresh)..."
 echo ""
 
 export FIG_PNG_DPI="${FIG_PNG_DPI:-120}"
-python drafts/scripts/paper_artifacts.py all --output-base "${OUTPUT_BASE}" --force \
+"${PYTHON_BIN}" drafts/scripts/paper_artifacts.py all --output-base "${OUTPUT_BASE}" --force \
   2>&1 | tee "${RUN_DIR}/logs/paper_artifacts_after_e4_imputation.log"
 
 echo ""
@@ -101,4 +130,3 @@ echo "Run Dir: ${RUN_DIR}"
 echo "E4 JSON: ${OUT_JSON}"
 echo "Paper cache: ${REPO_ROOT}/drafts/paper_outputs/e4_imputation_results.json"
 echo ""
-

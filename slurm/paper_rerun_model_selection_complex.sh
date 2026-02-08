@@ -29,7 +29,8 @@
 
 set -euo pipefail
 
-REPO_ROOT="/n/holylabs/kempner_dev/Users/hsafaai/Code/vine_diffusion_copula"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 if [ "$#" -lt 2 ]; then
   echo "ERROR: Need RUN_DIR and at least one checkpoint."
@@ -105,4 +106,3 @@ echo "==========================================================================
 echo "Run Dir: ${RUN_DIR}"
 echo "Results: ${RUN_DIR}/results/model_selection_complex.json"
 echo ""
-

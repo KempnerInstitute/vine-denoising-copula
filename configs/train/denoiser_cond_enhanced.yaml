@@ -32,64 +32,64 @@ data:
   n_samples_per_copula:
     mode: "log_uniform"
     min: 200
-    max: 5000
+    max: 8000
 
   # Weighted family mix. Conditional/BB/complex entries are handled by vdc/data/onthefly.py.
   copula_families:
-    gaussian: 0.14
-    student: 0.06
+    gaussian: 0.12
+    student: 0.08
     clayton: 0.10
-    gumbel: 0.10
-    frank: 0.06
-    joe: 0.06
-    bb1: 0.06
-    bb7: 0.06
-    conditional_gaussian: 0.08
-    conditional_clayton: 0.08
-    independence: 0.04
-    complex_x: 0.06
-    complex_ring: 0.05
-    complex_double_banana: 0.05
+    gumbel: 0.12
+    frank: 0.05
+    joe: 0.12
+    bb1: 0.08
+    bb7: 0.08
+    conditional_gaussian: 0.07
+    conditional_clayton: 0.07
+    independence: 0.03
+    complex_x: 0.03
+    complex_ring: 0.03
+    complex_double_banana: 0.02
 
   binning: "uniform"
   num_workers: 4
 
   # Mixture augmentation (parametric mixtures; complex families are excluded from mixture sampling)
-  mixture_prob: 0.25
+  mixture_prob: 0.20
   n_mixture_components: [2, 4]
 
   param_ranges:
     gaussian_rho: [-0.95, 0.95]
     student_rho: [-0.9, 0.9]
     student_df: [2, 30]
-    clayton_theta: [0.1, 12.0]
-    gumbel_theta: [1.1, 10.0]
+    clayton_theta: [0.1, 14.0]
+    gumbel_theta: [1.1, 12.0]
     frank_theta: [-15.0, 15.0]
-    joe_theta: [1.1, 10.0]
+    joe_theta: [1.1, 12.0]
     bb1_theta: [0.1, 5.0]
     bb1_delta: [1.0, 5.0]
     bb7_theta: [1.0, 5.0]
     bb7_delta: [0.1, 5.0]
 
 training:
-  max_steps: 200000
+  max_steps: 240000
   batch_size: 32
-  learning_rate: 1.0e-4
+  learning_rate: 8.0e-5
   weight_decay: 0.01
   gradient_clip: 1.0
 
   # Diffusion-inspired histogram corruption schedule for robustness.
   hist_noise:
     enable: true
-    max_strength: 0.75
+    max_strength: 0.65
     power: 1.0
 
   loss_weights:
     ce: 1.0
     ise: 0.0
-    tail: 0.1
+    tail: 0.2
     ms: 0.0
-    marg_kl: 0.0
+    marg_kl: 0.02
 
   projection_iters: 30
   detach_projection: false
@@ -109,4 +109,3 @@ output:
 hardware:
   device: "cuda"
   mixed_precision: true
-

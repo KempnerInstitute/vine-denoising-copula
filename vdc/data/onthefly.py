@@ -316,12 +316,19 @@ class OnTheFlyCopulaDataset(Dataset):
         weights = rng.dirichlet(np.ones(k))
         all_samples = []
         all_density = []
+        # sample_bicop() supports only one-parameter / standard families.
+        # Keep mixture sampling on this subset to avoid unsupported-family errors.
+        sample_bicop_families = {
+            "gaussian", "student", "student_t", "t", "studentt",
+            "clayton", "gumbel", "frank", "joe", "independence",
+        }
         for i, w in enumerate(weights):
             # Avoid complex families inside mixtures by default (they're expensive to sample
             # and mixtures are primarily meant for parametric augmentation).
             for _attempt in range(50):
                 family, params, rotation = self._sample_family()
-                if not str(family).startswith("complex"):
+                fam_s = str(family)
+                if (not fam_s.startswith("complex")) and (fam_s in sample_bicop_families):
                     break
             n_k = int(w * n_total)
             if i == k - 1:
@@ -485,5 +492,4 @@ class OnTheFlyCopulaDataset(Dataset):
         if self._return_samples:
             out['samples'] = torch.from_numpy(samples).float()
         return out
-
 

@@ -1,7 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-# Submit *all* paper-related SLURM jobs (training + baselines + MI).
+# Submit paper-related SLURM jobs for the single-model paper setup
+# (enhanced denoiser + downstream benchmarks).
 #
 # Usage:
 #   OUTPUT_BASE=/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula \
@@ -55,13 +56,9 @@ submit() {
 }
 
 if [ "${SUBMIT_TRAINING}" = "1" ]; then
-  echo "== Training jobs =="
+  echo "== Training job (single model) =="
   TRAIN_JIDS=()
-  OUT=$(submit "${SCRIPT_DIR}/paper_vdc_diffusion_cond.sh")
-  TRAIN_JIDS+=("$(echo "${OUT}" | awk '{print $4}')")
-  OUT=$(submit "${SCRIPT_DIR}/paper_vdc_denoiser_cond.sh")
-  TRAIN_JIDS+=("$(echo "${OUT}" | awk '{print $4}')")
-  OUT=$(submit "${SCRIPT_DIR}/paper_vdc_enhanced_cnn_cond.sh")
+  OUT=$(submit "${SCRIPT_DIR}/paper_train_enhanced.sh")
   TRAIN_JIDS+=("$(echo "${OUT}" | awk '{print $4}')")
   echo ""
 fi
@@ -89,7 +86,7 @@ fi
 
 if [ "${SUBMIT_MI}" = "1" ]; then
   echo "== MI estimator baselines =="
-  for est in ksg gaussian infonce nwj mine minde; do
+  for est in ksg dcd gaussian infonce nwj mine minde; do
     submit "${SCRIPT_DIR}/paper_vdc_mi_estimation.sh" "${est}"
   done
   echo ""
@@ -127,4 +124,3 @@ if [ "${SUBMIT_ARTIFACTS_JOB}" = "1" ]; then
 fi
 
 echo "Done submitting."
-

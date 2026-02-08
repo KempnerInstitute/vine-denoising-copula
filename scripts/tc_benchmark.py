@@ -142,7 +142,8 @@ def _load_checkpoint_model(ckpt_path: Path, device: str) -> _LoadedModel:
         raise RuntimeError("Checkpoint missing config dict.")
 
     # Train configs use model.type; keep fallback for older checkpoints.
-    model_type = str(config.get("model", {}).get("type", "diffusion_unet"))
+    model_type_raw = str(config.get("model", {}).get("type", "diffusion_unet"))
+    model_type = "diffusion_unet" if model_type_raw.startswith("diffusion_unet") else model_type_raw
     dev = torch.device(device)
     model = build_model(model_type, config, dev)
     model.load_state_dict(ckpt.get("model_state_dict", {}), strict=False)
@@ -160,6 +161,10 @@ def _tc_dcd_vine(
     batch_edges: bool,
     edge_batch_size: int,
     hfunc_use_spline: bool,
+    diffusion_steps: int,
+    diffusion_cfg_scale: float,
+    diffusion_pred_noise_clip: Optional[float],
+    truncation_level: Optional[int],
 ) -> Tuple[float, float]:
     """
     Returns (tc_hat, total_time_s) using a held-out evaluation split.
@@ -183,20 +188,28 @@ def _tc_dcd_vine(
     m = int(loaded.config.get("data", {}).get("m", 64))
     proj_iters = int(loaded.config.get("training", {}).get("projection_iters", 30))
 
+    diffusion_obj = None
     if str(loaded.model_type) == "diffusion_unet":
-        raise RuntimeError(
-            "tc_benchmark currently expects a single-pass checkpoint (denoiser/enhanced_cnn). "
-            "For diffusion_unet, add an iterative sampling path (slower) or use a denoiser checkpoint."
-        )
+        from vdc.models.copula_diffusion import CopulaAwareDiffusion
+
+        diff_cfg = loaded.config.get("diffusion", {})
+        diffusion_obj = CopulaAwareDiffusion(
+            timesteps=int(diff_cfg.get("timesteps", 1000)),
+            beta_schedule=str(diff_cfg.get("noise_schedule", "cosine")),
+        ).to(str(device))
 
     vine = VineCopulaModel(
         vine_type="dvine",
+        truncation_level=int(truncation_level) if truncation_level is not None else None,
         m=m,
         device=str(device),
         projection_iters=int(proj_iters),
         hfunc_use_spline=bool(hfunc_use_spline),
         batch_edges=bool(batch_edges),
         edge_batch_size=int(edge_batch_size),
+        diffusion_steps=int(diffusion_steps),
+        cfg_scale=float(diffusion_cfg_scale),
+        pred_noise_clip=diffusion_pred_noise_clip,
     )
 
     loaded.model.to(str(device))
@@ -210,7 +223,7 @@ def _tc_dcd_vine(
         pass
 
     t0 = perf_counter()
-    vine.fit(U_tr, diffusion_model=loaded.model, diffusion=None, verbose=False)
+    vine.fit(U_tr, diffusion_model=loaded.model, diffusion=diffusion_obj, verbose=False)
     tc_hat = float(np.mean(vine.logpdf(U_te)))
     t1 = perf_counter()
 
@@ -230,7 +243,7 @@ def _mean_std(xs: Sequence[float]) -> Tuple[float, float]:
 
 def main() -> None:
     p = argparse.ArgumentParser(description="TC benchmark (Gaussian AR(1) copulas).")
-    p.add_argument("--checkpoint", type=Path, required=True, help="Single-pass checkpoint (denoiser/enhanced_cnn).")
+    p.add_argument("--checkpoint", type=Path, required=True, help="Checkpoint (denoiser/enhanced_cnn/diffusion_unet).")
     p.add_argument("--device", type=str, default="cuda", help="torch device (default: cuda).")
     p.add_argument("--rho", type=float, default=0.7, help="AR(1) correlation rho.")
     p.add_argument("--dims", type=int, nargs="+", default=[2, 5, 10, 20, 50], help="Dimensions to benchmark.")
@@ -248,12 +261,33 @@ def main() -> None:
     p.add_argument("--batch-edges", action="store_true", help="Enable tree-level edge batching (ours, faster).")
     p.add_argument("--edge-batch-size", type=int, default=256)
     p.add_argument("--hfunc-use-spline", action="store_true", help="Use spline h-functions (slower, more accurate).")
+    p.add_argument("--diffusion-steps", type=int, default=16, help="DDIM steps for diffusion checkpoints.")
+    p.add_argument("--diffusion-cfg-scale", type=float, default=1.0, help="CFG scale for histogram-conditioned diffusion.")
+    p.add_argument(
+        "--diffusion-pred-noise-clip",
+        type=float,
+        default=1.0,
+        help="Clip predicted diffusion noise to [-clip,clip]; <=0 disables clipping.",
+    )
+    p.add_argument(
+        "--truncation-level",
+        type=int,
+        default=None,
+        help="Optional D-vine truncation level (1..d-1). If unset, fit full vine.",
+    )
     p.add_argument("--out-json", type=Path, required=True)
     p.add_argument("--table-d", type=int, default=10, help="Dimension used for the main TC estimation table.")
     p.add_argument("--table-n", type=int, nargs="+", default=[500, 5000], help="Sample sizes for the table.")
+    p.add_argument("--skip-table", action="store_true", help="Skip fixed-d table generation (faster).")
     args = p.parse_args()
 
     from vdc.data.generators import generate_gaussian_vine
+    import torch
+
+    if str(args.device).startswith("cuda") and not torch.cuda.is_available():
+        print("CUDA requested but unavailable; falling back to CPU.", flush=True)
+        args.device = "cpu"
+    pred_noise_clip = None if float(args.diffusion_pred_noise_clip) <= 0 else float(args.diffusion_pred_noise_clip)
 
     ckpt = Path(args.checkpoint)
     if not ckpt.exists():
@@ -279,6 +313,7 @@ def main() -> None:
     raw_by_dim: List[Dict[str, Any]] = []
 
     for d in dims:
+        print(f"[dim={d}] starting {n_trials} trial(s) with n={n}", flush=True)
         true_val = _true_tc_gaussian_ar1(d, rho)
         tc_true.append(true_val)
 
@@ -309,6 +344,10 @@ def main() -> None:
                 )
                 mine_vals.append(float(tc_mine))
 
+            print(
+                f"    fitting DCD-Vine (ddim={int(args.diffusion_steps)}, cfg={float(args.diffusion_cfg_scale):.2f})...",
+                flush=True,
+            )
             tc_dcd, dcd_time = _tc_dcd_vine(
                 U,
                 loaded=loaded,
@@ -318,6 +357,16 @@ def main() -> None:
                 batch_edges=bool(args.batch_edges),
                 edge_batch_size=int(args.edge_batch_size),
                 hfunc_use_spline=bool(args.hfunc_use_spline),
+                diffusion_steps=int(args.diffusion_steps),
+                diffusion_cfg_scale=float(args.diffusion_cfg_scale),
+                diffusion_pred_noise_clip=pred_noise_clip,
+                truncation_level=args.truncation_level,
+            )
+            print(
+                f"  trial={t+1}/{n_trials} tc_true={true_val:.4f} "
+                f"ksg={tc_ksg:.4f} dcd={tc_dcd:.4f} "
+                f"time_s(ksg,dcd)=({ksg_time:.2f},{dcd_time:.2f})",
+                flush=True,
             )
 
             ksg_vals.append(float(tc_ksg))
@@ -353,75 +402,86 @@ def main() -> None:
     # Table entries (d fixed, n varies): absolute error + time.
     table_rows: List[Dict[str, Any]] = []
     d_table = int(args.table_d)
-    for n_table in [int(x) for x in args.table_n]:
-        # One fresh sample (single trial) per n for simplicity; increase n_trials if needed.
-        trial_seed = seed + 99_000 + 10 * n_table
-        U = generate_gaussian_vine(n=n_table, d=d_table, rho=rho, seed=trial_seed)
-        tc_t = _true_tc_gaussian_ar1(d_table, rho)
+    if not bool(args.skip_table):
+        for n_table in [int(x) for x in args.table_n]:
+            print(f"[table] d={d_table} n={n_table}", flush=True)
+            # One fresh sample (single trial) per n for simplicity; increase n_trials if needed.
+            trial_seed = seed + 99_000 + 10 * n_table
+            U = generate_gaussian_vine(n=n_table, d=d_table, rho=rho, seed=trial_seed)
+            tc_t = _true_tc_gaussian_ar1(d_table, rho)
 
-        t0 = perf_counter()
-        tc_k = _tc_ksg_chain_rule(U, k=k, seed=trial_seed)
-        t_ksg = float(perf_counter() - t0)
+            t0 = perf_counter()
+            tc_k = _tc_ksg_chain_rule(U, k=k, seed=trial_seed)
+            t_ksg = float(perf_counter() - t0)
 
-        tc_m = None
-        t_mine = None
-        if bool(args.include_mine):
-            tc_m, t_mine = _tc_mine(
+            tc_m = None
+            t_mine = None
+            if bool(args.include_mine):
+                tc_m, t_mine = _tc_mine(
+                    U,
+                    device=str(args.device),
+                    seed=trial_seed + 999,
+                    steps=int(args.mine_steps),
+                    batch_size=int(args.mine_batch_size),
+                    lr=float(args.mine_lr),
+                    hidden=int(args.mine_hidden),
+                    layers=int(args.mine_layers),
+                )
+
+            tc_d, t_dcd = _tc_dcd_vine(
                 U,
+                loaded=loaded,
                 device=str(args.device),
-                seed=trial_seed + 999,
-                steps=int(args.mine_steps),
-                batch_size=int(args.mine_batch_size),
-                lr=float(args.mine_lr),
-                hidden=int(args.mine_hidden),
-                layers=int(args.mine_layers),
+                seed=trial_seed,
+                test_frac=float(args.test_frac),
+                batch_edges=bool(args.batch_edges),
+                edge_batch_size=int(args.edge_batch_size),
+            hfunc_use_spline=bool(args.hfunc_use_spline),
+            diffusion_steps=int(args.diffusion_steps),
+            diffusion_cfg_scale=float(args.diffusion_cfg_scale),
+            diffusion_pred_noise_clip=pred_noise_clip,
+            truncation_level=args.truncation_level,
+        )
+            print(
+                f"  table tc_true={tc_t:.4f} ksg={tc_k:.4f} dcd={tc_d:.4f} "
+                f"time_s(ksg,dcd)=({t_ksg:.2f},{t_dcd:.2f})",
+                flush=True,
             )
 
-        tc_d, t_dcd = _tc_dcd_vine(
-            U,
-            loaded=loaded,
-            device=str(args.device),
-            seed=trial_seed,
-            test_frac=float(args.test_frac),
-            batch_edges=bool(args.batch_edges),
-            edge_batch_size=int(args.edge_batch_size),
-            hfunc_use_spline=bool(args.hfunc_use_spline),
-        )
-
-        table_rows.extend(
-            [
-                {
-                    "estimator": "KSG",
-                    "n": int(n_table),
-                    "d": int(d_table),
-                    "rho": float(rho),
-                    "tc_true": float(tc_t),
-                    "tc_hat": float(tc_k),
-                    "abs_err": float(abs(tc_k - tc_t)),
-                    "time_s": float(t_ksg),
-                },
-                {
-                    "estimator": "MINE",
-                    "n": int(n_table),
-                    "d": int(d_table),
-                    "rho": float(rho),
-                    "tc_true": float(tc_t),
-                    "tc_hat": float(tc_m) if tc_m is not None else None,
-                    "abs_err": float(abs(float(tc_m) - tc_t)) if tc_m is not None else None,
-                    "time_s": float(t_mine) if t_mine is not None else None,
-                },
-                {
-                    "estimator": "DCD-Vine",
-                    "n": int(n_table),
-                    "d": int(d_table),
-                    "rho": float(rho),
-                    "tc_true": float(tc_t),
-                    "tc_hat": float(tc_d),
-                    "abs_err": float(abs(tc_d - tc_t)),
-                    "time_s": float(t_dcd),
-                },
-            ]
-        )
+            table_rows.extend(
+                [
+                    {
+                        "estimator": "KSG",
+                        "n": int(n_table),
+                        "d": int(d_table),
+                        "rho": float(rho),
+                        "tc_true": float(tc_t),
+                        "tc_hat": float(tc_k),
+                        "abs_err": float(abs(tc_k - tc_t)),
+                        "time_s": float(t_ksg),
+                    },
+                    {
+                        "estimator": "MINE",
+                        "n": int(n_table),
+                        "d": int(d_table),
+                        "rho": float(rho),
+                        "tc_true": float(tc_t),
+                        "tc_hat": float(tc_m) if tc_m is not None else None,
+                        "abs_err": float(abs(float(tc_m) - tc_t)) if tc_m is not None else None,
+                        "time_s": float(t_mine) if t_mine is not None else None,
+                    },
+                    {
+                        "estimator": "DCD-Vine",
+                        "n": int(n_table),
+                        "d": int(d_table),
+                        "rho": float(rho),
+                        "tc_true": float(tc_t),
+                        "tc_hat": float(tc_d),
+                        "abs_err": float(abs(tc_d - tc_t)),
+                        "time_s": float(t_dcd),
+                    },
+                ]
+            )
 
     payload: Dict[str, Any] = {
         "generated_at": __import__("datetime").datetime.now().isoformat(),
@@ -431,6 +491,10 @@ def main() -> None:
         "n_samples": int(n),
         "n_trials": int(n_trials),
         "ksg_k": int(k),
+        "diffusion_steps": int(args.diffusion_steps),
+        "diffusion_cfg_scale": float(args.diffusion_cfg_scale),
+        "diffusion_pred_noise_clip": pred_noise_clip,
+        "truncation_level": int(args.truncation_level) if args.truncation_level is not None else None,
         "dimensions": dims,
         "tc_true": tc_true,
         "tc_ksg_mean": tc_ksg_means,
@@ -443,7 +507,9 @@ def main() -> None:
             "d": int(d_table),
             "rho": float(rho),
             "rows": table_rows,
-        },
+        }
+        if not bool(args.skip_table)
+        else None,
         "raw_records": raw_by_dim,
     }
 
@@ -455,4 +521,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

@@ -29,7 +29,11 @@
 
 set -euo pipefail
 
-REPO_ROOT="/n/holylabs/kempner_dev/Users/hsafaai/Code/vine_diffusion_copula"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+if [ -n "${SLURM_SUBMIT_DIR:-}" ] && [ -f "${SLURM_SUBMIT_DIR}/scripts/train_unified.py" ]; then
+  REPO_ROOT="${SLURM_SUBMIT_DIR}"
+fi
 CONFIG_SRC="${REPO_ROOT}/configs/train/denoiser_cond.yaml"
 MODEL_TYPE="denoiser"
 METHOD_TAG="denoiser_cond"
@@ -62,7 +66,26 @@ echo ""
 module purge
 module load cuda/12.2.0-fasrc01
 eval "$(conda shell.bash hook)" || true
-conda activate vdc 2>/dev/null || conda activate diffuse_vine_cop 2>/dev/null || true
+set +u
+if [ -n "${VDC_PYTHON_BIN:-}" ]; then
+  PYTHON_BIN="${VDC_PYTHON_BIN}"
+elif [ -n "${VDC_CONDA_ENV_PATH:-}" ]; then
+  conda activate "${VDC_CONDA_ENV_PATH}"
+  PYTHON_BIN="python"
+elif conda activate vdc 2>/dev/null; then
+  PYTHON_BIN="python"
+elif conda activate diffuse_vine_cop 2>/dev/null; then
+  PYTHON_BIN="python"
+else
+  echo "ERROR: failed to activate conda env. Set VDC_CONDA_ENV_PATH or VDC_PYTHON_BIN."
+  exit 3
+fi
+set -u
+
+if [ "${PYTHON_BIN}" != "python" ] && [ ! -x "${PYTHON_BIN}" ]; then
+  echo "ERROR: VDC_PYTHON_BIN is not executable: ${PYTHON_BIN}"
+  exit 3
+fi
 
 cd "${REPO_ROOT}"
 
@@ -72,6 +95,8 @@ export MKL_NUM_THREADS="${SLURM_CPUS_PER_TASK:-16}"
 export PYTORCH_ALLOC_CONF=expandable_segments:True
 export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
 export NCCL_DEBUG=${NCCL_DEBUG:-WARN}
+export PYTHONNOUSERSITE="${PYTHONNOUSERSITE:-1}"
+unset PYTHONHOME || true
 
 # Some cluster images don't have system libbz2; ensure we can load it from conda.
 # (Fixes: ImportError: libbz2.so.1.0: cannot open shared object file)
@@ -81,8 +106,8 @@ fi
 
 {
   echo "CONDA_DEFAULT_ENV=${CONDA_DEFAULT_ENV:-}"
-  echo "Python: $(which python)"
-  python -c "import torch; print('torch', torch.__version__, 'cuda', torch.version.cuda, 'nccl', torch.cuda.nccl.version() if torch.cuda.is_available() else None)"
+  echo "Python: ${PYTHON_BIN}"
+  "${PYTHON_BIN}" -c "import torch; print('torch', torch.__version__, 'cuda', torch.version.cuda, 'nccl', torch.cuda.nccl.version() if torch.cuda.is_available() else None)"
   nvidia-smi || true
 } | tee "${RUN_DIR}/logs/env.txt"
 
@@ -94,7 +119,7 @@ git status --porcelain 2>/dev/null | tee "${RUN_DIR}/analysis/git_status_porcela
 # Write an exact config copy with a top-level checkpoint_dir (used by scripts/train_unified.py)
 CONFIG_OUT="${RUN_DIR}/analysis/train_config.yaml"
 export CONFIG_SRC CONFIG_OUT CHECKPOINT_DIR
-python - <<PY
+"${PYTHON_BIN}" - <<PY
 import os
 from pathlib import Path
 import yaml
@@ -115,7 +140,7 @@ GPUS="${SLURM_GPUS_ON_NODE:-${SLURM_GPUS_PER_NODE:-4}}"
 TRAIN_LOG="${RUN_DIR}/logs/train.log"
 
 set +e
-torchrun --standalone --nproc_per_node="${GPUS}" \
+"${PYTHON_BIN}" -m torch.distributed.run --standalone --nproc_per_node="${GPUS}" \
   scripts/train_unified.py \
   --config "${CONFIG_OUT}" \
   --model-type "${MODEL_TYPE}" \
@@ -151,7 +176,7 @@ mkdir -p "${RUN_DIR}/figures/examples"
 
 # NOTE: evaluation is helpful but should not fail the overall training job.
 set +e
-python scripts/model_selection.py \
+"${PYTHON_BIN}" scripts/model_selection.py \
   --checkpoints "${CKPT}" \
   --n-samples 2000 \
   --device cuda \
@@ -180,7 +205,7 @@ EVAL_COMPLEX_LOG="${RUN_DIR}/logs/model_selection_complex.log"
 mkdir -p "${RUN_DIR}/figures/examples_complex"
 
 set +e
-python scripts/model_selection.py \
+"${PYTHON_BIN}" scripts/model_selection.py \
   --suite complex \
   --checkpoints "${CKPT}" \
   --n-samples 2000 \
@@ -210,4 +235,3 @@ echo "Run Dir: ${RUN_DIR}"
 echo "Checkpoint: ${CKPT}"
 echo "Results: ${RUN_DIR}/results/model_selection.json"
 echo ""
-
