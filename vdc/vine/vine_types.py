@@ -258,6 +258,9 @@ def _optimize_cvine_order(U: np.ndarray) -> List[int]:
     # Compute pairwise Kendall's tau
     tau_mat = kendall_tau_matrix(U)
     abs_tau = np.abs(tau_mat)
+    # Robustify against pathological columns (constant features, degenerate ranks)
+    # where Kendall-tau can become NaN/inf.
+    abs_tau = np.nan_to_num(abs_tau, nan=0.0, posinf=0.0, neginf=0.0)
     
     order = []
     remaining = set(range(d))
@@ -272,10 +275,15 @@ def _optimize_cvine_order(U: np.ndarray) -> List[int]:
         best_sum = -1
         
         for var in remaining:
-            tau_sum = sum(abs_tau[var, other] for other in remaining if other != var)
+            tau_sum = float(np.sum([abs_tau[var, other] for other in remaining if other != var]))
             if tau_sum > best_sum:
                 best_sum = tau_sum
                 best_var = var
+
+        # If all candidates were non-finite before cleaning (or remaining became unexpected),
+        # pick a deterministic fallback to keep structure construction valid.
+        if best_var is None:
+            best_var = min(remaining)
         
         order.append(best_var)
         remaining.remove(best_var)

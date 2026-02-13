@@ -86,6 +86,7 @@ ckpt = choose_best_checkpoint(
     output_bases=[output_base],
     preferred_methods=["denoiser_cond_enhanced", "denoiser_cond"],
     metric="mean_ise",
+    prefer_joint=True,
 )
 if ckpt is None:
     import torch

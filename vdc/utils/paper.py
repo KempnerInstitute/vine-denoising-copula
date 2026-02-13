@@ -27,6 +27,14 @@ class PaperRun:
     def checkpoint_path_txt(self) -> Path:
         return self.run_dir / "results" / "checkpoint_path.txt"
 
+    @property
+    def model_selection_joint_json(self) -> Path:
+        return self.run_dir / "results" / "model_selection_joint_best.json"
+
+    @property
+    def checkpoint_path_joint_txt(self) -> Path:
+        return self.run_dir / "results" / "checkpoint_path_joint.txt"
+
 
 def discover_paper_runs(output_bases: Iterable[Path]) -> List[PaperRun]:
     runs: List[PaperRun] = []
@@ -49,6 +57,7 @@ def choose_best_checkpoint(
     output_bases: Iterable[Path],
     preferred_methods: List[str],
     metric: str = "mean_ise",
+    prefer_joint: bool = False,
 ) -> Optional[Path]:
     """Choose the best available checkpoint from paper run directories.
 
@@ -56,6 +65,8 @@ def choose_best_checkpoint(
       - Consider runs with results/model_selection.json available
       - Filter by preferred_methods (in the given order)
       - Choose minimum of `metric` (ties broken by timestamp)
+      - If prefer_joint=True, first try latest valid checkpoint from
+        `results/checkpoint_path_joint.txt` for preferred methods.
 
     Returns:
       Path to checkpoint, or None if none found.
@@ -69,6 +80,19 @@ def choose_best_checkpoint(
         by_method.setdefault(r.method, []).append(r)
     for m in by_method:
         by_method[m].sort(key=lambda rr: rr.timestamp, reverse=True)
+
+    if prefer_joint:
+        for method in preferred:
+            for r in by_method.get(method, []):
+                p = r.checkpoint_path_joint_txt
+                if not p.exists():
+                    continue
+                try:
+                    ckpt = Path(p.read_text().strip())
+                except Exception:
+                    continue
+                if ckpt.exists():
+                    return ckpt
 
     best: Optional[Tuple[float, str, Path]] = None  # (metric, ts, ckpt)
 
@@ -103,4 +127,3 @@ def choose_best_checkpoint(
             break  # respect preferred method order
 
     return best[2] if best is not None else None
-

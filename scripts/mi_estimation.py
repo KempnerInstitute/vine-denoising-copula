@@ -162,6 +162,7 @@ def _resolve_dcd_checkpoint(
         output_bases=bases,
         preferred_methods=[str(x).strip() for x in preferred_methods if str(x).strip()],
         metric="mean_ise",
+        prefer_joint=True,
     )
     if ckpt is not None and ckpt.exists() and _is_supported(ckpt):
         return ckpt

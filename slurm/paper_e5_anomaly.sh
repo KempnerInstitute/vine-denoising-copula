@@ -29,6 +29,7 @@ if [ -n "${SLURM_SUBMIT_DIR:-}" ] && [ -f "${SLURM_SUBMIT_DIR}/drafts/scripts/e5
   REPO_ROOT="${SLURM_SUBMIT_DIR}"
 fi
 OUTPUT_BASE="${OUTPUT_BASE:-/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula}"
+export OUTPUT_BASE
 
 echo "============================================================================"
 echo "Vine Diffusion Copula PAPER JOB: E5 anomaly detection"
@@ -83,6 +84,7 @@ export MKL_NUM_THREADS="${SLURM_CPUS_PER_TASK:-16}"
 export PYTORCH_ALLOC_CONF=expandable_segments:True
 
 echo "CONDA_PREFIX: ${CONDA_PREFIX:-}"
+echo "E5 params: vine_type=${E5_VINE_TYPE:-dvine} score_mode=${E5_SCORE_MODE:-neg_logpdf} seed=${E5_SEED:-42}"
 echo "Testing Python..."
 "${PYTHON_BIN}" -c "import numpy, scipy, torch; print(f'numpy={numpy.__version__}, scipy={scipy.__version__}, torch={torch.__version__}')"
 
@@ -101,21 +103,27 @@ fi
   --output-base "${OUTPUT_BASE}" \
   "${CKPT_ARGS[@]}" \
   --device cuda \
+  --vine-type "${E5_VINE_TYPE:-dvine}" \
   --max-train "${E5_MAX_TRAIN:-20000}" \
   --max-test "${E5_MAX_TEST:-20000}" \
-  --seed 42 \
+  --score-mode "${E5_SCORE_MODE:-neg_logpdf}" \
+  --seed "${E5_SEED:-42}" \
   --out-json "${OUT_JSON}" \
   2>&1 | tee "${RUN_DIR}/logs/e5_anomaly.log"
 
-cp "${OUT_JSON}" "drafts/paper_outputs/e5_anomaly_results.json"
+if [ "${E5_COPY_TO_PAPER:-1}" = "1" ]; then
+  cp "${OUT_JSON}" "drafts/paper_outputs/e5_anomaly_results.json"
+fi
 
-echo ""
-echo "Regenerating paper artifacts (force refresh)..."
-echo ""
+if [ "${E5_REGENERATE_ARTIFACTS:-1}" = "1" ]; then
+  echo ""
+  echo "Regenerating paper artifacts (force refresh)..."
+  echo ""
 
-export FIG_PNG_DPI="${FIG_PNG_DPI:-120}"
-"${PYTHON_BIN}" drafts/scripts/paper_artifacts.py all --output-base "${OUTPUT_BASE}" --force \
-  2>&1 | tee "${RUN_DIR}/logs/paper_artifacts_after_e5_anomaly.log"
+  export FIG_PNG_DPI="${FIG_PNG_DPI:-120}"
+  "${PYTHON_BIN}" drafts/scripts/paper_artifacts.py all --output-base "${OUTPUT_BASE}" --force \
+    2>&1 | tee "${RUN_DIR}/logs/paper_artifacts_after_e5_anomaly.log"
+fi
 
 echo ""
 echo "============================================================================"

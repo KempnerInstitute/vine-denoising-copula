@@ -1,0 +1,608 @@
+{
+  "manifest": "analysis/paper_sweep_jobs_20260211.json",
+  "output_base": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula",
+  "n_jobs": 16,
+  "n_completed_with_artifact": 15,
+  "n_pending_or_missing_artifact": 1,
+  "completed": [
+    {
+      "job_id": 59843465,
+      "experiment": "e4_imputation",
+      "label": "h005_pool50k",
+      "seed": 42,
+      "params": {
+        "missing_frac": 0.2,
+        "n_eval": 1000,
+        "candidate_pool": 50000,
+        "kernel_h": 0.05,
+        "max_train": 200000,
+        "max_test": 50000,
+        "copy_to_paper": 0,
+        "regenerate_artifacts": 0
+      },
+      "artifact": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e4_imputation_20260211_004438_59843465/results/e4_imputation_results.json",
+      "summary": {
+        "mean_delta_pct": 22.113862635248744,
+        "std_delta_pct": 15.232218242184148,
+        "n_datasets": 3,
+        "datasets": [
+          {
+            "dataset": "power",
+            "rmse_ours": 6.856462804394904,
+            "best_baseline": "knn",
+            "best_baseline_rmse": 6.08334230187535,
+            "delta_pct": 12.708811442045926
+          },
+          {
+            "dataset": "gas",
+            "rmse_ours": 1.085544257847618,
+            "best_baseline": "iterative",
+            "best_baseline_rmse": 0.9865644100450152,
+            "delta_pct": 10.03278111340815
+          },
+          {
+            "dataset": "credit",
+            "rmse_ours": 1.4358245167424213,
+            "best_baseline": "mean",
+            "best_baseline_rmse": 0.9998778295500134,
+            "delta_pct": 43.599995350292154
+          }
+        ]
+      }
+    },
+    {
+      "job_id": 59843466,
+      "experiment": "e4_imputation",
+      "label": "h005_pool50k",
+      "seed": 123,
+      "params": {
+        "missing_frac": 0.2,
+        "n_eval": 1000,
+        "candidate_pool": 50000,
+        "kernel_h": 0.05,
+        "max_train": 200000,
+        "max_test": 50000,
+        "copy_to_paper": 0,
+        "regenerate_artifacts": 0
+      },
+      "artifact": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e4_imputation_20260211_004446_59843466/results/e4_imputation_results.json",
+      "summary": {
+        "mean_delta_pct": 24.40671775856656,
+        "std_delta_pct": 13.610945477368263,
+        "n_datasets": 3,
+        "datasets": [
+          {
+            "dataset": "power",
+            "rmse_ours": 6.836404788348007,
+            "best_baseline": "knn",
+            "best_baseline_rmse": 5.707952050623437,
+            "delta_pct": 19.769835620839146
+          },
+          {
+            "dataset": "gas",
+            "rmse_ours": 1.1143831019362687,
+            "best_baseline": "iterative",
+            "best_baseline_rmse": 1.0080707370090989,
+            "delta_pct": 10.54612151946736
+          },
+          {
+            "dataset": "credit",
+            "rmse_ours": 1.4476952897289463,
+            "best_baseline": "iterative",
+            "best_baseline_rmse": 1.0130530305473617,
+            "delta_pct": 42.90419613539318
+          }
+        ]
+      }
+    },
+    {
+      "job_id": 59843467,
+      "experiment": "e4_imputation",
+      "label": "h005_pool50k",
+      "seed": 456,
+      "params": {
+        "missing_frac": 0.2,
+        "n_eval": 1000,
+        "candidate_pool": 50000,
+        "kernel_h": 0.05,
+        "max_train": 200000,
+        "max_test": 50000,
+        "copy_to_paper": 0,
+        "regenerate_artifacts": 0
+      },
+      "artifact": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e4_imputation_20260211_004446_59843467/results/e4_imputation_results.json",
+      "summary": {
+        "mean_delta_pct": 25.269553587002612,
+        "std_delta_pct": 14.698997351644627,
+        "n_datasets": 3,
+        "datasets": [
+          {
+            "dataset": "power",
+            "rmse_ours": 6.592585569411608,
+            "best_baseline": "knn",
+            "best_baseline_rmse": 5.6220273155515885,
+            "delta_pct": 17.263492320204
+          },
+          {
+            "dataset": "gas",
+            "rmse_ours": 1.1125272138013211,
+            "best_baseline": "iterative",
+            "best_baseline_rmse": 0.9875191924678799,
+            "delta_pct": 12.658794106171992
+          },
+          {
+            "dataset": "credit",
+            "rmse_ours": 1.4609133526683558,
+            "best_baseline": "mean",
+            "best_baseline_rmse": 1.0014049354035874,
+            "delta_pct": 45.88637433463184
+          }
+        ]
+      }
+    },
+    {
+      "job_id": 59843468,
+      "experiment": "e4_imputation",
+      "label": "h002_pool100k",
+      "seed": 42,
+      "params": {
+        "missing_frac": 0.2,
+        "n_eval": 1000,
+        "candidate_pool": 100000,
+        "kernel_h": 0.02,
+        "max_train": 200000,
+        "max_test": 50000,
+        "copy_to_paper": 0,
+        "regenerate_artifacts": 0
+      },
+      "artifact": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e4_imputation_20260211_004446_59843468/results/e4_imputation_results.json",
+      "summary": {
+        "mean_delta_pct": 29.992228409721342,
+        "std_delta_pct": 14.468978777278659,
+        "n_datasets": 3,
+        "datasets": [
+          {
+            "dataset": "power",
+            "rmse_ours": 6.922732790288756,
+            "best_baseline": "knn",
+            "best_baseline_rmse": 6.08334230187535,
+            "delta_pct": 13.79817946714329
+          },
+          {
+            "dataset": "gas",
+            "rmse_ours": 1.255470494428387,
+            "best_baseline": "iterative",
+            "best_baseline_rmse": 0.9865644100450152,
+            "delta_pct": 27.256819893908613
+          },
+          {
+            "dataset": "credit",
+            "rmse_ours": 1.4890349203873685,
+            "best_baseline": "mean",
+            "best_baseline_rmse": 0.9998778295500134,
+            "delta_pct": 48.92168586811213
+          }
+        ]
+      }
+    },
+    {
+      "job_id": 59843469,
+      "experiment": "e4_imputation",
+      "label": "h002_pool100k",
+      "seed": 123,
+      "params": {
+        "missing_frac": 0.2,
+        "n_eval": 1000,
+        "candidate_pool": 100000,
+        "kernel_h": 0.02,
+        "max_train": 200000,
+        "max_test": 50000,
+        "copy_to_paper": 0,
+        "regenerate_artifacts": 0
+      },
+      "artifact": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e4_imputation_20260211_004447_59843469/results/e4_imputation_results.json",
+      "summary": {
+        "mean_delta_pct": 32.394954075212716,
+        "std_delta_pct": 12.13226259451184,
+        "n_datasets": 3,
+        "datasets": [
+          {
+            "dataset": "power",
+            "rmse_ours": 6.828378886025595,
+            "best_baseline": "knn",
+            "best_baseline_rmse": 5.707952050623437,
+            "delta_pct": 19.629226480271193
+          },
+          {
+            "dataset": "gas",
+            "rmse_ours": 1.2988974819278232,
+            "best_baseline": "iterative",
+            "best_baseline_rmse": 1.0080707370090989,
+            "delta_pct": 28.849835060344507
+          },
+          {
+            "dataset": "credit",
+            "rmse_ours": 1.5064686204393394,
+            "best_baseline": "iterative",
+            "best_baseline_rmse": 1.0130530305473617,
+            "delta_pct": 48.70580068502245
+          }
+        ]
+      }
+    },
+    {
+      "job_id": 59843470,
+      "experiment": "e4_imputation",
+      "label": "h002_pool100k",
+      "seed": 456,
+      "params": {
+        "missing_frac": 0.2,
+        "n_eval": 1000,
+        "candidate_pool": 100000,
+        "kernel_h": 0.02,
+        "max_train": 200000,
+        "max_test": 50000,
+        "copy_to_paper": 0,
+        "regenerate_artifacts": 0
+      },
+      "artifact": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e4_imputation_20260211_004447_59843470/results/e4_imputation_results.json",
+      "summary": {
+        "mean_delta_pct": 34.047635707617644,
+        "std_delta_pct": 14.444820192430553,
+        "n_datasets": 3,
+        "datasets": [
+          {
+            "dataset": "power",
+            "rmse_ours": 6.58904345455498,
+            "best_baseline": "knn",
+            "best_baseline_rmse": 5.6220273155515885,
+            "delta_pct": 17.200488093119755
+          },
+          {
+            "dataset": "gas",
+            "rmse_ours": 1.3081245870360336,
+            "best_baseline": "iterative",
+            "best_baseline_rmse": 0.9875191924678799,
+            "delta_pct": 32.46573808524555
+          },
+          {
+            "dataset": "credit",
+            "rmse_ours": 1.5269090083176804,
+            "best_baseline": "mean",
+            "best_baseline_rmse": 1.0014049354035874,
+            "delta_pct": 52.47668094448762
+          }
+        ]
+      }
+    },
+    {
+      "job_id": 59843471,
+      "experiment": "e5_anomaly",
+      "label": "score_best",
+      "seed": 42,
+      "params": {
+        "max_train": 50000,
+        "max_test": 50000,
+        "score_mode": "best",
+        "copy_to_paper": 0,
+        "regenerate_artifacts": 0
+      },
+      "artifact": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e5_anomaly_20260211_004517_59843471/results/e5_anomaly_results.json",
+      "summary": {
+        "score_mode": "logpdf",
+        "ours_mean_auroc": 0.5823002701769603,
+        "ours_mean_ap": 0.2692348519460749,
+        "best_baseline_method": "Gaussian-MD",
+        "best_baseline_auroc": 0.8426756846667851,
+        "gap_vs_best_baseline_auroc": -0.2603754144898248
+      }
+    },
+    {
+      "job_id": 59843472,
+      "experiment": "e5_anomaly",
+      "label": "score_best",
+      "seed": 123,
+      "params": {
+        "max_train": 50000,
+        "max_test": 50000,
+        "score_mode": "best",
+        "copy_to_paper": 0,
+        "regenerate_artifacts": 0
+      },
+      "artifact": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e5_anomaly_20260211_004517_59843472/results/e5_anomaly_results.json",
+      "summary": {
+        "score_mode": "logpdf",
+        "ours_mean_auroc": 0.5823002701769603,
+        "ours_mean_ap": 0.2692348519460749,
+        "best_baseline_method": "Gaussian-MD",
+        "best_baseline_auroc": 0.8426756846667851,
+        "gap_vs_best_baseline_auroc": -0.2603754144898248
+      }
+    },
+    {
+      "job_id": 59843473,
+      "experiment": "e5_anomaly",
+      "label": "score_best",
+      "seed": 456,
+      "params": {
+        "max_train": 50000,
+        "max_test": 50000,
+        "score_mode": "best",
+        "copy_to_paper": 0,
+        "regenerate_artifacts": 0
+      },
+      "artifact": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e5_anomaly_20260211_004517_59843473/results/e5_anomaly_results.json",
+      "summary": {
+        "score_mode": "logpdf",
+        "ours_mean_auroc": 0.5823002701769603,
+        "ours_mean_ap": 0.2692348519460749,
+        "best_baseline_method": "Gaussian-MD",
+        "best_baseline_auroc": 0.8426756846667851,
+        "gap_vs_best_baseline_auroc": -0.2603754144898248
+      }
+    },
+    {
+      "job_id": 59843474,
+      "experiment": "e5_anomaly",
+      "label": "score_neglogpdf",
+      "seed": 42,
+      "params": {
+        "max_train": 50000,
+        "max_test": 50000,
+        "score_mode": "neg_logpdf",
+        "copy_to_paper": 0,
+        "regenerate_artifacts": 0
+      },
+      "artifact": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e5_anomaly_20260211_004525_59843474/results/e5_anomaly_results.json",
+      "summary": {
+        "score_mode": "neg_logpdf",
+        "ours_mean_auroc": 0.45743058637618705,
+        "ours_mean_ap": 0.1977758187373945,
+        "best_baseline_method": "Gaussian-MD",
+        "best_baseline_auroc": 0.8426756846667851,
+        "gap_vs_best_baseline_auroc": -0.38524509829059805
+      }
+    },
+    {
+      "job_id": 59843475,
+      "experiment": "e5_anomaly",
+      "label": "score_neglogpdf",
+      "seed": 123,
+      "params": {
+        "max_train": 50000,
+        "max_test": 50000,
+        "score_mode": "neg_logpdf",
+        "copy_to_paper": 0,
+        "regenerate_artifacts": 0
+      },
+      "artifact": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e5_anomaly_20260211_004633_59843475/results/e5_anomaly_results.json",
+      "summary": {
+        "score_mode": "neg_logpdf",
+        "ours_mean_auroc": 0.45743058637618705,
+        "ours_mean_ap": 0.1977758187373945,
+        "best_baseline_method": "Gaussian-MD",
+        "best_baseline_auroc": 0.8426756846667851,
+        "gap_vs_best_baseline_auroc": -0.38524509829059805
+      }
+    },
+    {
+      "job_id": 59843476,
+      "experiment": "e5_anomaly",
+      "label": "score_neglogpdf",
+      "seed": 456,
+      "params": {
+        "max_train": 50000,
+        "max_test": 50000,
+        "score_mode": "neg_logpdf",
+        "copy_to_paper": 0,
+        "regenerate_artifacts": 0
+      },
+      "artifact": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e5_anomaly_20260211_004633_59843476/results/e5_anomaly_results.json",
+      "summary": {
+        "score_mode": "neg_logpdf",
+        "ours_mean_auroc": 0.45743058637618705,
+        "ours_mean_ap": 0.1977758187373945,
+        "best_baseline_method": "Gaussian-MD",
+        "best_baseline_auroc": 0.8426756846667851,
+        "gap_vs_best_baseline_auroc": -0.38524509829059805
+      }
+    },
+    {
+      "job_id": 59844095,
+      "experiment": "e4_imputation",
+      "label": "h01_pool50k",
+      "seed": 42,
+      "params": {
+        "missing_frac": 0.2,
+        "n_eval": 1000,
+        "candidate_pool": 50000,
+        "kernel_h": 0.1,
+        "max_train": 200000,
+        "max_test": 50000,
+        "copy_to_paper": 0,
+        "regenerate_artifacts": 0
+      },
+      "artifact": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e4_imputation_20260211_005127_59844095/results/e4_imputation_results.json",
+      "summary": {
+        "mean_delta_pct": 15.089184266884791,
+        "std_delta_pct": 11.39286625466915,
+        "n_datasets": 3,
+        "datasets": [
+          {
+            "dataset": "power",
+            "rmse_ours": 7.094947147218806,
+            "best_baseline": "knn",
+            "best_baseline_rmse": 6.08334230187535,
+            "delta_pct": 16.62909622941328
+          },
+          {
+            "dataset": "gas",
+            "rmse_ours": 0.9908041711088845,
+            "best_baseline": "iterative",
+            "best_baseline_rmse": 0.9865644100450152,
+            "delta_pct": 0.42975005186695414
+          },
+          {
+            "dataset": "credit",
+            "rmse_ours": 1.2819304320400646,
+            "best_baseline": "mean",
+            "best_baseline_rmse": 0.9998778295500134,
+            "delta_pct": 28.20870651937414
+          }
+        ]
+      }
+    },
+    {
+      "job_id": 59844096,
+      "experiment": "e4_imputation",
+      "label": "h01_pool50k",
+      "seed": 123,
+      "params": {
+        "missing_frac": 0.2,
+        "n_eval": 1000,
+        "candidate_pool": 50000,
+        "kernel_h": 0.1,
+        "max_train": 200000,
+        "max_test": 50000,
+        "copy_to_paper": 0,
+        "regenerate_artifacts": 0
+      },
+      "artifact": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e4_imputation_20260211_005135_59844096/results/e4_imputation_results.json",
+      "summary": {
+        "mean_delta_pct": 17.15867110846322,
+        "std_delta_pct": 11.415284223387433,
+        "n_datasets": 3,
+        "datasets": [
+          {
+            "dataset": "power",
+            "rmse_ours": 7.1009362003539716,
+            "best_baseline": "knn",
+            "best_baseline_rmse": 5.707952050623437,
+            "delta_pct": 24.404272099279282
+          },
+          {
+            "dataset": "gas",
+            "rmse_ours": 1.0185779737243459,
+            "best_baseline": "iterative",
+            "best_baseline_rmse": 1.0080707370090989,
+            "delta_pct": 1.0423114499307369
+          },
+          {
+            "dataset": "credit",
+            "rmse_ours": 1.276744957729147,
+            "best_baseline": "iterative",
+            "best_baseline_rmse": 1.0130530305473617,
+            "delta_pct": 26.029429776179644
+          }
+        ]
+      }
+    },
+    {
+      "job_id": 59844097,
+      "experiment": "e4_imputation",
+      "label": "h01_pool50k",
+      "seed": 456,
+      "params": {
+        "missing_frac": 0.2,
+        "n_eval": 1000,
+        "candidate_pool": 50000,
+        "kernel_h": 0.1,
+        "max_train": 200000,
+        "max_test": 50000,
+        "copy_to_paper": 0,
+        "regenerate_artifacts": 0
+      },
+      "artifact": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e4_imputation_20260211_005143_59844097/results/e4_imputation_results.json",
+      "summary": {
+        "mean_delta_pct": 17.46156698032471,
+        "std_delta_pct": 11.567944640871321,
+        "n_datasets": 3,
+        "datasets": [
+          {
+            "dataset": "power",
+            "rmse_ours": 6.88818961198016,
+            "best_baseline": "knn",
+            "best_baseline_rmse": 5.6220273155515885,
+            "delta_pct": 22.521454012258676
+          },
+          {
+            "dataset": "gas",
+            "rmse_ours": 1.0019224837268927,
+            "best_baseline": "iterative",
+            "best_baseline_rmse": 0.9875191924678799,
+            "delta_pct": 1.4585327929696246
+          },
+          {
+            "dataset": "credit",
+            "rmse_ours": 1.2858511446462266,
+            "best_baseline": "mean",
+            "best_baseline_rmse": 1.0014049354035874,
+            "delta_pct": 28.40471413574583
+          }
+        ]
+      }
+    }
+  ],
+  "pending_or_missing": [
+    {
+      "job_id": 59843463,
+      "experiment": "e3_var",
+      "label": "daily_resim_short_horizon",
+      "seed": 42,
+      "params": {
+        "window": 252,
+        "refit_every": 5,
+        "n_sim": 5000,
+        "start_day": 0,
+        "max_days": 120,
+        "resimulate_daily": 1,
+        "copy_to_paper": 0,
+        "regenerate_artifacts": 0
+      },
+      "artifact": null
+    }
+  ],
+  "aggregated": {
+    "e4_by_label": {
+      "h002_pool100k": {
+        "mean": 32.144939397517234,
+        "std": 1.6650250433061617,
+        "n": 3
+      },
+      "h005_pool50k": {
+        "mean": 23.93004466027264,
+        "std": 1.3316679460293783,
+        "n": 3
+      },
+      "h01_pool50k": {
+        "mean": 16.56980745189091,
+        "std": 1.0542359758867796,
+        "n": 3
+      }
+    },
+    "e5_by_label_ours_auroc": {
+      "score_best": {
+        "mean": 0.5823002701769603,
+        "std": 0.0,
+        "n": 3
+      },
+      "score_neglogpdf": {
+        "mean": 0.45743058637618705,
+        "std": 0.0,
+        "n": 3
+      }
+    },
+    "e5_by_label_gap_vs_best": {
+      "score_best": {
+        "mean": -0.2603754144898248,
+        "std": 0.0,
+        "n": 3
+      },
+      "score_neglogpdf": {
+        "mean": -0.38524509829059805,
+        "std": 0.0,
+        "n": 3
+      }
+    }
+  }
+}

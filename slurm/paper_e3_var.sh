@@ -6,7 +6,8 @@
 #SBATCH --ntasks=1
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=16
-#SBATCH --time=12:00:00
+# Full-horizon VaR backtests can exceed 12h depending on node/load.
+#SBATCH --time=48:00:00
 #SBATCH --mem=256GB
 #SBATCH --partition=kempner_h100_priority3
 #SBATCH --account=kempner_dev
@@ -29,6 +30,7 @@ if [ -n "${SLURM_SUBMIT_DIR:-}" ] && [ -f "${SLURM_SUBMIT_DIR}/drafts/scripts/e3
   REPO_ROOT="${SLURM_SUBMIT_DIR}"
 fi
 OUTPUT_BASE="${OUTPUT_BASE:-/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula}"
+export OUTPUT_BASE
 
 echo "============================================================================"
 echo "Vine Diffusion Copula PAPER JOB: E3 VaR backtest"
@@ -81,9 +83,11 @@ cd "${REPO_ROOT}"
 export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-16}"
 export MKL_NUM_THREADS="${SLURM_CPUS_PER_TASK:-16}"
 export PYTORCH_ALLOC_CONF=expandable_segments:True
+export PYTHONUNBUFFERED=1
 
 echo "CONDA_PREFIX: ${CONDA_PREFIX:-}"
 echo "LD_LIBRARY_PATH: ${LD_LIBRARY_PATH:-}"
+echo "E3 params: vine_type=${E3_VINE_TYPE:-dvine} window=${E3_WINDOW:-252} refit_every=${E3_REFIT_EVERY:-5} start_day=${E3_START_DAY:-0} n_sim=${E3_N_SIM:-5000} max_days=${E3_MAX_DAYS:-0} seed=${E3_SEED:-42}"
 echo "Testing Python..."
 "${PYTHON_BIN}" -c "print('Python works')"
 "${PYTHON_BIN}" -c "import numpy; print(f'numpy: {numpy.__version__}')"
@@ -100,29 +104,40 @@ CKPT_ARGS=()
 if [ -n "${CKPT}" ]; then
   CKPT_ARGS=(--checkpoint "${CKPT}")
 fi
+E3_EXTRA_ARGS=()
+if [ "${E3_RESIMULATE_DAILY:-0}" = "1" ]; then
+  E3_EXTRA_ARGS+=(--resimulate-daily)
+fi
 
 "${PYTHON_BIN}" drafts/scripts/e3_var_backtest.py \
   --output-base "${OUTPUT_BASE}" \
   "${CKPT_ARGS[@]}" \
   --device cuda \
+  --vine-type "${E3_VINE_TYPE:-dvine}" \
   --window "${E3_WINDOW:-252}" \
   --refit-every "${E3_REFIT_EVERY:-5}" \
+  --start-day "${E3_START_DAY:-0}" \
   --n-sim "${E3_N_SIM:-5000}" \
   --alphas 0.01 0.05 \
   --max-days "${E3_MAX_DAYS:-0}" \
-  --seed 42 \
+  "${E3_EXTRA_ARGS[@]}" \
+  --seed "${E3_SEED:-42}" \
   --out-json "${OUT_JSON}" \
   2>&1 | tee "${RUN_DIR}/logs/e3_var.log"
 
-cp "${OUT_JSON}" "drafts/paper_outputs/e3_var_results.json"
+if [ "${E3_COPY_TO_PAPER:-1}" = "1" ]; then
+  cp "${OUT_JSON}" "drafts/paper_outputs/e3_var_results.json"
+fi
 
-echo ""
-echo "Regenerating paper artifacts (force refresh)..."
-echo ""
+if [ "${E3_REGENERATE_ARTIFACTS:-1}" = "1" ]; then
+  echo ""
+  echo "Regenerating paper artifacts (force refresh)..."
+  echo ""
 
-export FIG_PNG_DPI="${FIG_PNG_DPI:-120}"
-"${PYTHON_BIN}" drafts/scripts/paper_artifacts.py all --output-base "${OUTPUT_BASE}" --force \
-  2>&1 | tee "${RUN_DIR}/logs/paper_artifacts_after_e3_var.log"
+  export FIG_PNG_DPI="${FIG_PNG_DPI:-120}"
+  "${PYTHON_BIN}" drafts/scripts/paper_artifacts.py all --output-base "${OUTPUT_BASE}" --force \
+    2>&1 | tee "${RUN_DIR}/logs/paper_artifacts_after_e3_var.log"
+fi
 
 echo ""
 echo "============================================================================"

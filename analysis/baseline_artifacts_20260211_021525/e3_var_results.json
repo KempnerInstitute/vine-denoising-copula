@@ -1,0 +1,143 @@
+{
+  "generated_at": "2026-02-10T16:56:51.958033",
+  "merged_inputs": [
+    "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e3_var_20260210_123031_59756191/results/e3_var_results.json",
+    "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e3_var_20260210_123031_59756203/results/e3_var_results.json",
+    "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e3_var_20260210_123031_59756204/results/e3_var_results.json",
+    "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e3_var_20260210_123031_59756205/results/e3_var_results.json",
+    "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e3_var_20260210_123036_59756206/results/e3_var_results.json",
+    "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e3_var_20260210_123036_59756207/results/e3_var_results.json",
+    "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e3_var_20260210_123038_59756208/results/e3_var_results.json",
+    "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e3_var_20260210_123053_59756209/results/e3_var_results.json",
+    "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e3_var_20260210_123153_59756210/results/e3_var_results.json",
+    "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e3_var_20260210_123313_59756211/results/e3_var_results.json",
+    "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e3_var_20260210_123313_59756212/results/e3_var_results.json",
+    "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e3_var_20260210_123428_59756213/results/e3_var_results.json",
+    "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e3_var_20260210_123504_59756214/results/e3_var_results.json",
+    "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e3_var_20260210_123712_59756215/results/e3_var_results.json",
+    "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_e3_var_20260210_123736_59756216/results/e3_var_results.json"
+  ],
+  "data_root": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/datasets",
+  "checkpoint": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_denoiser_cond_enhanced_20260207_105852_59344687/checkpoints/model_step_190000.pt",
+  "checkpoints": [
+    "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_denoiser_cond_enhanced_20260207_105852_59344687/checkpoints/model_step_190000.pt"
+  ],
+  "model_type": "denoiser",
+  "window": 252,
+  "refit_every": 5,
+  "n_sim": 5000,
+  "n_refits": 867,
+  "mean_fit_s": 4.829496011446792,
+  "rows": [
+    {
+      "method": "VDC (Ours)",
+      "alpha": 0.01,
+      "n": 4326,
+      "violations": 60,
+      "kupiec_p": 0.015670686354225638,
+      "christoffersen_p": 0.0
+    },
+    {
+      "method": "Historical",
+      "alpha": 0.01,
+      "n": 4326,
+      "violations": 63,
+      "kupiec_p": 0.0047419366754895,
+      "christoffersen_p": 0.0
+    },
+    {
+      "method": "Gaussian",
+      "alpha": 0.01,
+      "n": 4326,
+      "violations": 84,
+      "kupiec_p": 3.530490066960823e-08,
+      "christoffersen_p": 0.0
+    },
+    {
+      "method": "VDC (Ours)",
+      "alpha": 0.05,
+      "n": 4326,
+      "violations": 81,
+      "kupiec_p": 0.0,
+      "christoffersen_p": 0.0
+    },
+    {
+      "method": "Historical",
+      "alpha": 0.05,
+      "n": 4326,
+      "violations": 189,
+      "kupiec_p": 0.05182383770669907,
+      "christoffersen_p": 0.0
+    },
+    {
+      "method": "Gaussian",
+      "alpha": 0.05,
+      "n": 4326,
+      "violations": 204,
+      "kupiec_p": 0.38651743190638266,
+      "christoffersen_p": 0.0
+    }
+  ],
+  "records": [
+    {
+      "method": "VDC (Ours)",
+      "alpha": 0.01,
+      "violation_rate": 0.013869625520110958,
+      "pvalue": 0.015670686354225638,
+      "kupiec_p": 0.015670686354225638,
+      "christoffersen_p": 0.0,
+      "n": 4326,
+      "violations": 60
+    },
+    {
+      "method": "Historical",
+      "alpha": 0.01,
+      "violation_rate": 0.014563106796116505,
+      "pvalue": 0.0047419366754895,
+      "kupiec_p": 0.0047419366754895,
+      "christoffersen_p": 0.0,
+      "n": 4326,
+      "violations": 63
+    },
+    {
+      "method": "Gaussian",
+      "alpha": 0.01,
+      "violation_rate": 0.019417475728155338,
+      "pvalue": 3.530490066960823e-08,
+      "kupiec_p": 3.530490066960823e-08,
+      "christoffersen_p": 0.0,
+      "n": 4326,
+      "violations": 84
+    },
+    {
+      "method": "VDC (Ours)",
+      "alpha": 0.05,
+      "violation_rate": 0.01872399445214979,
+      "pvalue": 0.0,
+      "kupiec_p": 0.0,
+      "christoffersen_p": 0.0,
+      "n": 4326,
+      "violations": 81
+    },
+    {
+      "method": "Historical",
+      "alpha": 0.05,
+      "violation_rate": 0.043689320388349516,
+      "pvalue": 0.05182383770669907,
+      "kupiec_p": 0.05182383770669907,
+      "christoffersen_p": 0.0,
+      "n": 4326,
+      "violations": 189
+    },
+    {
+      "method": "Gaussian",
+      "alpha": 0.05,
+      "violation_rate": 0.047156726768377254,
+      "pvalue": 0.38651743190638266,
+      "kupiec_p": 0.38651743190638266,
+      "christoffersen_p": 0.0,
+      "n": 4326,
+      "violations": 204
+    }
+  ]
+}

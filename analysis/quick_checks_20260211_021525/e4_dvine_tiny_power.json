@@ -1,0 +1,25 @@
+{
+  "generated_at": "2026-02-11T02:23:29.837653",
+  "data_root": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/datasets",
+  "checkpoint": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_denoiser_cond_enhanced_20260207_105852_59344687/checkpoints/model_step_190000.pt",
+  "model_type": "denoiser",
+  "vine_type": "dvine",
+  "records": [
+    {
+      "dataset": "power",
+      "d": 5,
+      "n_train": 1000,
+      "n_test": 200,
+      "fit_s": 2.8082419120473787,
+      "missing_frac": 0.2,
+      "n_eval": 5,
+      "candidate_pool": 500,
+      "kernel_h": 0.05,
+      "rmse_ours": 6.726665682331521,
+      "rmse_mean": 13.799227996739202,
+      "rmse_median": 15.16109876060108,
+      "rmse_knn": 4.044730679103912,
+      "rmse_iterative": 3.2482970935301108
+    }
+  ]
+}
