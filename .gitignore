@@ -1,8 +1,28 @@
 # Ignore drafts folder (separate git repo)
 drafts/
-*.out
 # Keep only README.md
 !README.md
+
+# Generated artifacts (LaTeX / reports / job logs)
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.log
+*.lot
+*.nav
+*.out
+*.pdf
+*.run.xml
+*.synctex.gz
+*.toc
+*.vrb
+*.xdv
+slurm-*.out
+slurm-*.err
 # Python
 __pycache__/
 *.py[cod]
