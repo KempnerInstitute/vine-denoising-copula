@@ -219,6 +219,8 @@ Use `scripts/model_selection.py` to compare checkpoints on a fixed bivariate sui
 The paper source and paper-only SLURM jobs live in the separate `drafts/` repository:
 - LaTeX: `drafts/vine_diffusion.tex`
 - Artifact scripts: `drafts/scripts/paper_artifacts.py`
+- Canonical paper checkpoint pointer: `analysis/PAPER_CHECKPOINT.txt`
+- Canonical paper model manifest: `analysis/PAPER_BEST_MODEL.json`
 
 ## Documentation
 
@@ -230,6 +232,7 @@ The paper source and paper-only SLURM jobs live in the separate `drafts/` reposi
 | [docs/API.md](docs/API.md) | Complete API reference |
 | [docs/TECHNICAL_DETAILS.md](docs/TECHNICAL_DETAILS.md) | Mathematical framework |
 | [docs/WHY_DIFFUSION.md](docs/WHY_DIFFUSION.md) | Design decisions and motivation |
+| [docs/PAPER_REPRODUCIBILITY.md](docs/PAPER_REPRODUCIBILITY.md) | Canonical paper checkpoint + exact rerun commands |
 
 ## Examples
 

@@ -1,5 +1,75 @@
 # Paper Results Status (2026-02-08)
 
+## Update (2026-02-13 09:30 EST)
+- Added TC story composite figure (main text):
+  - Script: `drafts/scripts/fig_tc_story_composite.py`
+  - Output: `drafts/figures/fig_tc_story_composite.pdf`
+  - Panels:
+    1. Ground-truth edge MI recovery (synthetic Gaussian factor truth vs estimate),
+    2. Real-data tree decomposition contrast (Power vs Gas, grouped bars),
+    3. Existing TC scaling benchmark panel from `results/tc_benchmark.json`.
+- Negative TC handling policy for decomposition comparison:
+  - Keep signed TC values as-is (do **not** clamp negative totals to zero),
+  - Use per-tree **absolute share of |TC|** for grouped bar comparisons to avoid misleading cancellation artifacts in near-independence regimes.
+- Main manuscript now uses this composite in the Information section:
+  - `drafts/vine_diffusion.tex` Figure `\ref{fig:tc_decomposition}` now includes `fig_tc_story_composite`.
+- Artifact pipeline wiring:
+  - `drafts/scripts/paper_artifacts.py` now calls `fig_tc_story_composite.py`.
+- Validation:
+  - `pdflatex` 2-pass compile succeeds,
+  - `analysis/paper_asset_audit_latest.json` remains clean (`ok=true`).
+
+## Update (2026-02-13 03:25 EST)
+- Added real-data TC decomposition pipeline:
+  - Script upgraded: `drafts/scripts/generate_tc_decomposition_figure.py`
+    - supports `--mode uci` using canonical checkpoint + real UCI data,
+    - writes figure, JSON artifact, and LaTeX table from the same run.
+- Real runs completed with canonical checkpoint
+  `/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_denoiser_cond_enhanced_20260207_105852_59344687/checkpoints/model_step_190000.pt`:
+  - `power` (used in main text): `drafts/paper_outputs/tc_decomposition_uci_power.json`
+    - TC = `2.3566` nats, `T1=89.0%`, `T1+T2=97.1%`.
+  - `gas` diagnostic: `drafts/paper_outputs/tc_decomposition_uci_gas.json`
+    - near-independence regime (`TC≈-0.0010` nats with sign cancellations), not suitable as flagship interpretability panel.
+  - `hepmass` diagnostic (subsampled): `drafts/paper_outputs/tc_decomposition_uci_hepmass.json`
+    - similarly near-zero signed TC under this estimator setting.
+- Figure/table artifacts from real data:
+  - Main figure now overwritten with real-data run: `drafts/figures/fig_tc_decomposition.pdf`
+  - Additional table: `drafts/tables/tab_tc_decomposition_uci_power.tex`
+- Manuscript integration:
+  - Added TC decomposition figure in Information section:
+    `drafts/vine_diffusion.tex` (Figure `\ref{fig:tc_decomposition}`), with real-data caption values.
+- Added reproducible asset audit utility:
+  - `analysis/audit_paper_assets.py` -> `analysis/paper_asset_audit_latest.json`
+  - Current audit status: all referenced figures/tables exist and no referenced table is placeholder-flagged.
+
+## Update (2026-02-13 04:05 EST)
+- Added explicit ground-truth TC decomposition comparison benchmark:
+  - Script: `drafts/scripts/compare_tc_decomposition_ground_truth.py`
+  - Setup: synthetic Gaussian factor copula (`d=8`), analytic TC and analytic per-edge MI under D-vine natural ordering.
+  - Fits \ours{} on sampled train data with canonical checkpoint and compares edge/tree/total TC on held-out data.
+- Generated artifacts:
+  - `drafts/figures/fig_tc_decomposition_ground_truth.pdf`
+  - `drafts/paper_outputs/tc_decomposition_ground_truth_compare.json`
+  - `drafts/tables/tab_tc_decomposition_ground_truth.tex`
+- Current results (real run, no placeholders):
+  - `TC_true = 1.7505`, `TC_est = 1.7916`, `|Delta TC| = 0.0411`
+  - Edge-wise error: `MAE = 0.0041`, `RMSE = 0.0068` over `28` edges.
+- Manuscript integration:
+  - Added appendix subsection “Ground-Truth TC Decomposition Check” with figure/table includes in `drafts/vine_diffusion.tex`.
+
+## Update (2026-02-13 02:35 EST)
+- Added explicit in-repo canonical model pointers for camera-ready reproducibility:
+  - `analysis/PAPER_CHECKPOINT.txt`
+  - `analysis/PAPER_BEST_MODEL.json`
+- Canonical checkpoint remains:
+  - `/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_denoiser_cond_enhanced_20260207_105852_59344687/checkpoints/model_step_190000.pt`
+- Added dedicated documentation page:
+  - `docs/PAPER_REPRODUCIBILITY.md` (resolution order + exact rerun commands for information benchmarks).
+- Checkpoint resolver hardening:
+  - `vdc/utils/paper.py` now resolves canonical checkpoint in this order:
+    `PAPER_CHECKPOINT` env -> `analysis/PAPER_CHECKPOINT.txt` -> `analysis/PAPER_BEST_MODEL.json` -> run auto-discovery.
+  - This prevents accidental drift to a different checkpoint when `--checkpoint` is omitted.
+
 ## Update (2026-02-11 02:12 EST)
 - Execution pivot applied (results-first, no paper overwrite during sweeps):
   - Cancelled infeasible full-horizon daily-resimulation E3 pilot: `59792536` (`CANCELLED`, had reached `12/144` refits in ~`6.85h`).
