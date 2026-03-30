@@ -55,24 +55,35 @@ def tail_density(d: torch.Tensor, tail_region: float = 0.1) -> torch.Tensor:
 def kendall_tau(samples: torch.Tensor, max_points: int = 2000) -> torch.Tensor:
     """Approximate Kendall's tau from samples (N,2) or (B,N,2).
     Subsamples to max_points for O(n^2) concordance computation.
+    
+    Returns Kendall's tau in [-1, 1].
     """
-    if samples.dim() == 2: samples = samples.unsqueeze(0)
+    if samples.dim() == 2: 
+        samples = samples.unsqueeze(0)
     B, N, _ = samples.shape
     if N > max_points:
         idx = torch.randperm(N, device=samples.device)[:max_points]
         samples = samples[:, idx]
         N = max_points
-    u = samples[...,0]; v = samples[...,1]
-    # (B,N,N) differences
+    u = samples[..., 0]  # (B, N)
+    v = samples[..., 1]  # (B, N)
+    
+    # (B, N, N) differences
     du = u.unsqueeze(-1) - u.unsqueeze(-2)
     dv = v.unsqueeze(-1) - v.unsqueeze(-2)
-    sign = torch.sign(du*dv)
-    # ignore zeros (ties) by masking
-    mask = (du!=0) & (dv!=0)
-    concord = (sign>0).float()[mask].sum(dim=-1)
-    discord = (sign<0).float()[mask].sum(dim=-1)
-    denom = mask.float().sum(dim=-1).clamp_min(1.0)
-    tau = (concord - discord) / denom
+    sign = torch.sign(du * dv)
+    
+    # Ignore zeros (ties) by masking
+    mask = (du != 0) & (dv != 0)
+    
+    # Apply mask and sum per batch
+    # Concordant: sign > 0, Discordant: sign < 0
+    concordant = ((sign > 0) & mask).float().sum(dim=(-2, -1))  # (B,)
+    discordant = ((sign < 0) & mask).float().sum(dim=(-2, -1))  # (B,)
+    total_pairs = mask.float().sum(dim=(-2, -1)).clamp_min(1.0)  # (B,)
+    
+    # Kendall's tau = (concordant - discordant) / total_pairs
+    tau = (concordant - discordant) / total_pairs
     return tau.mean()
 
 def tail_dependence_from_grid(d: torch.Tensor, q_high: float = 0.95, q_low: float = 0.05) -> torch.Tensor:
@@ -118,3 +129,41 @@ def aggregate_metrics(pred: torch.Tensor, target: torch.Tensor, samples: Optiona
         except Exception:
             pass
     return metrics
+
+
+def mutual_information_from_density_grid(d: torch.Tensor, eps: float = 1e-12) -> torch.Tensor:
+    """
+    Approximate mutual information for a (bi)variate copula density on a grid.
+
+    For a copula density c(u,v) with uniform marginals:
+        I(U;V) = ∫∫ c(u,v) log c(u,v) du dv
+
+    This function expects a *density grid* (not log-density). If `d` is not perfectly
+    normalized, it will be normalized internally.
+
+    Args:
+        d: Tensor shaped (m,m), (B,m,m), or (B,1,m,m).
+        eps: Clamp for log stability.
+
+    Returns:
+        Scalar tensor (mean over batch if B>1).
+    """
+    if d.dim() == 2:
+        d_ = d.unsqueeze(0).unsqueeze(0)  # (1,1,m,m)
+    elif d.dim() == 3:
+        d_ = d.unsqueeze(1)  # (B,1,m,m)
+    elif d.dim() == 4:
+        d_ = d
+    else:
+        raise ValueError(f"d must have 2/3/4 dims, got shape={tuple(d.shape)}")
+
+    B, _, m, _ = d_.shape
+    du = 1.0 / m
+    d_n = _safe_normalize(d_.clamp_min(eps), eps=eps)
+    mi = (d_n * torch.log(d_n + eps)).sum(dim=(-2, -1)) * (du * du)  # (B,1)
+    return mi.mean()
+
+
+def copula_entropy_from_density_grid(d: torch.Tensor, eps: float = 1e-12) -> torch.Tensor:
+    """Copula entropy H_c = -∫ c log c = -I(U;V) for bivariate copulas."""
+    return -mutual_information_from_density_grid(d, eps=eps)

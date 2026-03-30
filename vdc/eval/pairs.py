@@ -11,12 +11,11 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 from ..models.projection import copula_project
-from ..losses.nll import nll_points
-from ..losses.ise import ise_logdensity
-from .metrics import (
+from ..losses import nll_points, ise_logdensity
+from ..utils.stats import (
     tail_dependence_empirical,
-    compute_kendall_tau,
-    copula_distance_metrics
+    kendall_tau as compute_kendall_tau,
+    copula_distance as copula_distance_metrics
 )
 
 

@@ -157,6 +157,13 @@ class CopulaDenoiser(nn.Module):
             skips.append(h)
 
         h = self.bottle(h, temb)
+        # Align skip usage with the decoder schedule:
+        # - We stored a skip at the bottleneck resolution (before upsampling).
+        # - The decoder applies its first upsample AFTER the first decoder block-list.
+        # If we don't consume this bottleneck-resolution skip here, the first upsample
+        # would try to add an 8×8 skip to a 16×16 tensor (shape mismatch).
+        if skips:
+            h = h + skips.pop()
 
         # Decoder
         dec_iter = iter(self.dec_levels)

@@ -300,7 +300,7 @@ if __name__ == '__main__':
     print(f"   Min: {hist.min():.6f}, Max: {hist.max():.6f}, Mean: {hist.mean():.6f}")
     assert hist.shape == (B, 1, m, m)
     assert torch.allclose(hist.sum(dim=(-2, -1)), torch.ones(B, 1, device=device), atol=1e-5)
-    print("   ✓ Passed")
+    print("   Passed")
     
     # Test 2: build_coordinates
     print("\n2. Testing build_coordinates...")
@@ -311,7 +311,7 @@ if __name__ == '__main__':
     assert coords.shape == (B, 2, m, m)
     assert coords[:, 0].min() >= 0 and coords[:, 0].max() <= 1
     assert coords[:, 1].min() >= 0 and coords[:, 1].max() <= 1
-    print("   ✓ Passed")
+    print("   Passed")
     
     # Test 3: tail_loss
     print("\n3. Testing tail_loss...")
@@ -325,7 +325,7 @@ if __name__ == '__main__':
     loss_nonzero = tail_loss(D_pred_noisy, D_target, tau=0.15)
     print(f"   Loss (noisy): {loss_nonzero.item():.6f}")
     assert loss_nonzero.item() > 0
-    print("   ✓ Passed")
+    print("   Passed")
     
     # Test 4: alpha_bar_cosine
     print("\n4. Testing alpha_bar_cosine...")
@@ -335,7 +335,7 @@ if __name__ == '__main__':
     print(f"   alpha_bar: {alpha_bar}")
     assert alpha_bar[0] > 0.99  # t=0 should give alpha_bar ≈ 1
     assert alpha_bar[-1] < 0.1  # t=1 should give alpha_bar ≈ 0
-    print("   ✓ Passed")
+    print("   Passed")
     
     # Test 5: add_noise_to_histogram
     print("\n5. Testing add_noise_to_histogram...")
@@ -348,7 +348,7 @@ if __name__ == '__main__':
     for i, ti in enumerate(t):
         dist = (H_noisy[i] - H_clean[i]).pow(2).sum().sqrt().item()
         print(f"     t={ti:.1f}: {dist:.6f}")
-    print("   ✓ Passed")
+    print("   Passed")
     
     # Test 6: check_density_sanity
     print("\n6. Testing check_density_sanity...")
@@ -359,7 +359,7 @@ if __name__ == '__main__':
     D_bad = torch.ones(B, 1, m, m, device=device) * 1e9  # billion-scale (BAD!)
     metrics_bad = check_density_sanity(D_bad, name='bad', verbose=True)
     assert not metrics_bad['sanity_ok']
-    print("   ✓ Passed")
+    print("   Passed")
     
     # Test 7: cross_entropy_on_masses
     print("\n7. Testing cross_entropy_on_masses...")
@@ -373,6 +373,6 @@ if __name__ == '__main__':
     ce_nonzero = cross_entropy_on_masses(D_pred_diff, D_target, m)
     print(f"   CE (different): {ce_nonzero.item():.6f}")
     assert ce_nonzero.item() > 0.01
-    print("   ✓ Passed")
+    print("   Passed")
     
-    print("\n✅ All tests passed!")
+    print("\nAll tests passed.")

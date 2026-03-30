@@ -1,0 +1,64 @@
+# Default configuration for data generation
+defaults:
+  - _self_
+
+# Dataset parameters
+name: synthetic_zoo
+output_dir: data/zoo
+seed: 42
+
+# Copula families to generate
+families:
+  - gaussian
+  - student_t
+  - clayton
+  - gumbel
+  - frank
+  - joe
+  - bb1
+  - bb6
+  - bb7
+  - bb8
+
+# Include rotations (90, 180, 270 degrees)
+include_rotations: true
+
+# Sample sizes per copula
+sample_sizes: [500, 1000, 2000, 5000]
+
+# Number of parameter configurations per family
+n_configs_per_family: 100
+
+# Total pairs to generate
+n_pairs_total: 2000000
+
+# Grid resolution
+m: 64
+
+# Histogram options
+hist:
+  reflect: true
+  tail_bias: false  # If true, use denser bins near 0/1
+
+# Conditional pairs (from vines)
+conditional:
+  enabled: true
+  fraction: 0.25  # 25% of data will be conditional pairs
+  vine_dims: [5, 10, 15, 20]
+  samples_per_vine: 10000
+
+# Teacher densities
+teacher:
+  analytic: true  # Use exact copula densities
+  kdecopula: false  # Optionally add kdecopula teacher (slower)
+  kdecopula_renorm_iters: 3
+
+# Train/val/test split
+split:
+  train: 0.8
+  val: 0.1
+  test: 0.1
+
+# Storage
+compression: gzip
+chunk_size: 10000

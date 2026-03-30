@@ -1,5 +1,11 @@
 """Utility functions for training and evaluation."""
-from .metrics import kendall_tau, tail_dependence_from_grid
+from .metrics import (
+    kendall_tau,
+    tail_dependence_from_grid,
+    mutual_information_from_density_grid,
+    copula_entropy_from_density_grid,
+)
+from .information import ksg_mutual_information
 from .histogram import anti_aliased_hist
 from .ipfp_log import ipfp_project_log, marginal_deviation
 from .probit_transform import (
@@ -12,6 +18,9 @@ from .probit_transform import (
 __all__ = [
     'kendall_tau',
     'tail_dependence_from_grid',
+    'mutual_information_from_density_grid',
+    'copula_entropy_from_density_grid',
+    'ksg_mutual_information',
     'anti_aliased_hist',
     'ipfp_project_log',
     'marginal_deviation',

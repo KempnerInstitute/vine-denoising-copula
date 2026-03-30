@@ -1,0 +1,138 @@
+{
+  "model_id": "vdc-denoiser-m64-v1",
+  "checkpoint_path": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_denoiser_cond_enhanced_20260207_105852_59344687/checkpoints/model_step_190000.pt",
+  "device": "cpu",
+  "cases": [
+    {
+      "family": "independence",
+      "params": {},
+      "rotation": 0,
+      "label": "Independence",
+      "ise": 9.77863762887049e-08,
+      "mi_true": 0.0,
+      "mi_est": 0.0002002693989426182,
+      "mi_abs_err": 0.0002002693989426182,
+      "mass": 1.0,
+      "mass_err": 0.0,
+      "density_min": 0.9143946170806885,
+      "density_max": 1.131178379058838
+    },
+    {
+      "family": "gaussian",
+      "params": {
+        "rho": 0.7
+      },
+      "rotation": 0,
+      "label": "Gaussian(\u03c1=0.7)",
+      "ise": 1.4364927516544984e-07,
+      "mi_true": 0.3305656921296251,
+      "mi_est": 0.3360807373671403,
+      "mi_abs_err": 0.00551504523751517,
+      "mass": 0.9999998807907104,
+      "mass_err": 1.1920928955078125e-07,
+      "density_min": 2.933165706053842e-05,
+      "density_max": 16.808473587036133
+    },
+    {
+      "family": "gaussian",
+      "params": {
+        "rho": -0.7
+      },
+      "rotation": 0,
+      "label": "Gaussian(\u03c1=-0.7)",
+      "ise": 1.2004651744277204e-06,
+      "mi_true": 0.33056569023980104,
+      "mi_est": 0.35850322714405947,
+      "mi_abs_err": 0.02793753690425843,
+      "mass": 0.9999998807907104,
+      "mass_err": 1.1920928955078125e-07,
+      "density_min": 2.413694528513588e-05,
+      "density_max": 18.947734832763672
+    },
+    {
+      "family": "clayton",
+      "params": {
+        "theta": 3.0
+      },
+      "rotation": 0,
+      "label": "Clayton(\u03b8=3.0)",
+      "ise": 1.3055079926105615e-06,
+      "mi_true": 0.6302433904228535,
+      "mi_est": 0.5974677799910502,
+      "mi_abs_err": 0.032775610431803326,
+      "mass": 1.0,
+      "mass_err": 0.0,
+      "density_min": 3.2184079827857204e-06,
+      "density_max": 57.23576736450195
+    },
+    {
+      "family": "frank",
+      "params": {
+        "theta": 5.0
+      },
+      "rotation": 0,
+      "label": "Frank(\u03b8=5.0)",
+      "ise": 1.3656513239593682e-07,
+      "mi_true": 0.2578712044854707,
+      "mi_est": 0.2607760513799773,
+      "mi_abs_err": 0.0029048468945065964,
+      "mass": 0.9999999403953552,
+      "mass_err": 5.960464477539063e-08,
+      "density_min": 0.0384250245988369,
+      "density_max": 4.844460487365723
+    },
+    {
+      "family": "gumbel",
+      "params": {
+        "theta": 2.5
+      },
+      "rotation": 0,
+      "label": "Gumbel(\u03b8=2.5)",
+      "ise": 4.592939483917493e-07,
+      "mi_true": 0.5545196263975531,
+      "mi_est": 0.5338637425552897,
+      "mi_abs_err": 0.020655883842263467,
+      "mass": 0.9999998807907104,
+      "mass_err": 1.1920928955078125e-07,
+      "density_min": 7.523732347181067e-05,
+      "density_max": 47.81380081176758
+    }
+  ],
+  "aggregate": {
+    "mean_ise": 5.572113165466871e-07,
+    "mean_mi_abs_err": 0.014998198784881601,
+    "mean_mass_err": 6.953875223795573e-08
+  },
+  "artifacts": {
+    "bivariate_grid_png": "/n/holylabs/kempner_dev/Users/hsafaai/Code/vine_diffusion_copula/docs/reports/pretrained_release/pretrained_bivariate_verification.png",
+    "bivariate_grid_pdf": "/n/holylabs/kempner_dev/Users/hsafaai/Code/vine_diffusion_copula/docs/reports/pretrained_release/pretrained_bivariate_verification.pdf"
+  },
+  "qualitative_figure": {
+    "pdf": "/n/holylabs/kempner_dev/Users/hsafaai/Code/vine_diffusion_copula/docs/reports/pretrained_release/fig_copula_example_main_verify.pdf",
+    "png": "/n/holylabs/kempner_dev/Users/hsafaai/Code/vine_diffusion_copula/docs/reports/pretrained_release/fig_copula_example_main_verify.png",
+    "metrics": {
+      "checkpoint": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_denoiser_cond_enhanced_20260207_105852_59344687/checkpoints/model_step_190000.pt",
+      "model_type": "denoiser",
+      "copula_name": "Complex-X",
+      "copula_kind": "x",
+      "copula_params": {
+        "sigma": 0.03,
+        "w2": 1.0
+      },
+      "n_samples": 5000,
+      "n_plot": 2500,
+      "m": 64,
+      "seed": 123,
+      "device": "cpu",
+      "pyvine_selected_mode": "nonparametric_tll",
+      "ise_pyvine_selected": 0.00030537464185091396,
+      "time_ms_pyvine_selected": 892.0762469060719,
+      "ise_pyvine_tll": 0.00030537464185091396,
+      "ise_pyvine_param": 0.0008848131289672036,
+      "time_ms_pyvine_tll": 892.0762469060719,
+      "time_ms_pyvine_param": 1735.0397580303252,
+      "ise_dcd_one_shot": 7.517040785387508e-07,
+      "time_ms_dcd_one_shot": 557.3215531185269
+    }
+  }
+}

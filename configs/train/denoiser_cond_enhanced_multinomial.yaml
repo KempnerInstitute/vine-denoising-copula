@@ -1,0 +1,98 @@
+# =============================================================================
+# Count-aware denoiser ablation.
+# Uses multinomial resampling of histogram cell counts before normalization.
+# =============================================================================
+experiment:
+  name: "copula_denoiser_cond_enhanced_multinomial"
+  description: "Denoising edge estimator with multinomial count corruption"
+  seed: 42
+
+model:
+  type: "denoiser"
+  grid_size: 64
+  base_channels: 128
+  depth: 4
+  blocks_per_level: 2
+  dropout: 0.1
+  time_emb_dim: 256
+  use_coordinates: true
+  use_probit_coords: true
+  use_log_n: true
+  time_conditioning: true
+  output_mode: "log"
+  transform_to_probit_space: false
+
+data:
+  m: 64
+  n_samples_per_copula:
+    mode: "log_uniform"
+    min: 200
+    max: 8000
+  copula_families:
+    gaussian: 0.12
+    student: 0.08
+    clayton: 0.10
+    gumbel: 0.12
+    frank: 0.05
+    joe: 0.12
+    bb1: 0.08
+    bb7: 0.08
+    conditional_gaussian: 0.07
+    conditional_clayton: 0.07
+    independence: 0.03
+    complex_x: 0.03
+    complex_ring: 0.03
+    complex_double_banana: 0.02
+  binning: "uniform"
+  num_workers: 4
+  mixture_prob: 0.20
+  n_mixture_components: [2, 4]
+  param_ranges:
+    gaussian_rho: [-0.95, 0.95]
+    student_rho: [-0.9, 0.9]
+    student_df: [2, 30]
+    clayton_theta: [0.1, 14.0]
+    gumbel_theta: [1.1, 12.0]
+    frank_theta: [-15.0, 15.0]
+    joe_theta: [1.1, 12.0]
+    bb1_theta: [0.1, 5.0]
+    bb1_delta: [1.0, 5.0]
+    bb7_theta: [1.0, 5.0]
+    bb7_delta: [0.1, 5.0]
+
+training:
+  max_steps: 240000
+  batch_size: 32
+  learning_rate: 8.0e-5
+  weight_decay: 0.01
+  gradient_clip: 1.0
+  t_scalar_mode: "random"
+  hist_noise:
+    enable: true
+    mode: "multinomial_resample"
+    max_strength: 1.0
+    min_count: 32
+    power: 1.0
+  loss_weights:
+    ce: 1.0
+    ise: 0.0
+    tail: 0.2
+    ms: 0.0
+    marg_kl: 0.02
+  projection_iters: 30
+  detach_projection: false
+  skip_projection: false
+  use_amp: true
+  log_every: 100
+  save_every: 10000
+  viz_every: 5000
+
+output:
+  base_dir: "results"
+  checkpoint_dir: "checkpoints"
+  include_timestamp: true
+  include_job_id: true
+
+hardware:
+  device: "cuda"
+  mixed_precision: true

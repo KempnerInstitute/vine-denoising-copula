@@ -1,0 +1,89 @@
+# =============================================================================
+# Noise-Conditioned Single-Pass Denoiser (one forward pass at t=0)
+# =============================================================================
+experiment:
+  name: "copula_denoiser_cond"
+  description: "Single-pass copula density estimator: (histogram, noise_level) -> density"
+  seed: 42
+
+model:
+  type: "denoiser"
+  grid_size: 64
+  base_channels: 128
+  depth: 4
+  blocks_per_level: 2
+  dropout: 0.1
+  time_emb_dim: 256
+
+  # Conditioning helpers
+  use_coordinates: true
+  use_probit_coords: true
+  use_log_n: true
+  time_conditioning: true
+  output_mode: "log"
+  transform_to_probit_space: false
+
+data:
+  m: 64
+  # Train on a range of sample sizes so the estimator can adapt to uncertainty.
+  # log_uniform covers small-n and large-n fairly.
+  n_samples_per_copula:
+    mode: "log_uniform"
+    min: 200
+    max: 5000
+  copula_families: ["gaussian", "student", "clayton", "gumbel", "frank", "joe", "independence"]
+  binning: "uniform"
+  num_workers: 4
+  # Mixture augmentation (convex mixtures of copula densities are still valid copulas)
+  mixture_prob: 0.30
+  n_mixture_components: [2, 4]
+
+  param_ranges:
+    gaussian_rho: [-0.95, 0.95]
+    student_rho: [-0.9, 0.9]
+    student_df: [2, 30]
+    clayton_theta: [0.1, 10.0]
+    gumbel_theta: [1.1, 8.0]
+    frank_theta: [-15.0, 15.0]
+    joe_theta: [1.1, 8.0]
+
+training:
+  max_steps: 150000
+  batch_size: 32
+  learning_rate: 1.0e-4
+  weight_decay: 0.01
+  gradient_clip: 1.0
+
+  # Diffusion-inspired histogram corruption schedule for robustness.
+  # Inference uses a single forward pass with t=0 (i.e., minimal corruption).
+  hist_noise:
+    enable: true
+    max_strength: 0.75
+    power: 1.0
+
+  loss_weights:
+    ce: 1.0
+    ise: 0.0
+    tail: 0.1
+    ms: 0.0
+    marg_kl: 0.0
+
+  projection_iters: 30
+  detach_projection: false
+  skip_projection: false
+  use_amp: true
+
+  log_every: 100
+  save_every: 10000
+  viz_every: 5000
+
+output:
+  base_dir: "results"
+  checkpoint_dir: "checkpoints"
+  include_timestamp: true
+  include_job_id: true
+
+hardware:
+  device: "cuda"
+  mixed_precision: true
+

@@ -8,11 +8,10 @@ Implements the recursive algorithm for:
 """
 
 import numpy as np
-import torch
-from typing import List, Dict, Tuple, Optional, Callable
+from typing import Dict, FrozenSet, List, Optional, Tuple
 from dataclasses import dataclass
 
-from .structure import VineStructure, VineTree
+from .structure import VineStructure
 from ..models.hfunc import HFuncLookup
 
 
@@ -23,44 +22,34 @@ class VinePairCopula:
     
     Attributes:
         edge: (i, j, conditioning_set) tuple
-        density_grid: (m, m) tensor of copula density
+        density_grid: (m, m) numpy array of copula density
         hfunc: HFuncLookup object for this pair
         level: Tree level (0 = Tree 1)
     """
-    edge: Tuple[int, int, set]
-    density_grid: torch.Tensor
+    edge: Tuple[int, int, set[int]]
+    density_grid: np.ndarray
     hfunc: HFuncLookup
     level: int
     
     def pdf(self, u: np.ndarray, v: np.ndarray) -> np.ndarray:
         """Evaluate density at points (u, v)."""
-        u_t = torch.from_numpy(u).float()
-        v_t = torch.from_numpy(v).float()
-        return self.hfunc.pdf(u_t, v_t).numpy()
+        return self.hfunc.pdf(u, v)
     
     def h_u_given_v(self, u: np.ndarray, v: np.ndarray) -> np.ndarray:
         """h(u|v) = ∂C(u,v)/∂v."""
-        u_t = torch.from_numpy(u).float()
-        v_t = torch.from_numpy(v).float()
-        return self.hfunc.h_u_given_v(u_t, v_t).numpy()
+        return self.hfunc.h_u_given_v(u, v)
     
     def h_v_given_u(self, v: np.ndarray, u: np.ndarray) -> np.ndarray:
         """h(v|u) = ∂C(u,v)/∂u."""
-        v_t = torch.from_numpy(v).float()
-        u_t = torch.from_numpy(u).float()
-        return self.hfunc.h_v_given_u(v_t, u_t).numpy()
+        return self.hfunc.h_v_given_u(v, u)
     
     def hinv_u_given_v(self, q: np.ndarray, v: np.ndarray) -> np.ndarray:
         """Inverse h-function: solve h(u|v) = q for u."""
-        q_t = torch.from_numpy(q).float()
-        v_t = torch.from_numpy(v).float()
-        return self.hfunc.hinv_u_given_v(q_t, v_t).numpy()
+        return self.hfunc.hinv_u_given_v(q, v)
     
     def hinv_v_given_u(self, q: np.ndarray, u: np.ndarray) -> np.ndarray:
         """Inverse h-function: solve h(v|u) = q for v."""
-        q_t = torch.from_numpy(q).float()
-        u_t = torch.from_numpy(u).float()
-        return self.hfunc.hinv_v_given_u(q_t, u_t).numpy()
+        return self.hfunc.hinv_v_given_u(q, u)
 
 
 class VineRecursion:
@@ -73,21 +62,23 @@ class VineRecursion:
     - Forward/inverse Rosenblatt transforms for sampling
     """
     
-    def __init__(self, structure: VineStructure):
+    def __init__(self, structure: VineStructure, vine_type: Optional[str] = None):
         """
         Args:
             structure: VineStructure defining the vine
         """
         self.structure = structure
+        self.vine_type = (vine_type or "unknown").lower()
         self.pair_copulas: List[List[VinePairCopula]] = []  # [tree_level][edge_idx]
         self.d = structure.d
         
-        # Cache for h-function outputs
-        self._h_cache: Dict[str, np.ndarray] = {}
+        # Fast lookup: (unordered_pair, conditioning_set) -> copula
+        self._copula_lookup: Dict[Tuple[FrozenSet[int], FrozenSet[int]], VinePairCopula] = {}
     
     def set_pair_copulas(self, pair_copulas: List[List[VinePairCopula]]):
         """Set fitted pair copulas for all edges."""
         self.pair_copulas = pair_copulas
+        self._rebuild_lookup()
     
     def add_pair_copula(self, copula: VinePairCopula):
         """Add a fitted pair copula."""
@@ -95,18 +86,76 @@ class VineRecursion:
         while len(self.pair_copulas) <= level:
             self.pair_copulas.append([])
         self.pair_copulas[level].append(copula)
+        self._add_to_lookup(copula)
     
-    def _cache_key(self, i: int, j: int, cond: set) -> str:
-        """Generate cache key for h-function output."""
-        cond_str = ",".join(map(str, sorted(cond)))
-        return f"{i}|{j}|{cond_str}"
+    # ------------------------------------------------------------------
+    # Internal lookup helpers
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _key(i: int, j: int, cond: FrozenSet[int]) -> Tuple[FrozenSet[int], FrozenSet[int]]:
+        return (frozenset((i, j)), cond)
+
+    def _rebuild_lookup(self) -> None:
+        self._copula_lookup = {}
+        for level_copulas in self.pair_copulas:
+            for copula in level_copulas:
+                self._add_to_lookup(copula)
+
+    def _add_to_lookup(self, copula: VinePairCopula) -> None:
+        i, j, cond = copula.edge
+        k = self._key(i, j, frozenset(cond))
+        if k in self._copula_lookup:
+            raise ValueError(f"Duplicate pair-copula for edge ({i},{j}|{sorted(cond)})")
+        self._copula_lookup[k] = copula
+
+    def get_pair_copula(self, i: int, j: int, cond: FrozenSet[int]) -> VinePairCopula:
+        cop = self._copula_lookup.get(self._key(i, j, cond))
+        if cop is None:
+            raise KeyError(f"Missing pair-copula for ({i},{j}|{sorted(cond)})")
+        return cop
+
+    @staticmethod
+    def _clip01(x: np.ndarray, eps: float = 1e-6) -> np.ndarray:
+        return np.clip(x, eps, 1.0 - eps)
+
+    def _hinv_target_given_other(
+        self,
+        copula: VinePairCopula,
+        target: int,
+        other: int,
+        q: np.ndarray,
+        other_val: np.ndarray,
+    ) -> np.ndarray:
+        """Invert conditional CDF of target given other under this copula's orientation."""
+        i, j, _ = copula.edge
+        if target == i and other == j:
+            return copula.hinv_u_given_v(q, other_val)
+        if target == j and other == i:
+            return copula.hinv_v_given_u(q, other_val)
+        raise ValueError(f"Copula edge {copula.edge} does not connect ({target},{other})")
+
+    def _h_target_given_other(
+        self,
+        copula: VinePairCopula,
+        target: int,
+        other: int,
+        target_val: np.ndarray,
+        other_val: np.ndarray,
+    ) -> np.ndarray:
+        """Compute conditional CDF h(target | other) under this copula's orientation."""
+        i, j, _ = copula.edge
+        if target == i and other == j:
+            return copula.h_u_given_v(target_val, other_val)
+        if target == j and other == i:
+            return copula.h_v_given_u(target_val, other_val)
+        raise ValueError(f"Copula edge {copula.edge} does not connect ({target},{other})")
     
     def compute_h_transforms(
         self,
         U: np.ndarray,
         tree_level: int,
-        prev_transforms: Optional[Dict[str, np.ndarray]] = None
-    ) -> Dict[str, np.ndarray]:
+        prev_transforms: Optional[Dict[Tuple[int, FrozenSet[int]], np.ndarray]] = None,
+    ) -> Dict[Tuple[int, FrozenSet[int]], np.ndarray]:
         """
         Compute h-function transforms for a given tree level.
         
@@ -116,72 +165,44 @@ class VineRecursion:
             prev_transforms: Dictionary of h-transforms from previous levels
             
         Returns:
-            Dictionary mapping cache keys to transformed values
+            Dictionary mapping (var, conditioning_set) -> transformed values
         """
         if tree_level >= len(self.pair_copulas):
             return {}
         
-        if prev_transforms is None:
-            prev_transforms = {}
-        
-        transforms = {}
+        transforms: Dict[Tuple[int, FrozenSet[int]], np.ndarray] = {}
         tree_copulas = self.pair_copulas[tree_level]
-        
+
+        if tree_level > 0 and prev_transforms is None:
+            raise ValueError("prev_transforms must be provided for tree_level > 0")
+
         for copula in tree_copulas:
-            i, j, cond = copula.edge
-            
+            i, j, cond_set = copula.edge
+            D = frozenset(cond_set)
+
             if tree_level == 0:
-                # Tree 1: use original data
-                u_data = U[:, i]
-                v_data = U[:, j]
+                u_i_D = U[:, i]
+                u_j_D = U[:, j]
             else:
-                # Tree k: use h-transforms from previous level
-                # Need to identify which previous h-functions to use
-                # This is where the vine recursion gets complex
-                
-                # For now, simplified: look up in previous transforms
-                # In reality, you need to trace back through the vine structure
-                u_key = self._find_transform_key(i, cond, prev_transforms)
-                v_key = self._find_transform_key(j, cond, prev_transforms)
-                
-                if u_key is None or v_key is None:
-                    continue
-                
-                u_data = prev_transforms[u_key]
-                v_data = prev_transforms[v_key]
-            
-            # Compute both h-functions
-            h_u_v = copula.h_u_given_v(u_data, v_data)  # u|v
-            h_v_u = copula.h_v_given_u(v_data, u_data)  # v|u
-            
-            # Store with appropriate keys
-            # The conditioning set for the next level includes the conditioned variable
-            new_cond_u = cond | {j}
-            new_cond_v = cond | {i}
-            
-            transforms[self._cache_key(i, j, new_cond_u)] = h_u_v
-            transforms[self._cache_key(j, i, new_cond_v)] = h_v_u
-        
+                assert prev_transforms is not None
+                try:
+                    u_i_D = prev_transforms[(i, D)]
+                    u_j_D = prev_transforms[(j, D)]
+                except KeyError as e:
+                    raise RuntimeError(
+                        f"Missing conditional pseudo-observations for edge ({i},{j}|{sorted(D)}) "
+                        f"at tree_level={tree_level}. This usually indicates an invalid structure "
+                        f"or a bug in previous transform propagation."
+                    ) from e
+
+            # Compute both h-functions (produce conditioning sets of size |D|+1)
+            h_i_given_j = self._clip01(copula.h_u_given_v(u_i_D, u_j_D))  # i | (D ∪ {j})
+            h_j_given_i = self._clip01(copula.h_v_given_u(u_j_D, u_i_D))  # j | (D ∪ {i})
+
+            transforms[(i, D | frozenset({j}))] = h_i_given_j
+            transforms[(j, D | frozenset({i}))] = h_j_given_i
+
         return transforms
-    
-    def _find_transform_key(
-        self,
-        var: int,
-        cond: set,
-        transforms: Dict[str, np.ndarray]
-    ) -> Optional[str]:
-        """Find the right h-transform for a variable given a conditioning set."""
-        # Search for a matching key
-        for key in transforms.keys():
-            parts = key.split("|")
-            if len(parts) == 3:
-                var_str, other_str, cond_str = parts
-                if int(var_str) == var:
-                    # Check if conditioning set matches
-                    key_cond = set(map(int, cond_str.split(","))) if cond_str else set()
-                    if key_cond == cond:
-                        return key
-        return None
     
     def logpdf(self, U: np.ndarray) -> np.ndarray:
         """
@@ -196,47 +217,43 @@ class VineRecursion:
         Returns:
             (n,) log-density values
         """
-        n = U.shape[0]
-        logpdf = np.zeros(n)
-        
-        # Store all h-transforms
-        all_transforms = [{}]  # transforms[tree_level] = dict
-        
-        # Iterate through trees
-        for tree_level in range(len(self.pair_copulas)):
-            tree_copulas = self.pair_copulas[tree_level]
-            
-            if tree_level == 0:
-                prev_transforms = None
-            else:
-                prev_transforms = all_transforms[-1]
-            
-            # Compute h-transforms for this level
-            transforms = self.compute_h_transforms(U, tree_level, prev_transforms)
-            all_transforms.append(transforms)
-            
-            # Add pair-copula densities
+        if not self.pair_copulas:
+            raise RuntimeError("No pair copulas set on VineRecursion; call fit() or set_pair_copulas().")
+
+        U = np.asarray(U, dtype=np.float64)
+        n, d = U.shape
+        if d != self.d:
+            raise ValueError(f"Expected U with d={self.d}, got shape {U.shape}")
+
+        # Conditional pseudo-observations cache: (var, cond_set) -> array
+        cond_cache: Dict[Tuple[int, FrozenSet[int]], np.ndarray] = {
+            (i, frozenset()): self._clip01(U[:, i]) for i in range(d)
+        }
+
+        logpdf = np.zeros(n, dtype=np.float64)
+
+        for tree_level, tree_copulas in enumerate(self.pair_copulas):
             for copula in tree_copulas:
-                i, j, cond = copula.edge
-                
-                if tree_level == 0:
-                    u_data = U[:, i]
-                    v_data = U[:, j]
-                else:
-                    # Get transformed data
-                    u_key = self._find_transform_key(i, cond, prev_transforms)
-                    v_key = self._find_transform_key(j, cond, prev_transforms)
-                    
-                    if u_key is None or v_key is None:
-                        continue
-                    
-                    u_data = prev_transforms[u_key]
-                    v_data = prev_transforms[v_key]
-                
-                # Add log-density
-                pair_pdf = copula.pdf(u_data, v_data)
-                logpdf += np.log(np.clip(pair_pdf, 1e-10, None))
-        
+                i, j, cond_set = copula.edge
+                D = frozenset(cond_set)
+
+                try:
+                    u_i_D = cond_cache[(i, D)]
+                    u_j_D = cond_cache[(j, D)]
+                except KeyError as e:
+                    raise RuntimeError(
+                        f"Missing conditional pseudo-observations for edge ({i},{j}|{sorted(D)}) "
+                        f"at tree_level={tree_level}. This indicates an invalid structure or a "
+                        f"bug in transform propagation."
+                    ) from e
+
+                pair_pdf = copula.pdf(u_i_D, u_j_D)
+                logpdf += np.log(np.clip(pair_pdf, 1e-12, None))
+
+                # Propagate conditionals to the next level
+                cond_cache[(i, D | frozenset({j}))] = self._clip01(copula.h_u_given_v(u_i_D, u_j_D))
+                cond_cache[(j, D | frozenset({i}))] = self._clip01(copula.h_v_given_u(u_j_D, u_i_D))
+
         return logpdf
     
     def pdf(self, U: np.ndarray) -> np.ndarray:
@@ -255,41 +272,47 @@ class VineRecursion:
         Returns:
             W: (n, d) independent uniforms
         """
+        if self.vine_type not in {"dvine", "cvine"}:
+            raise NotImplementedError(
+                f"rosenblatt() is implemented for D-vines / C-vines only (got vine_type='{self.vine_type}')."
+            )
+        if self.structure.order is None:
+            raise RuntimeError("structure.order is required for Rosenblatt transform")
+
+        U = np.asarray(U, dtype=np.float64)
         n, d = U.shape
+        if d != self.d:
+            raise ValueError(f"Expected U with d={self.d}, got shape {U.shape}")
+
+        order = list(self.structure.order)
+
+        # Compute conditional pseudo-observations for all edges
+        cond_cache: Dict[Tuple[int, FrozenSet[int]], np.ndarray] = {
+            (i, frozenset()): self._clip01(U[:, i]) for i in range(d)
+        }
+        for tree_level, tree_copulas in enumerate(self.pair_copulas):
+            for copula in tree_copulas:
+                i, j, cond_set = copula.edge
+                D = frozenset(cond_set)
+                u_i_D = cond_cache[(i, D)]
+                u_j_D = cond_cache[(j, D)]
+                cond_cache[(i, D | frozenset({j}))] = self._clip01(copula.h_u_given_v(u_i_D, u_j_D))
+                cond_cache[(j, D | frozenset({i}))] = self._clip01(copula.h_v_given_u(u_j_D, u_i_D))
+
         W = np.zeros_like(U)
-        
-        # First variable unchanged
-        W[:, 0] = U[:, 0]
-        
-        # Follow vine order
-        order = self.structure.order if self.structure.order else list(range(d))
-        
-        # Store transforms at each level
-        transforms = {}
-        
-        for k in range(1, d):
-            var = order[k]
-            
-            # Find the appropriate h-function from the vine
-            # This is simplified - in practice, you follow the vine structure
-            
-            # For now, use the first available h-function involving this variable
-            found = False
-            for tree_level in range(len(self.pair_copulas)):
-                if found:
-                    break
-                for copula in self.pair_copulas[tree_level]:
-                    i, j, cond = copula.edge
-                    if i == var or j == var:
-                        # Use this copula to transform
-                        if tree_level == 0:
-                            if i == var:
-                                W[:, k] = copula.h_u_given_v(U[:, i], U[:, j])
-                            else:
-                                W[:, k] = copula.h_v_given_u(U[:, j], U[:, i])
-                        found = True
-                        break
-        
+        for k, var in enumerate(order):
+            if k == 0:
+                W[:, var] = cond_cache[(var, frozenset())]
+                continue
+            D = frozenset(order[:k])
+            key = (var, D)
+            if key not in cond_cache:
+                raise RuntimeError(
+                    f"Missing Rosenblatt conditional for var={var} given {sorted(D)}. "
+                    f"Likely the vine is truncated or inconsistent with the requested order."
+                )
+            W[:, var] = cond_cache[key]
+
         return W
     
     def inverse_rosenblatt(self, W: np.ndarray) -> np.ndarray:
@@ -304,37 +327,128 @@ class VineRecursion:
         Returns:
             U: (n, d) samples from the vine copula
         """
+        if self.vine_type == "cvine":
+            return self._inverse_rosenblatt_cvine(W)
+        if self.vine_type == "dvine":
+            return self._inverse_rosenblatt_dvine(W)
+        raise NotImplementedError(
+            f"inverse_rosenblatt() is implemented for D-vines / C-vines only (got vine_type='{self.vine_type}')."
+        )
+
+    def _inverse_rosenblatt_cvine(self, W: np.ndarray) -> np.ndarray:
+        """Inverse Rosenblatt for a C-vine with order = root sequence."""
+        if self.structure.order is None:
+            raise RuntimeError("structure.order is required for C-vine inverse Rosenblatt")
+        W = np.asarray(W, dtype=np.float64)
         n, d = W.shape
+        if d != self.d:
+            raise ValueError(f"Expected W with d={self.d}, got shape {W.shape}")
+
+        order = list(self.structure.order)
         U = np.zeros_like(W)
-        
-        # First variable unchanged
-        U[:, 0] = W[:, 0]
-        
-        # Follow vine order
-        order = self.structure.order if self.structure.order else list(range(d))
-        
-        # Sequentially sample using inverse h-functions
+
+        # First variable: w = u
+        v0 = order[0]
+        U[:, v0] = self._clip01(W[:, v0])
+
+        # Subsequent variables: peel off conditioning roots from last to first.
+        for j_pos in range(1, d):
+            var = order[j_pos]
+            q = self._clip01(W[:, var])  # u_{var | order[:j_pos]}
+
+            for k_pos in range(j_pos - 1, -1, -1):
+                root = order[k_pos]
+                D_prev = frozenset(order[:k_pos])  # roots before `root`
+                root_val = self._clip01(W[:, root]) if k_pos > 0 else self._clip01(U[:, root])
+
+                cop = self.get_pair_copula(root, var, D_prev)
+                q = self._clip01(self._hinv_target_given_other(cop, target=var, other=root, q=q, other_val=root_val))
+
+            U[:, var] = q
+
+        return U
+
+    def _inverse_rosenblatt_dvine(self, W: np.ndarray) -> np.ndarray:
+        """
+        Inverse Rosenblatt for a D-vine with order = path order.
+
+        Uses a triangular cache:
+          C[i][j] = u_{order[i] | order[i+1..j]} for i <= j.
+        """
+        if self.structure.order is None:
+            raise RuntimeError("structure.order is required for D-vine inverse Rosenblatt")
+        W = np.asarray(W, dtype=np.float64)
+        n, d = W.shape
+        if d != self.d:
+            raise ValueError(f"Expected W with d={self.d}, got shape {W.shape}")
+
+        order = list(self.structure.order)
+        U = np.zeros_like(W)
+
+        # Triangular cache of conditionals C[i][j] (object dtype: arrays of shape (n,))
+        C: List[List[Optional[np.ndarray]]] = [[None for _ in range(d)] for _ in range(d)]
+
+        # Sample first variable: w = u
+        v0 = order[0]
+        u0 = self._clip01(W[:, v0])
+        U[:, v0] = u0
+        C[0][0] = u0
+
+        # Sample sequentially along the path
         for k in range(1, d):
             var = order[k]
-            
-            # Find the appropriate inverse h-function
-            # This is highly simplified
-            found = False
-            for tree_level in range(len(self.pair_copulas)):
-                if found:
-                    break
-                for copula in self.pair_copulas[tree_level]:
-                    i, j, cond = copula.edge
-                    if i == var or j == var:
-                        if tree_level == 0:
-                            if i == var:
-                                # Solve h(u_i|u_j) = w_k for u_i
-                                U[:, k] = copula.hinv_u_given_v(W[:, k], U[:, order[0]])
-                            else:
-                                U[:, k] = copula.hinv_v_given_u(W[:, k], U[:, order[0]])
-                        found = True
-                        break
-        
+            q = self._clip01(W[:, var])  # u_{var | order[:k]}
+
+            # Store intermediate conditionals of var given suffix blocks:
+            # after removing order[i], q becomes u_{var | order[i+1..k-1]}.
+            q_after: List[Optional[np.ndarray]] = [None for _ in range(k)]
+
+            # Remove conditioning variables one by one from left to right
+            for i in range(0, k):
+                root = order[i]
+                D_between = frozenset(order[i + 1 : k])  # variables between root and var
+
+                # root conditional given variables between root and var
+                if i == k - 1:
+                    root_val = C[i][i]
+                else:
+                    root_val = C[i][k - 1]
+                if root_val is None:
+                    raise RuntimeError(
+                        f"Missing D-vine cache C[{i}][{k-1}] when sampling position k={k}."
+                    )
+
+                cop = self.get_pair_copula(root, var, D_between)
+                q = self._clip01(
+                    self._hinv_target_given_other(cop, target=var, other=root, q=q, other_val=root_val)
+                )
+                q_after[i] = q
+
+            # Unconditional sample for var
+            U[:, var] = q
+            C[k][k] = q
+
+            # Update caches C[i][k] = u_{order[i] | order[i+1..k]}
+            for i in range(k - 1, -1, -1):
+                root = order[i]
+                D_between = frozenset(order[i + 1 : k])  # variables between root and var (excludes var)
+
+                if i == k - 1:
+                    u_root_D = C[i][i]
+                else:
+                    u_root_D = C[i][k - 1]
+                if u_root_D is None:
+                    raise RuntimeError(f"Missing cache C[{i}][{k-1}] while updating C[*][{k}].")
+
+                u_var_D = q_after[i]
+                if u_var_D is None:
+                    raise RuntimeError(f"Missing q_after[{i}] while updating C[*][{k}].")
+
+                cop = self.get_pair_copula(root, var, D_between)
+                C[i][k] = self._clip01(
+                    self._h_target_given_other(cop, target=root, other=var, target_val=u_root_D, other_val=u_var_D)
+                )
+
         return U
     
     def simulate(self, n: int, seed: Optional[int] = None) -> np.ndarray:

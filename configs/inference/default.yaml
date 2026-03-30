@@ -1,0 +1,94 @@
+# =============================================================================
+# Vine Diffusion Copula - Inference Configuration
+# =============================================================================
+# Configuration for evaluation, sampling, and visualization.
+# Usage:
+#   python scripts/infer.py --config configs/inference/default.yaml
+#   python scripts/evaluate.py --config configs/inference/default.yaml
+
+# Task specification
+task:
+  type: "evaluate"  # Options: evaluate, sample, density, visualize, all
+
+# Model checkpoint
+model:
+  checkpoint: null  # Required: path to trained model checkpoint
+  device: "cuda"
+  grid_size: 64
+
+# Inference parameters
+inference:
+  sampling_steps: 50
+  cfg_scale: 2.0
+  ensemble_size: 1
+  batch_size: 32
+  projection_iters: 50
+
+# Evaluation settings
+evaluation:
+  # High-dimensional vine copula scenarios
+  scenarios:
+    - name: "gaussian_ar1"
+      description: "Gaussian copula with AR(1) correlation"
+      params: {rho: 0.6}
+    - name: "student_ar1"
+      description: "Student-t copula with AR(1) correlation"
+      params: {rho: 0.6, df: 5}
+    - name: "clayton_vine"
+      description: "D-vine with Clayton pair copulas"
+      params: {theta: 2.0}
+    - name: "mixed_vine"
+      description: "D-vine with mixed Gaussian/Clayton pairs"
+      params: {}
+  
+  # Dimensions to test
+  dimensions: [3, 5, 10]
+  
+  # Sample sizes
+  n_train: 2000
+  n_test: 500
+  n_repetitions: 1
+  
+  # Bivariate test copulas (for density estimation quality)
+  bivariate_tests:
+    - family: "gaussian"
+      params: {rho: 0.7}
+      name: "Gaussian(ρ=0.7)"
+    - family: "gaussian"
+      params: {rho: -0.7}
+      name: "Gaussian(ρ=-0.7)"
+    - family: "clayton"
+      params: {theta: 3.0}
+      name: "Clayton(θ=3.0)"
+    - family: "gumbel"
+      params: {theta: 2.5}
+      name: "Gumbel(θ=2.5)"
+    - family: "frank"
+      params: {theta: 5.0}
+      name: "Frank(θ=5.0)"
+    - family: "joe"
+      params: {theta: 3.0}
+      name: "Joe(θ=3.0)"
+
+# Sampling settings (for generating new samples from fitted vine)
+sampling:
+  n_samples: 1000
+  dimension: 5
+  scenario: "gaussian_ar1"
+  seed: 42
+
+# Visualization settings
+visualization:
+  plot_densities: true
+  plot_samples: true
+  plot_marginals: true
+  plot_dependence: true
+  figure_format: ["png"]
+  dpi: 150
+  style: "default"
+
+# Output paths
+output:
+  base_dir: "results"
+  include_timestamp: true
+  include_job_id: true

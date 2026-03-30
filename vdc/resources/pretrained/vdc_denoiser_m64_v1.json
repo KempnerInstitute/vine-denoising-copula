@@ -1,0 +1,37 @@
+{
+  "manifest_version": "1",
+  "model_id": "vdc-denoiser-m64-v1",
+  "display_name": "VDC pretrained denoiser m64 v1",
+  "version": "1.0.0",
+  "paper_tag": "current_frozen_paper_checkpoint",
+  "model_type": "denoiser",
+  "method_tag": "denoiser_cond_enhanced",
+  "description": "Frozen one-shot denoising checkpoint currently backing the paper experiments.",
+  "selection_rule": "joint_best_standard_plus_complex",
+  "checkpoint_step": 190000,
+  "checkpoint_filename": "vdc-denoiser-m64-v1.pt",
+  "grid_size": 64,
+  "sha256": "8a1b71ad6d2012ed344b22a743a96e667d32a2ab54ade4444686e375e91f5c0f",
+  "frozen_on": "2026-02-13",
+  "repository_commit": "fac93405b0948cb3874fdbe5ac48f667cdc7f25f",
+  "sources": {
+    "local_checkpoint": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_denoiser_cond_enhanced_20260207_105852_59344687/checkpoints/model_step_190000.pt",
+    "local_train_config": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_denoiser_cond_enhanced_20260207_105852_59344687/analysis/train_config.yaml",
+    "local_model_selection_joint": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_denoiser_cond_enhanced_20260207_105852_59344687/results/model_selection_joint_best.json",
+    "huggingface": {
+      "repo_id": "hsafaai/vdc-denoiser-m64-v1",
+      "revision": "main",
+      "filename": "vdc-denoiser-m64-v1.pt"
+    }
+  },
+  "intended_use": [
+    "bivariate copula density estimation",
+    "vine copula fitting with a pretrained pair-copula estimator",
+    "mutual information and total correlation estimation"
+  ],
+  "limitations": [
+    "continuous marginals",
+    "simplifying assumption for vine copulas",
+    "trained on synthetic copula zoo rather than raw mixed-type tabular data"
+  ]
+}

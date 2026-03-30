@@ -196,6 +196,7 @@ class UpBlock(nn.Module):
         num_res_blocks: int = 2,
         use_attention: bool = False,
         upsample: bool = True,
+        upsample_mode: str = "transpose",
     ):
         super().__init__()
         
@@ -213,15 +214,30 @@ class UpBlock(nn.Module):
         else:
             self.attn = None
         
+        self.upsample_mode = str(upsample_mode).lower().strip()
+        self.upsample = None
+        self.upsample_conv = None
         if upsample:
-            self.upsample = nn.ConvTranspose2d(out_channels, out_channels, 4, stride=2, padding=1)
-        else:
-            self.upsample = None
+            if self.upsample_mode in ("transpose", "convtranspose", "deconv"):
+                # Classic choice, but can introduce checkerboard artifacts.
+                self.upsample = nn.ConvTranspose2d(out_channels, out_channels, 4, stride=2, padding=1)
+            elif self.upsample_mode in ("bilinear", "nearest"):
+                # Anti-checkerboard: resize + conv.
+                self.upsample = None
+                self.upsample_conv = nn.Conv2d(out_channels, out_channels, 3, padding=1)
+            else:
+                raise ValueError(f"Unknown upsample_mode: {upsample_mode}")
     
     def forward(self, x: torch.Tensor, skip: torch.Tensor, t_emb: torch.Tensor):
         # Upsample BEFORE concatenating with skip
         if self.upsample is not None:
             x = self.upsample(x)
+        elif self.upsample_conv is not None:
+            if self.upsample_mode == "bilinear":
+                x = F.interpolate(x, scale_factor=2, mode="bilinear", align_corners=False)
+            else:
+                x = F.interpolate(x, scale_factor=2, mode=self.upsample_mode)
+            x = self.upsample_conv(x)
         
         # Now concatenate skip connection (both should have same spatial size)
         x = torch.cat([x, skip], dim=1)
@@ -257,6 +273,7 @@ class GridUNet(nn.Module):
         attention_resolutions: tuple = (16, 8),
         dropout: float = 0.1,
         time_emb_dim: int = 256,
+        upsample_mode: str = "transpose",
     ):
         super().__init__()
         
@@ -268,6 +285,13 @@ class GridUNet(nn.Module):
         self.time_embed = nn.Sequential(
             TimeEmbedding(time_emb_dim),
             nn.Linear(time_emb_dim, time_emb_dim),
+            nn.SiLU(),
+            nn.Linear(time_emb_dim, time_emb_dim),
+        )
+        
+        # Sample size (log n) embedding
+        self.logn_embed = nn.Sequential(
+            nn.Linear(1, time_emb_dim),
             nn.SiLU(),
             nn.Linear(time_emb_dim, time_emb_dim),
         )
@@ -334,6 +358,7 @@ class GridUNet(nn.Module):
                         num_res_blocks=1,
                         use_attention=use_attn,
                         upsample=(j == num_res_blocks and i < len(channel_mults) - 1),
+                        upsample_mode=str(upsample_mode),
                     )
                 )
                 now_channels = out_channels
@@ -342,17 +367,30 @@ class GridUNet(nn.Module):
         self.norm_out = nn.GroupNorm(8, now_channels)
         self.conv_out = nn.Conv2d(now_channels, 1, 3, padding=1)
     
-    def forward(self, x: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, t: torch.Tensor, log_n: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
         Args:
             x: Histogram (B, 1, m, m)
             t: Time (B,) or (B, 1, 1, 1), values in [0, 1]
+            log_n: Log of sample size (B,) or (B, 1). If None, uses default value.
             
         Returns:
             Log-density grid (B, 1, m, m)
         """
         # Time embedding
         t_emb = self.time_embed(t)
+        
+        # Sample size embedding
+        if log_n is None:
+            # Default: log(1000) ≈ 6.9
+            log_n = torch.full((x.shape[0], 1), 6.9, device=x.device, dtype=x.dtype)
+        elif log_n.dim() == 1:
+            log_n = log_n.unsqueeze(1)
+        
+        logn_emb = self.logn_embed(log_n)
+        
+        # Combine embeddings (additive)
+        t_emb = t_emb + logn_emb
         
         # Initial conv
         h = self.conv_in(x)
@@ -393,10 +431,13 @@ if __name__ == "__main__":
     # Test forward pass
     x = torch.randn(2, 1, 64, 64)
     t = torch.rand(2)
+    log_n = torch.tensor([6.9, 7.3])  # log(1000), log(1500)
     
     with torch.no_grad():
-        out = model(x, t)
+        out = model(x, t, log_n)
     
     print(f"Input shape: {x.shape}")
+    print(f"Time: {t}")
+    print(f"Log n: {log_n}")
     print(f"Output shape: {out.shape}")
     print(f"Output range: [{out.min():.3f}, {out.max():.3f}]")

@@ -1,6 +1,28 @@
 # Ignore drafts folder (separate git repo)
 drafts/
-*.md
+# Keep only README.md
+!README.md
+
+# Generated artifacts (LaTeX / reports / job logs)
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.log
+*.lot
+*.nav
+*.out
+*.pdf
+*.run.xml
+*.synctex.gz
+*.toc
+*.vrb
+*.xdv
+slurm-*.out
+slurm-*.err
 # Python
 __pycache__/
 *.py[cod]
@@ -41,7 +63,8 @@ ENV/
 *.ipynb
 
 # Data and outputs
-data/
+/data/*
+!/data/.gitkeep
 outputs/
 logs/
 wandb/
@@ -53,6 +76,12 @@ checkpoints/
 # Local archives and experiment results
 archive/
 results/
+slurm_logs/
+site/
+
+# External repos / vendored baseline code (kept out of git)
+external/
+third_party/
 
 # OS
 .DS_Store

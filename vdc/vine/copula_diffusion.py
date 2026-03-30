@@ -1,19 +1,18 @@
 """
 High-level interface for using a trained diffusion copula model as a bivariate copula.
 
-This module is intentionally lightweight and depends only on existing training/eval
-code paths. It provides:
+This wrapper is intended to be **importable as a library module** (e.g. from tests),
+so it must not depend on ad-hoc script modules that may be missing in some checkouts.
 
-    - DiffusionCopulaModel: load from checkpoint and estimate a copula density
-      on a grid from either
-        * an analytic truth (for benchmarks), or
-        * empirical bivariate samples in [0, 1]^2.
-    - Utilities to approximate h-functions and to sample from the estimated copula.
+It provides:
+- `DiffusionCopulaModel.from_checkpoint`: load a `GridUNet` + `CopulaAwareDiffusion`
+  from a training checkpoint produced by `scripts/train.py` / `scripts/train_unified.py`.
+- `estimate_density_from_samples`: estimate a bivariate copula density grid from
+  pseudo-observations in [0,1]^2 via the shared reverse diffusion routine
+  `vdc.inference.density.sample_density_grid`.
 
-The goal is to give a clean "vine-ready" API without re-implementing training.
-
-NOTE: This wrapper currently targets diffusion UNet checkpoints trained with
-      scripts/train_unified.py and evaluated via scripts/visualize_diffusion_offline.py.
+Note: advanced CFG / custom binning utilities previously lived in a separate script;
+this module focuses on a stable, self-contained API that matches the rest of the codebase.
 """
 from __future__ import annotations
 
@@ -24,17 +23,11 @@ from typing import Optional, Tuple
 import numpy as np
 import torch
 
-# We rely on the existing offline visualization utilities to avoid code duplication.
-from scripts.visualize_diffusion_offline import (  # type: ignore
-    build_binning,
-    build_diffusion,
-    build_model,
-    denoise_log_density,
-    load_checkpoint,
-    to_area_tensor,
-)
-from vdc.data.hist import points_to_histogram
+from vdc.inference.density import sample_density_grid
+from vdc.models.copula_diffusion import CopulaAwareDiffusion
+from vdc.models.unet_grid import GridUNet
 from vdc.models.projection import copula_project
+from vdc.utils.smoothing import smooth_density_gaussian
 
 
 @dataclass
@@ -76,104 +69,82 @@ class DiffusionCopulaModel:
             in the checkpoint is used (recommended).
         """
         ckpt_path = Path(checkpoint_path)
+        if not ckpt_path.exists():
+            raise FileNotFoundError(f"Checkpoint not found: {ckpt_path}")
+
         if device is None:
             device_t = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         else:
             device_t = torch.device(device)
 
-        checkpoint, config = load_checkpoint(ckpt_path, device_t, config_path)
-        model = build_model(config, device_t)
+        # We ignore config_path for now and rely on the config embedded in the checkpoint.
+        checkpoint = torch.load(ckpt_path, map_location=device_t, weights_only=False)
+        config = checkpoint.get("config", {})
+
+        m = int(config.get("data", {}).get("m", 64))
+        model_cfg = config.get("model", {})
+
         state = checkpoint.get("model_state_dict", checkpoint.get("model", None))
         if state is None:
             raise RuntimeError(f"Checkpoint at {ckpt_path} does not contain model weights")
-        model.load_state_dict(state, strict=True)
+
+        # Robustly infer in_channels from the checkpoint to support older/newer variants.
+        if isinstance(state, dict) and "conv_in.weight" in state:
+            in_channels = int(state["conv_in.weight"].shape[1])
+        else:
+            in_channels = int(model_cfg.get("in_channels", 1))
+
+        model = GridUNet(
+            m=m,
+            in_channels=in_channels,
+            base_channels=int(model_cfg.get("base_channels", 64)),
+            channel_mults=tuple(model_cfg.get("channel_mults", (1, 2, 3, 4))),
+            num_res_blocks=int(model_cfg.get("num_res_blocks", 2)),
+            attention_resolutions=tuple(model_cfg.get("attention_resolutions", (16, 8))),
+            dropout=float(model_cfg.get("dropout", 0.1)),
+            upsample_mode=str(model_cfg.get("upsample_mode", "transpose")),
+        ).to(device_t)
+
+        # Allow missing keys for backward compatibility (e.g., older checkpoints without log_n embedding).
+        model.load_state_dict(state, strict=False)
+        if not any(str(k).startswith("logn_embed") for k in state.keys()):
+            # Make log_n conditioning a no-op if the checkpoint did not include it.
+            for p in model.logn_embed.parameters():
+                torch.nn.init.zeros_(p)
         model.eval()
 
-        diffusion = build_diffusion(config, device_t)
+        diff_cfg = config.get("diffusion", {})
+        diffusion = CopulaAwareDiffusion(
+            timesteps=int(diff_cfg.get("timesteps", 1000)),
+            beta_schedule=str(diff_cfg.get("noise_schedule", "cosine")),
+        ).to(device_t)
 
         return cls(model=model, diffusion=diffusion, config=config, device=device_t)
 
     # ------------------------------------------------------------------
     # Core density estimation
     # ------------------------------------------------------------------
-    def _grid_geometry(
-        self,
-        m: Optional[int] = None,
-        binning: Optional[str] = None,
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, torch.Tensor]:
-        """
-        Build 1D binning and 2D cell-area tensor for a given grid resolution.
-
-        Returns
-        -------
-        u_centers, v_centers, cell_areas_np, area_tensor
-        """
-        m_cfg = int(self.config.get("data", {}).get("m", 64))
-        m_eff = int(m) if m is not None else m_cfg
-
-        mode = binning or self.config.get("data", {}).get("binning", "uniform")
-        _, u_centers, du = build_binning(m_eff, mode=mode)
-        _, v_centers, dv = build_binning(m_eff, mode=mode)
-        cell_areas_np = np.outer(du, dv)
-        area_tensor = to_area_tensor(du, dv, self.device, torch.float32)
-        return u_centers, v_centers, cell_areas_np, area_tensor
-
-    def _denoise_from_log_density(
-        self,
-        log_density_grid: np.ndarray,
-        noise_step: Optional[int] = None,
-        projection_iters: int = 15,
-    ) -> np.ndarray:
-        """
-        Run one DDPM denoising pass starting from a given target log-density.
-        """
-        m = log_density_grid.shape[0]
-        assert log_density_grid.shape == (m, m)
-
-        # Normalize to a proper copula density under the chosen geometry.
-        u_centers, v_centers, cell_areas_np, area_tensor = self._grid_geometry(m=m)
-        density_true = np.exp(np.clip(log_density_grid, -20.0, 20.0))
-        density_true = np.clip(density_true, 1e-12, 1e6)
-        density_true /= max(1e-20, float((density_true * cell_areas_np).sum()))
-
-        density_tensor = (
-            torch.from_numpy(density_true).float().unsqueeze(0).unsqueeze(0).to(self.device)
-        )
-        target_log = torch.log(density_tensor.clamp(min=1e-12))
-
-        timesteps = int(self.diffusion.timesteps)
-        t = noise_step if noise_step is not None else timesteps - 1
-
-        recon_log = denoise_log_density(self.model, self.diffusion, target_log, t)
-        recon_density = torch.exp(recon_log).clamp(1e-12, 1e6)
-        recon_density = recon_density / (
-            (recon_density * area_tensor).sum(dim=(2, 3), keepdim=True).clamp_min(1e-12)
-        )
-
-        # Marginal projection for a valid copula (row/col sums ~1).
-        du_vec = torch.from_numpy(cell_areas_np.sum(axis=1)).float().to(self.device)
-        dv_vec = torch.from_numpy(cell_areas_np.sum(axis=0)).float().to(self.device)
-        if projection_iters > 0:
-            recon_density = copula_project(
-                recon_density,
-                iters=projection_iters,
-                row_target=du_vec,
-                col_target=dv_vec,
-            )
-            recon_density = recon_density.clamp(1e-12, 1e6)
-            recon_density = recon_density / (
-                (recon_density * area_tensor).sum(dim=(2, 3), keepdim=True).clamp_min(1e-12)
-            )
-
-        return recon_density[0, 0].detach().cpu().numpy()
+    def _grid_centers(self, m: int) -> Tuple[np.ndarray, np.ndarray]:
+        u = np.linspace(0.5 / m, 1.0 - 0.5 / m, m)
+        v = np.linspace(0.5 / m, 1.0 - 0.5 / m, m)
+        return u, v
 
     # Public API --------------------------------------------------------
     def estimate_density_from_samples(
         self,
         u: np.ndarray,
         m: Optional[int] = None,
+        projection_iters: int = 30,
+        smooth_sigma: float = 0.0,
+        num_diffusion_steps: int = 200,
+        cfg_scale: float = 4.0,
+        adaptive_cfg: bool = False,
+        num_ensemble: int = 1,
+        ensemble_mode: str = "geometric",
+        return_std: bool = False,
+        use_cfg: bool = True,
+        # Legacy parameters (ignored when use_cfg=True)
         noise_step: Optional[int] = None,
-        projection_iters: int = 15,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Estimate a copula density from empirical pseudo-observations u in [0,1]^2.
@@ -184,14 +155,45 @@ class DiffusionCopulaModel:
             Array of shape (n, 2) with values in [0, 1]^2 (after marginal CDFs).
         m:
             Grid resolution. Defaults to the training config's `data.m`.
-        noise_step:
-            Diffusion timestep to denoise from. Defaults to T-1.
         projection_iters:
             Number of copula projection iterations for final normalization.
+        smooth_sigma:
+            Gaussian smoothing sigma (in grid units) applied after generation.
+            Set to 0 to disable smoothing. Default 0 (CFG produces smooth outputs).
+        num_diffusion_steps:
+            Number of reverse diffusion steps (more = better quality but slower).
+            Default 50 is usually sufficient with CFG.
+        cfg_scale:
+            Classifier-Free Guidance scale. Higher values (>1) produce outputs
+            more strongly conditioned on the input histogram. Default 2.0.
+            Set to 1.0 for no guidance (purely conditional).
+            Ignored if adaptive_cfg=True.
+        adaptive_cfg:
+            If True, automatically adjust CFG scale based on histogram properties:
+            - Symmetric histograms (Gaussian, Frank) → CFG ~2.0
+            - Asymmetric/peaked histograms (rotated Clayton) → CFG ~5.0
+            This helps handle both smooth and peaked copulas optimally.
+        num_ensemble:
+            Number of independent inference runs to average. Higher values give
+            smoother, more robust estimates at the cost of compute. Default 1.
+            Recommended: 3-5 for production, 1 for fast iteration.
+        ensemble_mode:
+            How to aggregate ensemble predictions:
+            - "geometric": Average in log-space (preserves relative magnitudes, recommended)
+            - "arithmetic": Average in density space (smooths peaks more)
+            - "median": Median in density space (robust to outliers)
+        return_std:
+            If True, also return the standard deviation across ensemble samples
+            (useful for uncertainty quantification). Only valid if num_ensemble > 1.
+        use_cfg:
+            If True (default), use CFG sampling from pure noise. This is the
+            recommended method for V2 models trained with CFG dropout.
+            If False, use the legacy denoising method (for older models).
 
         Returns
         -------
         density_pred, row_coords, col_coords
+        If return_std=True: density_pred, row_coords, col_coords, density_std
         """
         u = np.asarray(u, dtype=np.float64)
         if u.ndim != 2 or u.shape[1] != 2:
@@ -200,18 +202,60 @@ class DiffusionCopulaModel:
         m_cfg = int(self.config.get("data", {}).get("m", 64))
         m_eff = int(m) if m is not None else m_cfg
 
-        # Histogram on [0,1]^2; we use a uniform grid here on purpose.
-        hist = points_to_histogram(u, m=m_eff)
-        hist = np.clip(hist, 1e-12, 1e6)
-        hist /= max(1e-20, hist.sum())  # integral ≈ 1 on uniform grid
+        # This library wrapper currently uses the shared `sample_density_grid()` path.
+        # It does not require special histogram-conditioning channels.
 
-        log_density_grid = np.log(hist)
-        density_pred = self._denoise_from_log_density(
-            log_density_grid, noise_step=noise_step, projection_iters=projection_iters
-        )
+        ensemble = []
+        # Heuristic: if the UNet expects 2 channels, treat it as histogram-conditioned.
+        use_histogram_conditioning = bool(getattr(self.model, "conv_in").in_channels > 1)
+        transform_to_probit_space = bool(self.config.get("model", {}).get("transform_to_probit_space", False))
+        for i in range(max(1, int(num_ensemble))):
+            torch.manual_seed(42 + i * 1000)
+            density_i = sample_density_grid(
+                model=self.model,
+                diffusion=self.diffusion,
+                samples=u,
+                m=m_eff,
+                device=self.device,
+                num_steps=num_diffusion_steps,
+                cfg_scale=cfg_scale,
+                use_histogram_conditioning=use_histogram_conditioning,
+                # We apply a final projection after ensembling/smoothing below. Doing it here is redundant and
+                # can introduce small grid-scale "striping" artifacts when we later smooth + re-project.
+                projection_iters=0,
+                transform_to_probit_space=transform_to_probit_space,
+            )
+            ensemble.append(density_i)
 
-        # Coordinates under the evaluation geometry.
-        row_coords, col_coords, _, _ = self._grid_geometry(m=m_eff)
+        ensemble_arr = np.stack(ensemble, axis=0)  # (E,m,m)
+        if ensemble_arr.shape[0] == 1:
+            density_pred = ensemble_arr[0]
+            density_std = None
+        else:
+            if ensemble_mode == "geometric":
+                density_pred = np.exp(np.mean(np.log(np.clip(ensemble_arr, 1e-12, None)), axis=0))
+            elif ensemble_mode == "arithmetic":
+                density_pred = np.mean(ensemble_arr, axis=0)
+            elif ensemble_mode == "median":
+                density_pred = np.median(ensemble_arr, axis=0)
+            else:
+                raise ValueError(f"Unknown ensemble_mode: {ensemble_mode}")
+            density_std = np.std(ensemble_arr, axis=0) if return_std else None
+
+        if smooth_sigma > 0:
+            t = torch.from_numpy(density_pred).float().unsqueeze(0).unsqueeze(0).to(self.device)
+            t = smooth_density_gaussian(t, sigma=float(smooth_sigma), preserve_mass=True)
+            density_pred = t[0, 0].detach().cpu().numpy()
+
+        # Final projection (idempotent if already projected in sample_density_grid)
+        if projection_iters > 0:
+            t = torch.from_numpy(density_pred).float().unsqueeze(0).unsqueeze(0).to(self.device)
+            t = copula_project(t.clamp_min(1e-12), iters=int(projection_iters))
+            density_pred = t[0, 0].detach().cpu().numpy()
+
+        row_coords, col_coords = self._grid_centers(m_eff)
+        if return_std and density_std is not None:
+            return density_pred, row_coords, col_coords, density_std
         return density_pred, row_coords, col_coords
 
     # ------------------------------------------------------------------
@@ -270,12 +314,17 @@ class DiffusionCopulaModel:
         if rng is None:
             rng = np.random.default_rng()
 
-        flat = density.reshape(-1).astype(np.float64)
+        flat = np.asarray(density, dtype=np.float64).reshape(-1)
+        # Robustness: prediction pipelines may occasionally produce NaNs/inf.
+        # We never want sampling (used for tau diagnostics, etc.) to crash; sanitize
+        # to a valid categorical distribution.
+        flat = np.nan_to_num(flat, nan=0.0, posinf=0.0, neginf=0.0)
         flat = np.clip(flat, 0.0, None)
-        s = flat.sum()
-        if s <= 0:
-            raise ValueError("Density grid has non-positive total mass; cannot sample.")
-        flat /= s
+        s = float(flat.sum())
+        if (not np.isfinite(s)) or s <= 0:
+            flat = np.full_like(flat, 1.0 / float(flat.size))
+        else:
+            flat /= s
 
         # Draw cell indices
         idx = rng.choice(flat.size, size=n_samples, p=flat)

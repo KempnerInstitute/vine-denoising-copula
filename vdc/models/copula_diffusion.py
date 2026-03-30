@@ -92,6 +92,33 @@ class CopulaAwareDiffusion(nn.Module):
         
         return x_t
     
+    def predict_start_from_noise(
+        self,
+        x_t: torch.Tensor,
+        t: torch.Tensor,
+        noise: torch.Tensor
+    ) -> torch.Tensor:
+        """
+        Predict x_0 from x_t and predicted noise.
+        
+        Given: x_t = √α̅_t x_0 + √(1-α̅_t) ε
+        Solve for: x_0 = (x_t - √(1-α̅_t) ε) / √α̅_t
+        
+        Args:
+            x_t: Noisy input (B, 1, m, m)
+            t: Timestep (B,)
+            noise: Predicted noise (B, 1, m, m)
+            
+        Returns:
+            Predicted x_0 (clean log-density)
+        """
+        sqrt_alpha_t = self.sqrt_alphas_cumprod[t].view(-1, 1, 1, 1)
+        sqrt_one_minus_alpha_t = self.sqrt_one_minus_alphas_cumprod[t].view(-1, 1, 1, 1)
+        
+        pred_x0 = (x_t - sqrt_one_minus_alpha_t * noise) / sqrt_alpha_t
+        
+        return pred_x0
+    
     def p_sample(
         self,
         model: nn.Module,

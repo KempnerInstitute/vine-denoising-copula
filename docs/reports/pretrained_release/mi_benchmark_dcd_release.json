@@ -1,0 +1,118 @@
+{
+  "generated_at": "2026-03-30T12:49:22.478007",
+  "estimator": "dcd",
+  "n_samples": 2000,
+  "m_true": 256,
+  "seed": 123,
+  "records": [
+    {
+      "name": "Independence",
+      "family": "independence",
+      "rotation": 0,
+      "n_samples": 2000,
+      "mi_true": 1.0000889005818404e-12,
+      "mi_est": 0.0002003191036491743,
+      "mi_err": 0.0002003191026490854,
+      "time_s": 0.40089935483410954
+    },
+    {
+      "name": "Gaussian(\u03c1=0.7)",
+      "family": "gaussian",
+      "rotation": 0,
+      "n_samples": 2000,
+      "mi_true": 0.33507042636405115,
+      "mi_est": 0.3393914993614164,
+      "mi_err": 0.004321072997365227,
+      "time_s": 0.44560994394123554
+    },
+    {
+      "name": "Gaussian(\u03c1=-0.7)",
+      "family": "gaussian",
+      "rotation": 0,
+      "n_samples": 2000,
+      "mi_true": 0.3350704256141739,
+      "mi_est": 0.3473787535383704,
+      "mi_err": 0.012308327924196505,
+      "time_s": 0.39366364013403654
+    },
+    {
+      "name": "Student-t(\u03c1=0.7, df=5)",
+      "family": "student",
+      "rotation": 0,
+      "n_samples": 2000,
+      "mi_true": 0.3517413926089391,
+      "mi_est": 0.358171185727335,
+      "mi_err": 0.006429793118395866,
+      "time_s": 0.40361096570268273
+    },
+    {
+      "name": "Clayton(\u03b8=3.0)",
+      "family": "clayton",
+      "rotation": 0,
+      "n_samples": 2000,
+      "mi_true": 0.6345614779804531,
+      "mi_est": 0.6257825256883338,
+      "mi_err": 0.008778952292119335,
+      "time_s": 0.42013167310506105
+    },
+    {
+      "name": "Clayton(\u03b8=3.0, rot=90)",
+      "family": "clayton",
+      "rotation": 90,
+      "n_samples": 2000,
+      "mi_true": 0.634561477618891,
+      "mi_est": 0.6376145516627651,
+      "mi_err": 0.0030530740438741155,
+      "time_s": 0.47244718577712774
+    },
+    {
+      "name": "Gumbel(\u03b8=2.5)",
+      "family": "gumbel",
+      "rotation": 0,
+      "n_samples": 2000,
+      "mi_true": 0.5600860446936167,
+      "mi_est": 0.5586011925909136,
+      "mi_err": 0.0014848521027031047,
+      "time_s": 0.3989138179458678
+    },
+    {
+      "name": "Joe(\u03b8=3.0)",
+      "family": "joe",
+      "rotation": 0,
+      "n_samples": 2000,
+      "mi_true": 0.4752418023297993,
+      "mi_est": 0.4467743298245924,
+      "mi_err": 0.02846747250520687,
+      "time_s": 0.4064154648222029
+    },
+    {
+      "name": "Frank(\u03b8=5.0)",
+      "family": "frank",
+      "rotation": 0,
+      "n_samples": 2000,
+      "mi_true": 0.25794606317862356,
+      "mi_est": 0.25723268186897497,
+      "mi_err": 0.0007133813096485975,
+      "time_s": 0.40367988403886557
+    }
+  ],
+  "mean_abs_err": 0.00730636059957319,
+  "mean_time_s": 0.41615243670013213,
+  "source": {
+    "minde_repo": null,
+    "minde_url": "https://github.com/MustaphaBounoua/minde",
+    "mist_repo": null,
+    "mist_url": "https://github.com/gritsai/mist",
+    "dcd_checkpoint": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_denoiser_cond_enhanced_20260207_105852_59344687/checkpoints/model_step_190000.pt",
+    "dcd_model_type": "denoiser",
+    "dcd_grid_size": 64,
+    "dcd_projection_iters": 30,
+    "dcd_diffusion_steps": 4,
+    "dcd_diffusion_cfg_scale": 1.0,
+    "dcd_diffusion_ensemble": 1,
+    "dcd_diffusion_ensemble_mode": "geometric",
+    "dcd_diffusion_smooth_sigma": 0.0,
+    "dcd_pred_noise_clip": 10.0,
+    "dcd_seed_base": 123
+  }
+}

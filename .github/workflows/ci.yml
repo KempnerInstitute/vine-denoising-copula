@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+      - master
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Ruff
+        run: python -m pip install --upgrade pip ruff
+
+      - name: Run Ruff
+        run: ruff check .
+
+  smoke-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+
+      - name: Run smoke tests
+        run: |
+          pytest tests/test_pretrained.py -q
+          pytest tests/test_ipfp_log.py -q
+          pytest tests/test_probit_transform.py -q
+          pytest tests/test_hfunc_independence_accuracy.py -q

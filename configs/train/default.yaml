@@ -1,0 +1,86 @@
+# =============================================================================
+# Vine Diffusion Copula - Training Configuration
+# =============================================================================
+# Main training configuration. Override via command line or experiment configs.
+# Usage:
+#   python scripts/train.py --config configs/train/default.yaml
+#   torchrun --nproc_per_node=4 scripts/train.py --config configs/train/default.yaml
+
+experiment:
+  name: "copula_diffusion"
+  description: "Train diffusion model for copula density estimation"
+  seed: 42
+
+model:
+  type: "diffusion_unet"
+  grid_size: 64
+  in_channels: 1
+  base_channels: 64
+  channel_mults: [1, 2, 3, 4]
+  num_res_blocks: 2
+  attention_resolutions: [16, 8]
+  dropout: 0.1
+  time_emb_dim: 256
+  use_coordinates: false
+
+diffusion:
+  timesteps: 1000
+  noise_schedule: "cosine"
+  sampling_steps: 50
+  cfg_scale: 2.0
+
+data:
+  m: 64
+  n_samples_per_copula: 1000
+  copula_families: ["gaussian", "student", "clayton", "gumbel", "frank", "joe"]
+  binning: "uniform"
+  num_workers: 4
+  
+  # Parameter ranges for copula generation
+  param_ranges:
+    gaussian_rho: [-0.95, 0.95]
+    student_rho: [-0.9, 0.9]
+    student_df: [2, 30]
+    clayton_theta: [0.1, 10.0]
+    gumbel_theta: [1.1, 8.0]
+    frank_theta: [-15.0, 15.0]
+    joe_theta: [1.1, 8.0]
+
+training:
+  max_steps: 150000
+  batch_size: 32
+  learning_rate: 1.0e-4
+  weight_decay: 0.01
+  gradient_clip: 1.0
+  
+  loss_weights:
+    ce: 1.0
+    ise: 0.1
+    tail: 0.05
+    ms: 0.1
+    marg_kl: 0.01
+  
+  projection_iters: 10
+  detach_projection: true
+  skip_projection: false
+  use_amp: true
+  
+  log_every: 100
+  save_every: 10000
+  viz_every: 5000
+  
+  early_stopping:
+    enable: false
+    metric: "loss"
+    patience: 5000
+
+output:
+  base_dir: "results"
+  checkpoint_dir: "checkpoints"
+  include_timestamp: true
+  include_job_id: true
+
+hardware:
+  device: "cuda"
+  num_workers: 4
+  mixed_precision: true

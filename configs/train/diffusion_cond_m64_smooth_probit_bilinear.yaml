@@ -1,0 +1,95 @@
+# =============================================================================
+# Histogram-Conditioned Diffusion (iterative DDIM inference)
+# m=64 + smoothness regularization + probit-space target + bilinear upsampling
+# =============================================================================
+experiment:
+  name: "copula_diffusion_cond_m64_smooth_probit_bilinear"
+  description: "Conditional diffusion UNet at m=64 trained in probit space (z=Phi^{-1}(u)) with multi-scale + TV(log) regularization and bilinear upsampling"
+  seed: 42
+
+model:
+  type: "diffusion_unet"
+  grid_size: 64
+  in_channels: 2
+  base_channels: 64
+  channel_mults: [1, 2, 3, 4]
+  num_res_blocks: 2
+  attention_resolutions: [16, 8]
+  dropout: 0.1
+  time_emb_dim: 256
+  upsample_mode: "bilinear"
+  transform_to_probit_space: true
+
+diffusion:
+  timesteps: 1000
+  noise_schedule: "cosine"
+  sampling_steps: 200
+  cfg_scale: 4.0
+
+data:
+  m: 64
+  n_samples_per_copula:
+    mode: "log_uniform"
+    min: 200
+    max: 5000
+  copula_families: ["gaussian", "student", "clayton", "gumbel", "frank", "joe", "independence"]
+  binning: "uniform"
+  num_workers: 4
+  mixture_prob: 0.30
+  n_mixture_components: [2, 4]
+  param_ranges:
+    gaussian_rho: [-0.95, 0.95]
+    student_rho: [-0.9, 0.9]
+    student_df: [2, 30]
+    clayton_theta: [0.1, 10.0]
+    gumbel_theta: [1.1, 8.0]
+    frank_theta: [-15.0, 15.0]
+    joe_theta: [1.1, 8.0]
+
+training:
+  max_steps: 200000
+  batch_size: 32
+  learning_rate: 1.0e-4
+  weight_decay: 0.01
+  gradient_clip: 1.0
+
+  cfg_dropout_prob: 0.10
+
+  cond_hist_smooth_sigma: 0.30
+  cond_hist_smooth_random: true
+
+  loss_weights:
+    ce: 1.0
+    ise: 0.0
+    tail: 0.1
+    ms: 0.15
+    marg_kl: 0.0
+    tv: 0.01
+
+  tv_in_log_space: true
+
+  multi_scale:
+    enable: true
+    scales: [2, 4, 8]
+    ce_weight: 0.5
+    ise_weight: 0.25
+
+  projection_iters: 30
+  detach_projection: false
+  skip_projection: false
+  use_amp: true
+
+  log_every: 100
+  save_every: 10000
+  viz_every: 5000
+
+output:
+  base_dir: "results"
+  checkpoint_dir: "checkpoints"
+  include_timestamp: true
+  include_job_id: true
+
+hardware:
+  device: "cuda"
+  mixed_precision: true
+

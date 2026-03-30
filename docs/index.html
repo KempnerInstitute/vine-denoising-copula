@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vine Diffusion Copula Docs</title>
+    <link rel="stylesheet" href="assets/site.css">
+  </head>
+  <body>
+    <header class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Vine Diffusion Copula</p>
+        <h1>Pretrained copula estimation, vine fitting, and released-model verification.</h1>
+        <p class="lede">
+          The codebase contains a released pretrained edge estimator, vine recursion utilities,
+          verification reports, and training code for denoising and diffusion-style copula models.
+        </p>
+        <div class="cta-row">
+          <a class="button primary" href="../README.md">Readme</a>
+          <a class="button" href="GETTING_STARTED.md">Getting Started</a>
+          <a class="button" href="MODEL_RELEASES.md">Model Releases</a>
+          <a class="button" href="PAPER_REPRODUCIBILITY.md">Paper Reproducibility</a>
+        </div>
+      </div>
+      <div class="hero-art">
+        <img src="assets/method_pipeline.png" alt="Method pipeline for VDC">
+      </div>
+    </header>
+
+    <main class="page">
+      <section class="grid two">
+        <article class="card">
+          <h2>Start Here</h2>
+          <ul>
+            <li><a href="GETTING_STARTED.md">Getting Started</a></li>
+            <li><a href="USER_GUIDE.md">User Guide</a></li>
+            <li><a href="API.md">API Reference</a></li>
+            <li><a href="CONFIGURATION.md">Configuration Guide</a></li>
+          </ul>
+        </article>
+        <article class="card">
+          <h2>Reproducibility</h2>
+          <ul>
+            <li><a href="MODEL_RELEASES.md">Versioned pretrained-model workflow</a></li>
+            <li><a href="PAPER_REPRODUCIBILITY.md">Canonical paper checkpoint</a></li>
+            <li><a href="reports/pretrained_release/PRETRAINED_RELEASE_VERIFICATION.md">Verification report</a></li>
+            <li><a href="reports/pretrained_release/MI_BENCHMARK_DCD_RELEASE.md">Released-checkpoint MI benchmark</a></li>
+          </ul>
+        </article>
+      </section>
+
+      <section class="card">
+        <h2>Quick Commands</h2>
+        <pre><code>python scripts/download_pretrained.py --list
+python scripts/download_pretrained.py --model-id vdc-denoiser-m64-v1
+python examples/use_pretrained_model.py --model-id vdc-denoiser-m64-v1
+python scripts/verify_pretrained_release.py --model-id vdc-denoiser-m64-v1 --device cpu</code></pre>
+      </section>
+
+      <section class="gallery">
+        <article class="figure-card">
+          <img src="assets/copula_example_main.png" alt="Bivariate copula example">
+          <div>
+            <h3>Bivariate density estimation</h3>
+            <p>The released checkpoint reproduces the paper-side pair-copula workflow and qualitative figure generation.</p>
+          </div>
+        </article>
+        <article class="figure-card">
+          <img src="assets/pretrained_bivariate_verification.png" alt="Verification grid">
+          <div>
+            <h3>Released-model verification</h3>
+            <p>The release report checks analytic copulas, information accuracy, mass preservation, and figure regeneration.</p>
+          </div>
+        </article>
+        <article class="figure-card">
+          <img src="assets/mi_comparison.png" alt="MI comparison">
+          <div>
+            <h3>Information estimation</h3>
+            <p>VDC can estimate mutual information and support total-correlation style decompositions through learned copula densities.</p>
+          </div>
+        </article>
+        <article class="figure-card">
+          <img src="assets/speed_comparison.png" alt="Speed comparison">
+          <div>
+            <h3>Vine-scale reuse</h3>
+            <p>The same pretrained edge estimator is reused across vine edges, which is the practical reason the method scales.</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="grid two">
+        <article class="card">
+          <h2>Model Release Checklist</h2>
+          <ol>
+            <li>Package the bundle from the canonical checkpoint.</li>
+            <li>Upload the bundle to a Hugging Face model repo.</li>
+            <li>Update the packaged manifest with the public repo id and revision.</li>
+            <li>Run the verification script against the published model.</li>
+          </ol>
+        </article>
+        <article class="card">
+          <h2>Project Notes</h2>
+          <ul>
+            <li>The pretrained model assumes continuous marginals and pseudo-observations in <code>[0,1]</code>.</li>
+            <li>Vine fitting uses the simplifying assumption.</li>
+            <li>The released checkpoint is frozen and versioned.</li>
+          </ul>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

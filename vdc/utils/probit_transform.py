@@ -1,4 +1,4 @@
-"""Probit (Gaussian copula) space transformations with Jacobian corrections.
+r"""Probit (Gaussian/normal-score) space transformations with Jacobian corrections.
 
 For proper Gaussian copula representation, we transform:
 - Copula space [0,1]² with uniform marginals
@@ -8,7 +8,14 @@ Key transformations:
 1. Coordinate transform: u → z = Φ⁻¹(u) where Φ is standard normal CDF
 2. Density transform includes Jacobian correction:
    
-   c_copula(u,v) = c_gaussian(Φ⁻¹(u), Φ⁻¹(v)) · φ(Φ⁻¹(u)) · φ(Φ⁻¹(v))
+   If \(Z = (\Phi^{-1}(U), \Phi^{-1}(V))\) and \(f_Z\) is the *joint density* in probit space,
+   then:
+
+   \(c(u,v) = f_Z(z_u, z_v) / (\phi(z_u)\,\phi(z_v))\)
+   with \(z_u=\Phi^{-1}(u)\), \(z_v=\Phi^{-1}(v)\).
+
+   Equivalently:
+   \(f_Z(z_u,z_v) = c(u,v)\, \phi(z_u)\,\phi(z_v)\).
    
    where φ is standard normal PDF.
 
@@ -82,13 +89,13 @@ def copula_density_to_probit_density(
     m: int,
     eps: float = EPS
 ) -> torch.Tensor:
-    """Transform copula density to probit/Gaussian space density.
+    """Transform copula density c(u,v) to probit-space joint density f_Z(z_u,z_v).
     
     Given copula density c(u,v) on grid [0,1]², compute the corresponding
-    Gaussian copula density c_G(z_u, z_v) where z = Φ⁻¹(u).
+    joint density f_Z(z_u, z_v) where z = Φ⁻¹(u).
     
     Transformation:
-        c_G(z_u, z_v) = c_copula(Φ(z_u), Φ(z_v)) / (φ(z_u) · φ(z_v))
+        f_Z(z_u, z_v) = c_copula(u,v) · (φ(z_u) · φ(z_v))
         
     Args:
         c_copula: Copula density tensor, shape (..., m, m)
@@ -96,7 +103,7 @@ def copula_density_to_probit_density(
         eps: Clamping epsilon
         
     Returns:
-        c_gaussian: Density in probit space, shape (..., m, m)
+        f_Z: Joint density in probit space, shape (..., m, m)
     """
     device = c_copula.device
     
@@ -114,11 +121,10 @@ def copula_density_to_probit_density(
     phi_v = standard_normal_pdf(Z_v)
     jacobian = phi_u * phi_v
     
-    # Transform density: divide by Jacobian (copula → probit)
-    # Add small epsilon to avoid division by zero
-    c_gaussian = c_copula / (jacobian.clamp(min=eps))
+    # Transform density: multiply by Jacobian (copula → probit joint density)
+    fz = c_copula * jacobian
     
-    return c_gaussian
+    return fz
 
 
 def probit_density_to_copula_density(
@@ -126,16 +132,16 @@ def probit_density_to_copula_density(
     m: int,
     eps: float = EPS
 ) -> torch.Tensor:
-    """Transform probit/Gaussian space density back to copula density.
+    """Transform probit-space joint density f_Z back to copula density c(u,v).
     
-    Given Gaussian copula density c_G(z_u, z_v), compute the standard
+    Given joint density f_Z(z_u, z_v), compute the standard
     copula density c(u,v) on [0,1]².
     
     Transformation:
-        c_copula(u,v) = c_G(Φ⁻¹(u), Φ⁻¹(v)) · φ(Φ⁻¹(u)) · φ(Φ⁻¹(v))
+        c_copula(u,v) = f_Z(z_u, z_v) / (φ(z_u) · φ(z_v))
         
     Args:
-        c_gaussian: Density in probit space, shape (..., m, m)
+        c_gaussian: Joint density in probit space (f_Z), shape (..., m, m)
         m: Grid resolution
         eps: Clamping epsilon
         
@@ -158,8 +164,8 @@ def probit_density_to_copula_density(
     phi_v = standard_normal_pdf(Z_v)
     jacobian = phi_u * phi_v
     
-    # Transform density: multiply by Jacobian (probit → copula)
-    c_copula = c_gaussian * jacobian
+    # Transform density: divide by Jacobian (probit joint density → copula)
+    c_copula = c_gaussian / jacobian.clamp(min=eps)
     
     return c_copula
 
@@ -194,12 +200,12 @@ def copula_logdensity_to_probit_logdensity(
     m: int,
     eps: float = EPS
 ) -> torch.Tensor:
-    """Transform copula log-density to probit/Gaussian space log-density.
+    """Transform copula log-density log c(u,v) to probit-space joint log-density log f_Z(z).
     
     This is the numerically stable version using log-space arithmetic.
     
     Transformation:
-        log c_G(z_u, z_v) = log c_copula(Φ(z_u), Φ(z_v)) - log φ(z_u) - log φ(z_v)
+        log f_Z(z_u, z_v) = log c_copula(u,v) + log φ(z_u) + log φ(z_v)
         
     Args:
         log_c_copula: Log copula density tensor, shape (..., m, m)
@@ -225,10 +231,10 @@ def copula_logdensity_to_probit_logdensity(
     log_phi_v = standard_normal_logpdf(Z_v)
     log_jacobian = log_phi_u + log_phi_v
     
-    # Transform log-density: subtract log-Jacobian (copula → probit)
-    log_c_gaussian = log_c_copula - log_jacobian
+    # Transform log-density: add log-Jacobian (copula → probit joint density)
+    log_fz = log_c_copula + log_jacobian
     
-    return log_c_gaussian
+    return log_fz
 
 
 def probit_logdensity_to_copula_logdensity(
@@ -236,12 +242,12 @@ def probit_logdensity_to_copula_logdensity(
     m: int,
     eps: float = EPS
 ) -> torch.Tensor:
-    """Transform probit/Gaussian space log-density back to copula log-density.
+    """Transform probit-space joint log-density log f_Z back to copula log-density log c(u,v).
     
     Numerically stable log-space version.
     
     Transformation:
-        log c_copula(u,v) = log c_G(Φ⁻¹(u), Φ⁻¹(v)) + log φ(Φ⁻¹(u)) + log φ(Φ⁻¹(v))
+        log c_copula(u,v) = log f_Z(z_u, z_v) - log φ(z_u) - log φ(z_v)
         
     Args:
         log_c_gaussian: Log-density in probit space, shape (..., m, m)
@@ -267,8 +273,8 @@ def probit_logdensity_to_copula_logdensity(
     log_phi_v = standard_normal_logpdf(Z_v)
     log_jacobian = log_phi_u + log_phi_v
     
-    # Transform log-density: add log-Jacobian (probit → copula)
-    log_c_copula = log_c_gaussian + log_jacobian
+    # Transform log-density: subtract log-Jacobian (probit joint density → copula)
+    log_c_copula = log_c_gaussian - log_jacobian
     
     return log_c_copula
 
