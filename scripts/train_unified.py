@@ -29,7 +29,7 @@ import argparse
 import yaml
 import math
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 import time
 import traceback
 
@@ -534,6 +534,70 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
         mass = (grid * area).sum(dim=(-2, -1), keepdim=True).clamp_min(1e-12)
         grid = grid / mass
         return _sanitize_density(grid)
+
+    def build_t_scalar(batch_size: int) -> Optional[torch.Tensor]:
+        if not time_cond:
+            return None
+        t_cfg = training.get('t_scalar_mode', 'random')
+        if isinstance(t_cfg, (int, float)):
+            return torch.full((batch_size,), float(t_cfg), device=device)
+        mode = str(t_cfg).strip().lower()
+        if mode in {'random', 'rand'}:
+            return torch.rand(batch_size, device=device)
+        if mode in {'zero', 'zeros'}:
+            return torch.zeros(batch_size, device=device)
+        if mode in {'one', 'ones'}:
+            return torch.ones(batch_size, device=device)
+        if mode == 'fixed':
+            value = float(training.get('t_scalar_value', 0.0))
+            return torch.full((batch_size,), value, device=device)
+        raise ValueError(f"Unknown training.t_scalar_mode: {t_cfg}")
+
+    def corrupt_histogram(
+        hist_in: torch.Tensor,
+        hist_noise_cfg: Dict[str, Any],
+        t_scalar_local: Optional[torch.Tensor],
+        log_n_local: torch.Tensor,
+    ) -> torch.Tensor:
+        mode = str(hist_noise_cfg.get('mode', 'uniform_mix')).strip().lower()
+        if mode in {'none', 'off', 'disable', 'disabled'}:
+            return normalize_grid(hist_in)
+
+        if t_scalar_local is None:
+            t_scalar_local = torch.rand(hist_in.shape[0], device=hist_in.device)
+        strength_power = float(hist_noise_cfg.get('power', 1.0))
+        strength = t_scalar_local.clamp(0, 1) ** strength_power
+        strength_bc = strength.view(hist_in.shape[0], 1, 1, 1)
+
+        if mode == 'uniform_mix':
+            max_strength = float(hist_noise_cfg.get('max_strength', 0.75))
+            uniform = normalize_grid(torch.ones_like(hist_in))
+            hist_out = (1.0 - strength_bc * max_strength) * hist_in + (strength_bc * max_strength) * uniform
+            return normalize_grid(hist_out)
+
+        if mode == 'gaussian_additive':
+            std_max = float(hist_noise_cfg.get('std_max', hist_noise_cfg.get('max_strength', 0.15)))
+            noise = torch.randn_like(hist_in) * (strength_bc * std_max)
+            hist_out = (hist_in + noise).clamp_min(0.0)
+            return normalize_grid(hist_out)
+
+        if mode == 'multinomial_resample':
+            mix_strength = float(hist_noise_cfg.get('max_strength', 1.0))
+            min_count = int(hist_noise_cfg.get('min_count', 32))
+            hist_out = hist_in.clone()
+            flat_mass = (hist_in * area).view(hist_in.shape[0], -1).clamp_min(1e-12)
+            flat_mass = flat_mass / flat_mass.sum(dim=1, keepdim=True)
+            n_eff = torch.exp(log_n_local).round().clamp_min(float(min_count)).to(dtype=torch.int64)
+            for b in range(hist_in.shape[0]):
+                counts = torch.multinomial(flat_mass[b], int(n_eff[b].item()), replacement=True)
+                binc = torch.bincount(counts, minlength=flat_mass.shape[1]).to(hist_in.dtype)
+                count_density = (binc.view(1, m, m) / float(max(int(n_eff[b].item()), 1))) / area[b]
+                count_density = count_density.unsqueeze(0)
+                alpha = float(strength[b].item()) * mix_strength
+                hist_out[b:b+1] = (1.0 - alpha) * hist_in[b:b+1] + alpha * count_density
+            return normalize_grid(hist_out)
+
+        raise ValueError(f"Unknown training.hist_noise.mode: {mode}")
     # ------------------------------------------------------------------
     # Targets
     #
@@ -619,19 +683,9 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
     # it is used only as an optional conditioning channel.
     hist_noise_cfg = training.get('hist_noise', {})
     # We'll build t_scalar early if needed for noise conditioning.
-    t_scalar = torch.rand(B, device=device) if time_cond else None
+    t_scalar = build_t_scalar(B)
     if hist_noise_cfg.get('enable', False):
-        # Mix towards the uniform density as noise level increases.
-        max_strength = float(hist_noise_cfg.get('max_strength', 0.75))
-        power = float(hist_noise_cfg.get('power', 1.0))
-        if t_scalar is None:
-            t_scalar = torch.rand(B, device=device)
-        strength = (t_scalar.clamp(0, 1) ** power) * max_strength
-        strength = strength.view(B, 1, 1, 1)
-        uniform = torch.ones_like(input_hist)
-        uniform = normalize_grid(uniform)
-        input_hist = (1.0 - strength) * input_hist + strength * uniform
-        input_hist = normalize_grid(input_hist)
+        input_hist = corrupt_histogram(input_hist, hist_noise_cfg, t_scalar, log_n)
     input_noise_std = training.get('input_noise_std', 0.0)
     if input_noise_std:
         input_hist = (input_hist + torch.randn_like(input_hist) * input_noise_std).clamp_min(0.0)

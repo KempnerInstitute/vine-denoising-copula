@@ -34,9 +34,9 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 if [ -n "${SLURM_SUBMIT_DIR:-}" ] && [ -f "${SLURM_SUBMIT_DIR}/scripts/train_unified.py" ]; then
   REPO_ROOT="${SLURM_SUBMIT_DIR}"
 fi
-CONFIG_SRC="${REPO_ROOT}/configs/train/denoiser_cond.yaml"
-MODEL_TYPE="denoiser"
-METHOD_TAG="denoiser_cond"
+CONFIG_SRC="${CONFIG_SRC:-${REPO_ROOT}/configs/train/denoiser_cond.yaml}"
+MODEL_TYPE="${MODEL_TYPE:-denoiser}"
+METHOD_TAG="${METHOD_TAG:-denoiser_cond}"
 
 echo "============================================================================"
 echo "Vine Diffusion Copula PAPER JOB: ${METHOD_TAG}"
@@ -65,22 +65,18 @@ echo ""
 # Environment setup
 module purge
 module load cuda/12.2.0-fasrc01
-eval "$(conda shell.bash hook)" || true
-set +u
+
+# Prefer the stable base Mambaforge interpreter used by the successful paper
+# benchmark jobs. Some inherited netscratch conda environments fail on H200
+# nodes before Python can initialize its codec table.
+export LD_LIBRARY_PATH="/n/sw/Mambaforge-23.11.0-0/lib:${LD_LIBRARY_PATH:-}"
+unset CONDA_PREFIX CONDA_DEFAULT_ENV CONDA_SHLVL _CE_CONDA _CE_M PYTHONHOME PYTHONPATH
+
 if [ -n "${VDC_PYTHON_BIN:-}" ]; then
   PYTHON_BIN="${VDC_PYTHON_BIN}"
-elif [ -n "${VDC_CONDA_ENV_PATH:-}" ]; then
-  conda activate "${VDC_CONDA_ENV_PATH}"
-  PYTHON_BIN="python"
-elif conda activate vdc 2>/dev/null; then
-  PYTHON_BIN="python"
-elif conda activate diffuse_vine_cop 2>/dev/null; then
-  PYTHON_BIN="python"
 else
-  echo "ERROR: failed to activate conda env. Set VDC_CONDA_ENV_PATH or VDC_PYTHON_BIN."
-  exit 3
+  PYTHON_BIN="/n/sw/Mambaforge-23.11.0-0/bin/python"
 fi
-set -u
 
 if [ "${PYTHON_BIN}" != "python" ] && [ ! -x "${PYTHON_BIN}" ]; then
   echo "ERROR: VDC_PYTHON_BIN is not executable: ${PYTHON_BIN}"
@@ -95,7 +91,13 @@ export MKL_NUM_THREADS="${SLURM_CPUS_PER_TASK:-16}"
 export PYTORCH_ALLOC_CONF=expandable_segments:True
 export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
 export NCCL_DEBUG=${NCCL_DEBUG:-WARN}
-export PYTHONNOUSERSITE="${PYTHONNOUSERSITE:-1}"
+# Do not disable the user site by default. Some working paper environments
+# (notably vdc_paper) rely on user-site packages such as torch.
+if [ -n "${PYTHONNOUSERSITE:-}" ]; then
+  export PYTHONNOUSERSITE
+else
+  unset PYTHONNOUSERSITE || true
+fi
 unset PYTHONHOME || true
 
 # Some cluster images don't have system libbz2; ensure we can load it from conda.
