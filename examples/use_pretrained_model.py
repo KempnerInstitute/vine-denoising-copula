@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# ruff: noqa: E402
 """Example: load the official pretrained model and use it for pair or vine inference."""
 
 from __future__ import annotations

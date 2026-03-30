@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# ruff: noqa: E402
 """Stage a publishable pretrained-model bundle from the canonical paper checkpoint."""
 
 from __future__ import annotations

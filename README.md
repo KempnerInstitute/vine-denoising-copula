@@ -8,17 +8,12 @@
   <a href="https://huggingface.co/hsafaai/vdc-denoiser-m64-v1"><img src="https://img.shields.io/badge/Hugging%20Face-vdc--denoiser--m64--v1-f9d649" alt="Model"></a>
 </p>
 
-Vine Diffusion Copula, or VDC, is a codebase for bivariate copula density estimation, vine copula fitting, and information estimation from learned copula densities.
+Vine Diffusion Copula, or VDC, is a codebase for pretrained bivariate copula density estimation, vine copula fitting, and information estimation from learned copula densities.
 
-The released checkpoint is a pretrained denoising edge estimator. It takes bivariate pseudo-observations, predicts a positive density grid, projects that grid to a valid copula with IPFP, and reuses the resulting estimator across vine edges.
+The main released artifact is a frozen pretrained edge estimator, `vdc-denoiser-m64-v1`. Given bivariate pseudo-observations, it predicts a positive density grid, projects that grid to a valid copula with IPFP, and reuses the resulting estimator across vine edges.
 
 <p align="center">
   <img src="docs/assets/method_pipeline.png" alt="VDC method pipeline" width="100%">
-</p>
-
-<p align="center">
-  <img src="docs/assets/copula_example_main.png" alt="Bivariate copula example" width="49%">
-  <img src="docs/assets/speed_comparison.png" alt="Runtime comparison" width="49%">
 </p>
 
 ## Quick Start
@@ -54,21 +49,26 @@ Reports:
 - [docs/reports/pretrained_release/PRETRAINED_RELEASE_VERIFICATION.md](docs/reports/pretrained_release/PRETRAINED_RELEASE_VERIFICATION.md)
 - [docs/reports/pretrained_release/MI_BENCHMARK_DCD_RELEASE.md](docs/reports/pretrained_release/MI_BENCHMARK_DCD_RELEASE.md)
 
+### Documentation
+
+- [docs/index.html](docs/index.html)
+- [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)
+- [docs/MODEL_RELEASES.md](docs/MODEL_RELEASES.md)
+- [docs/PAPER_REPRODUCIBILITY.md](docs/PAPER_REPRODUCIBILITY.md)
+
 ## Main Capabilities
 
 - Estimate valid bivariate copula densities from samples in `[0, 1]^2`
 - Fit D-vine, C-vine, and R-vine style dependence models
 - Compute mutual information and total correlation from learned copula densities
 - Train denoising, CNN, and diffusion-style model variants
-- Reproduce the released checkpoint and regenerate verification figures
+- Reproduce the released checkpoint and verification artifacts
 
 ## Released Model
 
-The packaged released model id is:
+The packaged released model id is `vdc-denoiser-m64-v1`.
 
-- `vdc-denoiser-m64-v1`
-
-The codebase stores the manifest and loader code, not the large checkpoint itself. The published model lives on Hugging Face, and the release tooling is documented in [docs/MODEL_RELEASES.md](docs/MODEL_RELEASES.md).
+The repository stores the manifest and loader code, not the large checkpoint itself. The published weights live on Hugging Face, and the release workflow is documented in [docs/MODEL_RELEASES.md](docs/MODEL_RELEASES.md).
 
 Python usage:
 
@@ -84,7 +84,7 @@ print(density.shape)
 
 ## Core Workflow
 
-VDC separates the workflow into four pieces:
+The released inference path is:
 
 1. Build a normalized histogram from bivariate pseudo-observations.
 2. Predict a positive density grid with the released model or a trained checkpoint.
@@ -128,11 +128,6 @@ vine.fit(U, bundle.model, diffusion=bundle.diffusion)
 
 ## Verification Assets
 
-<p align="center">
-  <img src="docs/assets/pretrained_bivariate_verification.png" alt="Released model verification grid" width="49%">
-  <img src="docs/assets/mi_comparison.png" alt="Mutual information comparison" width="49%">
-</p>
-
 The release verification checks:
 
 - analytic bivariate cases including Gaussian, Clayton, Frank, and Gumbel
@@ -140,16 +135,10 @@ The release verification checks:
 - mutual information accuracy from the released checkpoint
 - regeneration of the main qualitative pair-copula figure
 
-## Documentation
-
-- [docs/index.html](docs/index.html)
-- [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)
-- [docs/USER_GUIDE.md](docs/USER_GUIDE.md)
-- [docs/API.md](docs/API.md)
-- [docs/CONFIGURATION.md](docs/CONFIGURATION.md)
-- [docs/TECHNICAL_DETAILS.md](docs/TECHNICAL_DETAILS.md)
-- [docs/MODEL_RELEASES.md](docs/MODEL_RELEASES.md)
-- [docs/PAPER_REPRODUCIBILITY.md](docs/PAPER_REPRODUCIBILITY.md)
+Reference artifacts:
+- [docs/reports/pretrained_release/PRETRAINED_RELEASE_VERIFICATION.md](docs/reports/pretrained_release/PRETRAINED_RELEASE_VERIFICATION.md)
+- [docs/reports/pretrained_release/MI_BENCHMARK_DCD_RELEASE.md](docs/reports/pretrained_release/MI_BENCHMARK_DCD_RELEASE.md)
+- [docs/assets/method_pipeline.png](docs/assets/method_pipeline.png)
 
 ## Notes
 

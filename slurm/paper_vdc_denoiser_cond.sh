@@ -29,10 +29,22 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-if [ -n "${SLURM_SUBMIT_DIR:-}" ] && [ -f "${SLURM_SUBMIT_DIR}/scripts/train_unified.py" ]; then
+SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)"
+REPO_ROOT=""
+if [ -n "${VDC_REPO_ROOT:-}" ] && [ -f "${VDC_REPO_ROOT}/scripts/train_unified.py" ]; then
+  REPO_ROOT="${VDC_REPO_ROOT}"
+elif [ -n "${SLURM_SUBMIT_DIR:-}" ] && [ -f "${SLURM_SUBMIT_DIR}/scripts/train_unified.py" ]; then
   REPO_ROOT="${SLURM_SUBMIT_DIR}"
+elif [ -f "${PWD}/scripts/train_unified.py" ]; then
+  REPO_ROOT="${PWD}"
+elif [ -f "${SCRIPT_DIR}/../scripts/train_unified.py" ]; then
+  REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+fi
+if [ -z "${REPO_ROOT}" ]; then
+  echo "ERROR: unable to resolve repository root"
+  echo "Set VDC_REPO_ROOT to the repo checkout containing scripts/train_unified.py"
+  exit 2
 fi
 CONFIG_SRC="${CONFIG_SRC:-${REPO_ROOT}/configs/train/denoiser_cond.yaml}"
 MODEL_TYPE="${MODEL_TYPE:-denoiser}"

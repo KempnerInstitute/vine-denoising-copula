@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# ruff: noqa: E402
 """Download or resolve an official pretrained VDC model."""
 
 from __future__ import annotations
