@@ -1,0 +1,291 @@
+:root {
+  --bg: #f7f4ed;
+  --paper: #fffdfa;
+  --ink: #1f1c17;
+  --muted: #5d574e;
+  --accent: #0f766e;
+  --accent-2: #c2410c;
+  --line: #d8d1c5;
+  --shadow: 0 18px 40px rgba(31, 28, 23, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top left, rgba(194, 65, 12, 0.08), transparent 30%),
+    radial-gradient(circle at top right, rgba(15, 118, 110, 0.12), transparent 32%),
+    var(--bg);
+  line-height: 1.6;
+}
+
+img {
+  max-width: 100%;
+}
+
+a {
+  color: var(--accent);
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 2rem;
+  padding: 3rem min(5vw, 4rem) 2rem;
+  align-items: center;
+}
+
+.hero-copy h1 {
+  margin: 0.2rem 0 1rem;
+  font-family: "Iowan Old Style", "Palatino Linotype", serif;
+  font-size: clamp(2rem, 4.5vw, 4.2rem);
+  line-height: 1.05;
+}
+
+.eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.8rem;
+  color: var(--accent-2);
+  font-weight: 700;
+}
+
+.lede {
+  max-width: 62ch;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.hero-art img,
+.figure-card img {
+  width: 100%;
+  display: block;
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  background: var(--paper);
+}
+
+.cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.button {
+  display: inline-block;
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.button.primary {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.page {
+  padding: 0  min(5vw, 4rem) 4rem;
+}
+
+.grid.two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.card,
+.figure-card {
+  background: rgba(255, 253, 250, 0.88);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+}
+
+.card {
+  padding: 1.4rem 1.5rem;
+}
+
+.card h2,
+.figure-card h3 {
+  margin-top: 0;
+  font-family: "Iowan Old Style", "Palatino Linotype", serif;
+}
+
+.card pre {
+  overflow-x: auto;
+  background: #1f1c17;
+  color: #f7f4ed;
+  padding: 1rem;
+  border-radius: 16px;
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  margin: 1.25rem 0;
+}
+
+.figure-card {
+  overflow: hidden;
+}
+
+.figure-card div {
+  padding: 1rem 1.1rem 1.2rem;
+}
+
+code {
+  font-family: "IBM Plex Mono", "SFMono-Regular", monospace;
+}
+
+.docs-page {
+  background:
+    linear-gradient(135deg, rgba(15, 118, 110, 0.06), transparent 32%),
+    linear-gradient(315deg, rgba(194, 65, 12, 0.08), transparent 28%),
+    var(--bg);
+}
+
+.doc-shell {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.doc-sidebar {
+  padding: 2rem 1.4rem;
+  border-right: 1px solid var(--line);
+  background: rgba(255, 253, 250, 0.72);
+  position: sticky;
+  top: 0;
+  align-self: start;
+  min-height: 100vh;
+}
+
+.doc-sidebar h1 {
+  margin: 0.25rem 0 0.75rem;
+  font-family: "Iowan Old Style", "Palatino Linotype", serif;
+  font-size: 1.75rem;
+  line-height: 1.1;
+}
+
+.sidebar-copy,
+.sidebar-foot {
+  color: var(--muted);
+}
+
+.doc-sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 1.25rem 0;
+}
+
+.doc-sidebar li + li {
+  margin-top: 0.55rem;
+}
+
+.doc-sidebar a {
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.doc-content {
+  padding: 2rem min(5vw, 3rem) 4rem;
+}
+
+.markdown-body {
+  max-width: 900px;
+  background: rgba(255, 253, 250, 0.92);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+  padding: 2rem;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4 {
+  font-family: "Iowan Old Style", "Palatino Linotype", serif;
+  line-height: 1.15;
+}
+
+.markdown-body h1 {
+  margin-top: 0;
+}
+
+.markdown-body pre {
+  overflow-x: auto;
+  background: #1f1c17;
+  color: #f7f4ed;
+  padding: 1rem;
+  border-radius: 16px;
+}
+
+.markdown-body :not(pre) > code {
+  background: rgba(15, 118, 110, 0.08);
+  padding: 0.12rem 0.35rem;
+  border-radius: 6px;
+}
+
+.markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25rem 0;
+}
+
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid var(--line);
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+}
+
+.markdown-body th {
+  background: rgba(15, 118, 110, 0.08);
+}
+
+.markdown-body blockquote {
+  margin: 1.25rem 0;
+  padding: 0.25rem 1rem;
+  border-left: 4px solid var(--accent-2);
+  color: var(--muted);
+  background: rgba(194, 65, 12, 0.06);
+  border-radius: 0 12px 12px 0;
+}
+
+@media (max-width: 900px) {
+  .hero,
+  .grid.two,
+  .gallery {
+    grid-template-columns: 1fr;
+  }
+
+  .hero {
+    padding-top: 2rem;
+  }
+
+  .doc-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .doc-sidebar {
+    min-height: auto;
+    position: static;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+}

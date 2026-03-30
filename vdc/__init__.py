@@ -27,6 +27,12 @@ __all__ = [
     "CopulaAwareDiffusion",
     # Vine API
     "VineCopulaModel",
+    # Pretrained
+    "DEFAULT_PRETRAINED_MODEL_ID",
+    "list_pretrained_models",
+    "load_pretrained_manifest",
+    "load_pretrained_model",
+    "resolve_pretrained_checkpoint",
     # Config
     "Config",
     "get_run_dir",
@@ -43,6 +49,21 @@ def __getattr__(name):
     elif name == "VineCopulaModel":
         from vdc.vine.api import VineCopulaModel
         return VineCopulaModel
+    elif name == "DEFAULT_PRETRAINED_MODEL_ID":
+        from vdc.pretrained import DEFAULT_PRETRAINED_MODEL_ID
+        return DEFAULT_PRETRAINED_MODEL_ID
+    elif name == "list_pretrained_models":
+        from vdc.pretrained import list_pretrained_models
+        return list_pretrained_models
+    elif name == "load_pretrained_manifest":
+        from vdc.pretrained import load_pretrained_manifest
+        return load_pretrained_manifest
+    elif name == "load_pretrained_model":
+        from vdc.pretrained import load_pretrained_model
+        return load_pretrained_model
+    elif name == "resolve_pretrained_checkpoint":
+        from vdc.pretrained import resolve_pretrained_checkpoint
+        return resolve_pretrained_checkpoint
     elif name == "Config":
         from vdc.config import Config
         return Config

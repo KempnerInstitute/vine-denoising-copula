@@ -1,23 +1,29 @@
 # Vine Diffusion Copula
 
-Nonparametric copula density estimation using denoising-based neural estimators (iterative diffusion and single-pass denoisers), with support for high-dimensional vine copula structures.
+<p>
+  <a href="https://github.com/KempnerInstitute/vine-diffusion-copula/actions/workflows/ci.yml"><img src="https://github.com/KempnerInstitute/vine-diffusion-copula/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/KempnerInstitute/vine-diffusion-copula/actions/workflows/pages.yml"><img src="https://github.com/KempnerInstitute/vine-diffusion-copula/actions/workflows/pages.yml/badge.svg" alt="Docs"></a>
+  <a href="https://github.com/KempnerInstitute/vine-diffusion-copula"><img src="https://img.shields.io/badge/python-3.9%2B-1f6feb" alt="Python"></a>
+  <a href="https://github.com/KempnerInstitute/vine-diffusion-copula/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-137333" alt="License"></a>
+  <a href="https://huggingface.co/hsafaai/vdc-denoiser-m64-v1"><img src="https://img.shields.io/badge/Hugging%20Face-vdc--denoiser--m64--v1-f9d649" alt="Model"></a>
+</p>
 
-## What This Does
+Vine Diffusion Copula, or VDC, is a codebase for bivariate copula density estimation, vine copula fitting, and information estimation from learned copula densities.
 
-Estimates the copula density function c(u,v) from bivariate data:
-- **Input**: Pseudo-observations (u_i, v_i) in [0,1]² (data after marginal transformation)
-- **Output**: Copula density c(u,v) on a discrete grid, satisfying copula constraints
-- **Method**: Supports (a) iterative conditional diffusion (DDIM/CFG) and (b) fast single-pass denoiser/CNN baselines, all with IPFP/Sinkhorn projection to enforce exact copula constraints
+The released checkpoint is a pretrained denoising edge estimator. It takes bivariate pseudo-observations, predicts a positive density grid, projects that grid to a valid copula with IPFP, and reuses the resulting estimator across vine edges.
 
-The estimated bivariate copulas can be combined into vine structures (D-vine, C-vine, R-vine) for modeling high-dimensional dependence.
+<p align="center">
+  <img src="docs/assets/method_pipeline.png" alt="VDC method pipeline" width="100%">
+</p>
 
-### Constraints Enforced
-- c(u,v) ≥ 0 (non-negative)
-- ∫₀¹ c(u,v) dv = 1 for all u (uniform marginals)
-- ∫₀¹ c(u,v) du = 1 for all v
-- Unit mass over [0,1]²
+<p align="center">
+  <img src="docs/assets/copula_example_main.png" alt="Bivariate copula example" width="49%">
+  <img src="docs/assets/speed_comparison.png" alt="Runtime comparison" width="49%">
+</p>
 
-## Installation
+## Quick Start
+
+### Install
 
 ```bash
 git clone https://github.com/KempnerInstitute/vine_diffusion_copula.git
@@ -27,244 +33,126 @@ conda activate vdc
 pip install -e .
 ```
 
-## Quick Start
-
-### 1. Training a Model
+### Use the released model
 
 ```bash
-# Recommended (unified trainer) — pick one:
-python scripts/train_unified.py --config configs/train/diffusion_cond.yaml --model-type diffusion_unet
-python scripts/train_unified.py --config configs/train/denoiser_cond.yaml  --model-type denoiser
-python scripts/train_unified.py --config configs/train/enhanced_cnn_cond.yaml --model-type enhanced_cnn
-
-# Multi-GPU (example: 4 GPUs)
-torchrun --nproc_per_node=4 scripts/train_unified.py --config configs/train/diffusion_cond.yaml --model-type diffusion_unet
-
-# SLURM (paper-style jobs; write a run directory with checkpoints/results/analysis)
-sbatch slurm/paper_vdc_diffusion_cond.sh
+python scripts/download_pretrained.py --list
+python scripts/download_pretrained.py --model-id vdc-denoiser-m64-v1
+python examples/use_pretrained_model.py --model-id vdc-denoiser-m64-v1
 ```
 
-### 2. Evaluating a Model
+### Verify the released model
 
 ```bash
-# Full evaluation (bivariate + vine copula)
-python scripts/evaluate.py --checkpoint checkpoints/model.pt
-
-# Quick evaluation
-python scripts/evaluate.py --checkpoint checkpoints/model.pt --quick
-
-# Standardized comparison across checkpoints (bivariate + small vine tasks)
-python scripts/model_selection.py --checkpoints checkpoints/*/model_step_*.pt --n-samples 2000
-
-# SLURM cluster
-CHECKPOINT=checkpoints/model.pt sbatch slurm/evaluate.sh
+python scripts/verify_pretrained_release.py \
+  --model-id vdc-denoiser-m64-v1 \
+  --device cpu \
+  --out-dir docs/reports/pretrained_release
 ```
 
-### 3. Inference: Density Estimation
+Reports:
+- [docs/reports/pretrained_release/PRETRAINED_RELEASE_VERIFICATION.md](docs/reports/pretrained_release/PRETRAINED_RELEASE_VERIFICATION.md)
+- [docs/reports/pretrained_release/MI_BENCHMARK_DCD_RELEASE.md](docs/reports/pretrained_release/MI_BENCHMARK_DCD_RELEASE.md)
 
-```bash
-# Estimate density from your data
-python scripts/infer.py density --checkpoint checkpoints/model.pt --data your_samples.npy
+## Main Capabilities
 
-# Visualize on test copulas
-python scripts/infer.py visualize --checkpoint checkpoints/model.pt
-```
+- Estimate valid bivariate copula densities from samples in `[0, 1]^2`
+- Fit D-vine, C-vine, and R-vine style dependence models
+- Compute mutual information and total correlation from learned copula densities
+- Train denoising, CNN, and diffusion-style model variants
+- Reproduce the released checkpoint and regenerate verification figures
 
-### 4. Using in Python
+## Released Model
+
+The packaged released model id is:
+
+- `vdc-denoiser-m64-v1`
+
+The codebase stores the manifest and loader code, not the large checkpoint itself. The published model lives on Hugging Face, and the release tooling is documented in [docs/MODEL_RELEASES.md](docs/MODEL_RELEASES.md).
+
+Python usage:
 
 ```python
-import torch
 import numpy as np
-from pathlib import Path
-from vdc.vine.api import VineCopulaModel
-from scripts.train_unified import build_model
-from vdc.models.copula_diffusion import CopulaAwareDiffusion
+from vdc.pretrained import estimate_pair_density_from_samples, load_pretrained_model
 
-# Load checkpoint + build model
-ckpt_path = Path("checkpoints/your_run/model_step_100000.pt")
-ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
-config = ckpt["config"]
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-model_type = config.get("model", {}).get("type", "diffusion_unet")
-model = build_model(model_type, config, device)
-model.load_state_dict(ckpt["model_state_dict"], strict=False)
-model.eval()
-
-# Diffusion object only needed for diffusion_unet inference
-diffusion = None
-if model_type == "diffusion_unet":
-    diffusion = CopulaAwareDiffusion(
-        timesteps=int(config.get("diffusion", {}).get("timesteps", 1000)),
-        beta_schedule=str(config.get("diffusion", {}).get("noise_schedule", "cosine")),
-    ).to(device)
-
-# Fit a D-vine copula to high-dimensional data
-U = np.random.uniform(0, 1, (1000, 5))  # 5D copula samples
-vine = VineCopulaModel(vine_type='dvine', m=64, device='cuda')
-vine.fit(U, model, diffusion=diffusion)  # diffusion!=None -> iterative DDIM sampling
-
-# Evaluate density and generate samples
-logpdf = vine.logpdf(U_test)
-samples = vine.simulate(n=1000)
-
-# Save for later use
-vine.save('my_vine.pkl')
+bundle = load_pretrained_model("vdc-denoiser-m64-v1", device="cpu")
+u = np.random.rand(2000, 2)
+density = estimate_pair_density_from_samples(bundle, u)
+print(density.shape)
 ```
 
-## Project Structure
+## Core Workflow
 
-```
-vine_diffusion_copula/
-├── vdc/                          # Core library
-│   ├── models/                   # Neural network architectures
-│   │   ├── unet_grid.py         # Main UNet model
-│   │   ├── copula_diffusion.py  # Diffusion process
-│   │   ├── projection.py        # Copula constraint projection
-│   │   └── hfunc.py             # H-function (conditional CDF)
-│   ├── vine/                     # Vine copula API
-│   │   ├── api.py               # High-level VineCopulaModel class
-│   │   ├── structure.py         # Vine structure building
-│   │   └── recursion.py         # Vine recursion algorithms
-│   ├── train/                    # Training utilities
-│   │   └── unified_trainer.py   # Main training loop
-│   ├── data/                     # Data generation
-│   │   ├── generators.py        # Copula sampling
-│   │   └── onthefly.py          # On-the-fly dataset
-│   ├── utils/                    # Utilities
-│   └── config.py                 # Configuration management
-├── scripts/                      # Main entry points
-│   ├── train.py                 # Training script
-│   ├── evaluate.py              # Evaluation script
-│   └── infer.py                 # Inference script
-├── configs/                      # Configuration files
-│   ├── train/default.yaml       # Training config
-│   └── inference/default.yaml   # Inference config
-├── slurm/                        # SLURM job scripts
-│   ├── train.sh                 # Training job
-│   └── evaluate.sh              # Evaluation job
-├── examples/                     # Usage examples
-├── tests/                        # Unit tests
-└── docs/                         # Documentation
-```
+VDC separates the workflow into four pieces:
 
-## Configuration
+1. Build a normalized histogram from bivariate pseudo-observations.
+2. Predict a positive density grid with the released model or a trained checkpoint.
+3. Project the grid to a valid copula with IPFP.
+4. Reuse the resulting pair-copula estimator inside vine recursion and information calculations.
 
-All settings are controlled via YAML config files:
+## Training And Evaluation
 
-```yaml
-# configs/train/default.yaml
-model:
-  type: "diffusion_unet"
-  grid_size: 64
-  base_channels: 64
+Train a denoiser:
 
-diffusion:
-  timesteps: 1000
-  noise_schedule: "cosine"
-
-training:
-  max_steps: 150000
-  batch_size: 32
-  learning_rate: 1.0e-4
-
-output:
-  base_dir: "results"
-  include_timestamp: true
-  include_job_id: true
-```
-
-Override via command line:
 ```bash
-python scripts/train.py --config configs/train/default.yaml \
-    training.max_steps=200000 model.base_channels=128
+python scripts/train_unified.py --config configs/train/denoiser_cond.yaml --model-type denoiser
 ```
 
-## Results Organization
+Train a diffusion-style model:
 
-Results are automatically organized with timestamps and job IDs:
-```
-results/
-└── evaluation_20251209_143022_job12345/
-    ├── checkpoints/           # Model checkpoints
-    ├── figures/               # Visualizations
-    │   ├── bivariate_results.png
-    │   └── vine_results.png
-    ├── logs/                  # Training logs
-    ├── metrics/               # JSON metrics
-    ├── config.yaml            # Config used
-    └── results.json           # Evaluation results
+```bash
+python scripts/train_unified.py --config configs/train/diffusion_cond.yaml --model-type diffusion_unet
 ```
 
-## Key Features
+Evaluate a checkpoint:
 
-- **Denoising-based density estimation**: Iterative conditional diffusion and fast single-pass estimators
-- **Vine copula support**: Build D-vine, C-vine, R-vine structures for high-dimensional data
-- **Automatic constraint enforcement**: IPFP projection ensures valid copula densities
-- **Multi-GPU training**: Distributed training with PyTorch DDP
-- **Flexible configuration**: YAML configs with command-line overrides
-- **Comprehensive evaluation**: Bivariate ISE, vine log-likelihood, Rosenblatt uniformity tests
+```bash
+python scripts/evaluate.py --checkpoint checkpoints/model.pt
+python scripts/model_selection.py --checkpoints checkpoints/*/model_step_*.pt --n-samples 2000
+```
 
-## Comparing One-Shot vs Diffusion
+Fit a vine model:
 
-This repo includes configs for head-to-head comparisons:
-- `configs/train/diffusion_cond.yaml` (iterative diffusion, optional histogram conditioning / CFG)
-- `configs/train/denoiser_cond.yaml` (single-pass denoiser)
-- `configs/train/enhanced_cnn_cond.yaml` (strong CNN baseline)
+```python
+import numpy as np
+from vdc.pretrained import load_pretrained_model
+from vdc.vine.api import VineCopulaModel
 
-Use `scripts/model_selection.py` to compare checkpoints on a fixed bivariate suite.
+bundle = load_pretrained_model("vdc-denoiser-m64-v1", device="cpu")
+U = np.random.rand(1000, 5)
 
-## Paper (ICML 2026)
+vine = VineCopulaModel(vine_type="dvine", m=bundle.config["data"]["m"], device="cpu")
+vine.fit(U, bundle.model, diffusion=bundle.diffusion)
+```
 
-The paper source and paper-only SLURM jobs live in the separate `drafts/` repository:
-- LaTeX: `drafts/vine_diffusion.tex`
-- Artifact scripts: `drafts/scripts/paper_artifacts.py`
-- Canonical paper checkpoint pointer: `analysis/PAPER_CHECKPOINT.txt`
-- Canonical paper model manifest: `analysis/PAPER_BEST_MODEL.json`
+## Verification Assets
+
+<p align="center">
+  <img src="docs/assets/pretrained_bivariate_verification.png" alt="Released model verification grid" width="49%">
+  <img src="docs/assets/mi_comparison.png" alt="Mutual information comparison" width="49%">
+</p>
+
+The release verification checks:
+
+- analytic bivariate cases including Gaussian, Clayton, Frank, and Gumbel
+- mass preservation after projection
+- mutual information accuracy from the released checkpoint
+- regeneration of the main qualitative pair-copula figure
 
 ## Documentation
 
-| Document | Description |
-|----------|-------------|
-| [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) | Quick start guide for new users |
-| [docs/CONFIGURATION.md](docs/CONFIGURATION.md) | **Complete configuration guide for all tasks** |
-| [docs/USER_GUIDE.md](docs/USER_GUIDE.md) | Comprehensive usage guide with examples |
-| [docs/API.md](docs/API.md) | Complete API reference |
-| [docs/TECHNICAL_DETAILS.md](docs/TECHNICAL_DETAILS.md) | Mathematical framework |
-| [docs/WHY_DIFFUSION.md](docs/WHY_DIFFUSION.md) | Design decisions and motivation |
-| [docs/PAPER_REPRODUCIBILITY.md](docs/PAPER_REPRODUCIBILITY.md) | Canonical paper checkpoint + exact rerun commands |
+- [docs/index.html](docs/index.html)
+- [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)
+- [docs/USER_GUIDE.md](docs/USER_GUIDE.md)
+- [docs/API.md](docs/API.md)
+- [docs/CONFIGURATION.md](docs/CONFIGURATION.md)
+- [docs/TECHNICAL_DETAILS.md](docs/TECHNICAL_DETAILS.md)
+- [docs/MODEL_RELEASES.md](docs/MODEL_RELEASES.md)
+- [docs/PAPER_REPRODUCIBILITY.md](docs/PAPER_REPRODUCIBILITY.md)
 
-## Examples
+## Notes
 
-| Example | Description |
-|---------|-------------|
-| [examples/use_pretrained_model.py](examples/use_pretrained_model.py) | Load model, estimate density, compute h-functions |
-| [examples/train_custom_copula.py](examples/train_custom_copula.py) | Create custom config, train model |
-| [examples/fit_vine_copula.py](examples/fit_vine_copula.py) | Fit D-vine to high-dimensional data |
-
-Run examples:
-```bash
-# Use pretrained model
-python examples/use_pretrained_model.py --checkpoint checkpoints/model.pt
-
-# Create custom training config
-python examples/train_custom_copula.py
-
-# Fit vine copula
-python examples/fit_vine_copula.py --checkpoint checkpoints/model.pt --dimension 5
-```
-
-## Citation
-
-```bibtex
-@software{vine_diffusion_copula,
-  title={Vine Diffusion Copula: Deep Learning for Copula Density Estimation},
-  author={Kempner Institute},
-  year={2025},
-  url={https://github.com/KempnerInstitute/vine_diffusion_copula}
-}
-```
-
-## License
-
-MIT License
+- The released model assumes continuous marginals and pseudo-observations.
+- Vine fitting uses the simplifying assumption.
+- The released checkpoint is frozen and versioned.
