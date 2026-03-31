@@ -4,8 +4,9 @@
 
 The paper uses one fixed model/checkpoint for all reported DCD/VDC information results.
 
-- Canonical checkpoint path file: `analysis/PAPER_CHECKPOINT.txt`
-- Canonical structured manifest: `analysis/PAPER_BEST_MODEL.json`
+- Canonical checkpoint path file: local private `analysis/PAPER_CHECKPOINT.txt` when available
+- Canonical structured manifest: local private `analysis/PAPER_BEST_MODEL.json` when available
+- Portable public fallback: the packaged pretrained release `vdc-denoiser-m64-v1`
 
 Current frozen checkpoint:
 
@@ -27,9 +28,10 @@ Paper scripts resolve checkpoints in this order:
 
 1. Explicit CLI `--checkpoint`
 2. Environment variable `PAPER_CHECKPOINT`
-3. `analysis/PAPER_CHECKPOINT.txt`
-4. `analysis/PAPER_BEST_MODEL.json`
-5. Auto-discovery via `vdc.utils.paper.choose_best_checkpoint(...)`
+3. local private `analysis/PAPER_CHECKPOINT.txt`
+4. local private `analysis/PAPER_BEST_MODEL.json`
+5. Hugging Face / packaged pretrained release via `vdc.pretrained.resolve_pretrained_checkpoint(...)`
+6. Auto-discovery via `vdc.utils.paper.choose_best_checkpoint(...)`
 
 The central resolver is in `vdc/utils/paper.py`.
 
@@ -54,7 +56,7 @@ Use these commands from repo root:
 
 ```bash
 # Always pin the canonical checkpoint explicitly for strict reproducibility.
-export PAPER_CHECKPOINT="$(cat analysis/PAPER_CHECKPOINT.txt)"
+export PAPER_CHECKPOINT="$(python scripts/download_pretrained.py --model-id vdc-denoiser-m64-v1)"
 
 # Table 3 MI benchmark (DCD row)
 python scripts/mi_estimation.py \
@@ -125,7 +127,7 @@ python drafts/scripts/fig_density_scaling_e6.py \
 
 ## Verification Checklist
 
-- Confirm `analysis/PAPER_CHECKPOINT.txt` and `analysis/PAPER_BEST_MODEL.json` point to the same checkpoint.
+- Confirm `analysis/PAPER_CHECKPOINT.txt` and `analysis/PAPER_BEST_MODEL.json` point to the same checkpoint when using the local private paper layout.
 - Confirm generated result JSON files contain that same checkpoint path.
 - Confirm `docs/reports/pretrained_release/PRETRAINED_RELEASE_VERIFICATION.md` and `docs/reports/pretrained_release/MI_BENCHMARK_DCD_RELEASE.md` were regenerated from the same checkpoint.
 - Confirm the synthetic density-scaling artifacts exist when building the final paper figures:

@@ -10,8 +10,8 @@ Current packaged model id:
 
 Canonical paper sources:
 
-- `analysis/PAPER_CHECKPOINT.txt`
-- `analysis/PAPER_BEST_MODEL.json`
+- local private `analysis/PAPER_CHECKPOINT.txt` and `analysis/PAPER_BEST_MODEL.json` when available
+- otherwise the packaged pretrained manifest plus Hugging Face release
 
 Packaged manifest:
 

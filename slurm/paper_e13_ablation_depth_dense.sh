@@ -30,7 +30,22 @@ PYTHON_BIN="${VDC_PYTHON_BIN:-/n/home13/hsafaai/.venvs/vdc_paper/bin/python}"
 
 OUT_JSON="${REPO_ROOT}/drafts/paper_outputs/e13_depth_stability_ablation_dense.json"
 
-UNIFORM_CKPT="${UNIFORM_CKPT:-$(cat "${REPO_ROOT}/analysis/PAPER_CHECKPOINT.txt")}"
+if [ -z "${UNIFORM_CKPT:-}" ]; then
+  UNIFORM_CKPT="$("${PYTHON_BIN}" - <<'PY'
+from pathlib import Path
+import sys
+repo_root = Path.cwd()
+sys.path.insert(0, str(repo_root))
+from vdc.utils.paper import resolve_canonical_paper_checkpoint
+ckpt = resolve_canonical_paper_checkpoint()
+print("" if ckpt is None else str(ckpt))
+PY
+)"
+fi
+if [ -z "${UNIFORM_CKPT}" ]; then
+  echo "ERROR: unable to resolve Uniform-mix checkpoint."
+  exit 1
+fi
 DIRECT_CKPT="${DIRECT_CKPT:-/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_denoiser_cond_enhanced_direct_20260330_144429_2719530/checkpoints/model_step_240000.pt}"
 GAUSSIAN_CKPT="${GAUSSIAN_CKPT:-/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_denoiser_cond_enhanced_gaussian_20260330_144631_2719531/checkpoints/model_step_190000.pt}"
 MULTINOMIAL_CKPT="${MULTINOMIAL_CKPT:-/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_denoiser_cond_enhanced_multinomial_20260330_150223_2719534/checkpoints/model_step_220000.pt}"
