@@ -124,7 +124,7 @@ fi
 echo "Using checkpoint: ${CHECKPOINT}"
 echo ""
 
-OUT_JSON="${REPO_ROOT}/results/tc_benchmark.json"
+OUT_JSON="${TC_OUT_JSON:-${REPO_ROOT}/results/tc_benchmark.json}"
 DIMS="${TC_DIMS:-5 10 20 50}"
 
 CMD=(
@@ -148,6 +148,46 @@ CMD=(
 
 if [ "${TC_INCLUDE_MINE:-0}" = "1" ]; then
   CMD+=(--include-mine)
+fi
+
+if [ "${TC_INCLUDE_INFONCE:-0}" = "1" ]; then
+  CMD+=(--include-infonce)
+fi
+
+if [ "${TC_INCLUDE_NWJ:-0}" = "1" ]; then
+  CMD+=(--include-nwj)
+fi
+
+if [ -n "${TC_MINE_STEPS:-}" ]; then
+  CMD+=(--mine-steps "${TC_MINE_STEPS}")
+fi
+
+if [ -n "${TC_MINE_BATCH_SIZE:-}" ]; then
+  CMD+=(--mine-batch-size "${TC_MINE_BATCH_SIZE}")
+fi
+
+if [ -n "${TC_MINE_LR:-}" ]; then
+  CMD+=(--mine-lr "${TC_MINE_LR}")
+fi
+
+if [ -n "${TC_MINE_HIDDEN:-}" ]; then
+  CMD+=(--mine-hidden "${TC_MINE_HIDDEN}")
+fi
+
+if [ -n "${TC_MINE_WEIGHT_DECAY:-}" ]; then
+  CMD+=(--mine-weight-decay "${TC_MINE_WEIGHT_DECAY}")
+fi
+
+if [ -n "${TC_MINE_GRAD_CLIP:-}" ]; then
+  CMD+=(--mine-grad-clip "${TC_MINE_GRAD_CLIP}")
+fi
+
+if [ -n "${TC_MINE_EVAL_BATCHES:-}" ]; then
+  CMD+=(--mine-eval-batches "${TC_MINE_EVAL_BATCHES}")
+fi
+
+if [ -n "${TC_NWJ_T_CLIP:-}" ]; then
+  CMD+=(--nwj-t-clip "${TC_NWJ_T_CLIP}")
 fi
 
 echo "Running: ${CMD[*]}"

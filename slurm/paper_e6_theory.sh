@@ -91,7 +91,8 @@ echo "Testing Python..."
 cp "$0" "${RUN_DIR}/analysis/slurm_script.sh"
 git rev-parse HEAD 2>/dev/null | tee "${RUN_DIR}/analysis/git_commit.txt" || true
 
-OUT_JSON="${RUN_DIR}/results/e6_theory_synthetic_results.json"
+OUT_JSON_NAME="${E6_OUT_JSON_NAME:-e6_theory_synthetic_results.json}"
+OUT_JSON="${RUN_DIR}/results/${OUT_JSON_NAME}"
 CKPT="${E6_CHECKPOINT:-${PAPER_CHECKPOINT:-}}"
 CKPT_ARGS=()
 if [ -n "${CKPT}" ]; then
@@ -101,6 +102,18 @@ fi
 E6_EXTRA_ARGS=()
 if [ "${E6_GAUSSIAN_COPULA:-1}" = "1" ]; then
   E6_EXTRA_ARGS+=(--gaussian-copula)
+fi
+if [ "${E6_FLOW_REALNVP:-0}" = "1" ]; then
+  E6_EXTRA_ARGS+=(--flow-realnvp)
+  E6_EXTRA_ARGS+=(--flow-num-layers "${E6_FLOW_NUM_LAYERS:-8}")
+  E6_EXTRA_ARGS+=(--flow-hidden-dim "${E6_FLOW_HIDDEN_DIM:-128}")
+  E6_EXTRA_ARGS+=(--flow-hidden-layers "${E6_FLOW_HIDDEN_LAYERS:-2}")
+  E6_EXTRA_ARGS+=(--flow-epochs "${E6_FLOW_EPOCHS:-25}")
+  E6_EXTRA_ARGS+=(--flow-batch-size "${E6_FLOW_BATCH_SIZE:-2048}")
+  E6_EXTRA_ARGS+=(--flow-eval-batch-size "${E6_FLOW_EVAL_BATCH_SIZE:-4096}")
+  E6_EXTRA_ARGS+=(--flow-lr "${E6_FLOW_LR:-1e-3}")
+  E6_EXTRA_ARGS+=(--flow-val-fraction "${E6_FLOW_VAL_FRACTION:-0.1}")
+  E6_EXTRA_ARGS+=(--flow-patience "${E6_FLOW_PATIENCE:-5}")
 fi
 if [ "${E6_MI_CLONE_MINDE:-0}" = "1" ]; then
   E6_EXTRA_ARGS+=(--mi-clone-minde)
@@ -140,15 +153,18 @@ fi
   --out-json "${OUT_JSON}" \
   2>&1 | tee "${RUN_DIR}/logs/e6_theory.log"
 
-cp "${OUT_JSON}" "drafts/paper_outputs/e6_theory_synthetic_results.json"
+PAPER_COPY_PATH="${E6_PAPER_COPY_PATH:-drafts/paper_outputs/e6_theory_synthetic_results.json}"
+cp "${OUT_JSON}" "${PAPER_COPY_PATH}"
 
-echo ""
-echo "Regenerating paper artifacts (force refresh)..."
-echo ""
+if [ "${E6_SKIP_ARTIFACTS:-0}" != "1" ]; then
+  echo ""
+  echo "Regenerating paper artifacts (force refresh)..."
+  echo ""
 
-export FIG_PNG_DPI="${FIG_PNG_DPI:-120}"
-"${PYTHON_BIN}" drafts/scripts/paper_artifacts.py all --output-base "${OUTPUT_BASE}" --force \
-  2>&1 | tee "${RUN_DIR}/logs/paper_artifacts_after_e6_theory.log"
+  export FIG_PNG_DPI="${FIG_PNG_DPI:-120}"
+  "${PYTHON_BIN}" drafts/scripts/paper_artifacts.py all --output-base "${OUTPUT_BASE}" --force \
+    2>&1 | tee "${RUN_DIR}/logs/paper_artifacts_after_e6_theory.log"
+fi
 
 echo ""
 echo "============================================================================"
@@ -156,5 +172,5 @@ echo "DONE: E6 synthetic theory benchmark completed at $(date)"
 echo "============================================================================"
 echo "Run Dir: ${RUN_DIR}"
 echo "E6 JSON: ${OUT_JSON}"
-echo "Paper cache: ${REPO_ROOT}/drafts/paper_outputs/e6_theory_synthetic_results.json"
+echo "Paper cache: ${REPO_ROOT}/${PAPER_COPY_PATH}"
 echo ""

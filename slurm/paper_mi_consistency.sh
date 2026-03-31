@@ -42,24 +42,30 @@ mkdir -p "${REPO_ROOT}/logs"
 module purge
 module load cuda/12.2.0-fasrc01
 
-# Fix libffi issue
+# Fix libffi issue and prefer the stable paper env directly.
 export LD_LIBRARY_PATH="/n/sw/Mambaforge-23.11.0-0/lib:${LD_LIBRARY_PATH:-}"
-eval "$(conda shell.bash hook)" || true
-set +u
+unset CONDA_PREFIX CONDA_DEFAULT_ENV CONDA_SHLVL _CE_CONDA _CE_M PYTHONHOME PYTHONPATH
+
 if [ -n "${VDC_PYTHON_BIN:-}" ]; then
   PYTHON_BIN="${VDC_PYTHON_BIN}"
-elif [ -n "${VDC_CONDA_ENV_PATH:-}" ]; then
-  conda activate "${VDC_CONDA_ENV_PATH}"
-  PYTHON_BIN="python"
-elif conda activate vdc 2>/dev/null; then
-  PYTHON_BIN="python"
-elif conda activate diffuse_vine_cop 2>/dev/null; then
-  PYTHON_BIN="python"
+elif [ -x "/n/netscratch/kempner_dev/hsafaai/conda_envs/vdc_paper/bin/python" ]; then
+  PYTHON_BIN="/n/netscratch/kempner_dev/hsafaai/conda_envs/vdc_paper/bin/python"
 else
-  echo "ERROR: failed to activate conda env. Set VDC_CONDA_ENV_PATH or VDC_PYTHON_BIN."
-  exit 3
+  eval "$(conda shell.bash hook)" || true
+  set +u
+  if [ -n "${VDC_CONDA_ENV_PATH:-}" ]; then
+    conda activate "${VDC_CONDA_ENV_PATH}"
+    PYTHON_BIN="python"
+  elif conda activate vdc 2>/dev/null; then
+    PYTHON_BIN="python"
+  elif conda activate diffuse_vine_cop 2>/dev/null; then
+    PYTHON_BIN="python"
+  else
+    echo "ERROR: failed to activate conda env. Set VDC_CONDA_ENV_PATH or VDC_PYTHON_BIN."
+    exit 3
+  fi
+  set -u
 fi
-set -u
 
 if [ "${PYTHON_BIN}" != "python" ] && [ ! -x "${PYTHON_BIN}" ]; then
   echo "ERROR: VDC_PYTHON_BIN is not executable: ${PYTHON_BIN}"
@@ -67,6 +73,10 @@ if [ "${PYTHON_BIN}" != "python" ] && [ ! -x "${PYTHON_BIN}" ]; then
 fi
 
 cd "${REPO_ROOT}"
+mkdir -p "${REPO_ROOT}/drafts/paper_outputs" "${REPO_ROOT}/drafts/tables"
+
+TABLE_OUT="${REPO_ROOT}/drafts/tables/tab_self_consistency.tex"
+JSON_OUT="${REPO_ROOT}/drafts/paper_outputs/mi_self_consistency.json"
 
 # Resolve checkpoint (explicit env -> best checkpoint auto-selection).
 OUTPUT_BASE="${OUTPUT_BASE:-/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula}"
@@ -126,13 +136,13 @@ echo "Using checkpoint: ${CHECKPOINT:-none (will use KSG only)}"
     --dcd-diffusion-cfg-scale "${MI_CONS_CFG_SCALE:-1.0}" \
     --dcd-pred-noise-clip "${MI_CONS_PRED_NOISE_CLIP:-1.0}" \
     --dcd-truncation-level "${MI_CONS_TRUNCATION_LEVEL:-1}" \
-    --output drafts/tables/tab_self_consistency.tex \
-    --json_output results/mi_self_consistency.json \
+    --output "${TABLE_OUT}" \
+    --json_output "${JSON_OUT}" \
     --device cuda
 
 echo ""
 echo "============================================================================"
 echo "Self-consistency tests complete!"
-echo "Output: drafts/tables/tab_self_consistency.tex"
-echo "JSON: results/mi_self_consistency.json"
+echo "Output: ${TABLE_OUT}"
+echo "JSON: ${JSON_OUT}"
 echo "============================================================================"

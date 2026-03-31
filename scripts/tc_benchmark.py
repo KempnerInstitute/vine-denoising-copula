@@ -22,6 +22,7 @@ Outputs a JSON consumable by:
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import sys
 from dataclasses import dataclass
@@ -63,64 +64,99 @@ def _tc_ksg_chain_rule(U: np.ndarray, *, k: int, seed: int) -> float:
     return float(tc)
 
 
-def _tc_mine(
+def _load_mi_estimation_module(repo_root: Path):
+    """Load scripts/mi_estimation.py as a module for neural MI baselines."""
+    mod_path = repo_root / "scripts" / "mi_estimation.py"
+    mod_name = "vdc_mi_estimation_tc_runtime"
+    spec = importlib.util.spec_from_file_location(mod_name, str(mod_path))
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Failed to load MI estimation module: {mod_path}")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[mod_name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _tc_neural_chain_rule(
     U: np.ndarray,
     *,
+    estimator: str,
+    mi_mod: Any,
     device: str,
     seed: int,
     steps: int,
     batch_size: int,
     lr: float,
     hidden: int,
-    layers: int,
+    weight_decay: float,
+    grad_clip: float,
+    layers: int = 3,
+    eval_batches: int = 10,
+    t_clip: float = 20.0,
 ) -> Tuple[float, float]:
-    """Estimate TC = KL(p||Uniform) using a DV/MINE-style critic."""
+    """Estimate TC via chain rule using a neural MI estimator on growing blocks."""
     import torch
-    import torch.nn as nn
 
     U = np.asarray(U, dtype=np.float32)
     n, d = U.shape
-    if n < 10:
+    if n < 10 or d < 2:
         return 0.0, 0.0
 
-    torch.manual_seed(int(seed))
     dev = torch.device(device)
-
-    p_t = torch.from_numpy(U).to(dev)
-
-    # Simple MLP critic T(u)
-    mods: List[nn.Module] = [nn.Linear(d, int(hidden)), nn.ReLU(inplace=True)]
-    for _ in range(max(0, int(layers) - 1)):
-        mods += [nn.Linear(int(hidden), int(hidden)), nn.ReLU(inplace=True)]
-    mods += [nn.Linear(int(hidden), 1)]
-    net = nn.Sequential(*mods).to(dev)
-    opt = torch.optim.Adam(net.parameters(), lr=float(lr))
-
     t0 = perf_counter()
-    bs = max(32, int(batch_size))
-    for _s in range(int(steps)):
-        idx = torch.randint(0, n, (bs,), device=dev)
-        p_b = p_t[idx]
-        q_b = torch.rand(bs, d, device=dev)  # uniform on (0,1)
+    tc = 0.0
 
-        Tp = net(p_b).mean()
-        Tq = net(q_b).squeeze(-1)
-        log_mean_exp_Tq = torch.logsumexp(Tq, dim=0) - float(np.log(bs))
-        loss = -(Tp - log_mean_exp_Tq)
+    for i in range(1, d):
+        x = np.asarray(U[:, :i], dtype=np.float32)
+        y = np.asarray(U[:, i : i + 1], dtype=np.float32)
+        step_seed = int(seed) + 10_000 * i
+        if estimator == "mine":
+            mi = mi_mod._mine_estimate_mi(
+                x=x,
+                y=y,
+                seed=step_seed,
+                device=dev,
+                steps=int(steps),
+                lr=float(lr),
+                batch_size=int(batch_size),
+                hidden_dim=int(hidden),
+                weight_decay=float(weight_decay),
+                grad_clip=float(grad_clip),
+            )
+        elif estimator == "infonce":
+            mi = mi_mod._infonce_estimate_mi(
+                x=x,
+                y=y,
+                seed=step_seed,
+                device=dev,
+                steps=int(steps),
+                lr=float(lr),
+                batch_size=int(batch_size),
+                hidden_dim=int(hidden),
+                weight_decay=float(weight_decay),
+                grad_clip=float(grad_clip),
+                eval_batches=int(eval_batches),
+            )
+        elif estimator == "nwj":
+            mi = mi_mod._nwj_estimate_mi(
+                x=x,
+                y=y,
+                seed=step_seed,
+                device=dev,
+                steps=int(steps),
+                lr=float(lr),
+                batch_size=int(batch_size),
+                hidden_dim=int(hidden),
+                weight_decay=float(weight_decay),
+                grad_clip=float(grad_clip),
+                t_clip=float(t_clip),
+                eval_batches=int(eval_batches),
+            )
+        else:
+            raise ValueError(f"Unknown estimator for TC chain rule: {estimator}")
+        tc += max(0.0, float(mi))
 
-        opt.zero_grad(set_to_none=True)
-        loss.backward()
-        opt.step()
-
-    # Final estimate on a fresh uniform batch
-    with torch.no_grad():
-        Tp = net(p_t).mean()
-        q_eval = torch.rand(min(n, 20000), d, device=dev)
-        Tq = net(q_eval).squeeze(-1)
-        log_mean_exp_Tq = torch.logsumexp(Tq, dim=0) - float(np.log(Tq.shape[0]))
-        tc_hat = float((Tp - log_mean_exp_Tq).item())
-
-    return float(tc_hat), float(perf_counter() - t0)
+    return float(tc), float(perf_counter() - t0)
 
 
 @dataclass(frozen=True)
@@ -251,12 +287,18 @@ def main() -> None:
     p.add_argument("--n-trials", type=int, default=3, help="Random trials per dimension.")
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--ksg-k", type=int, default=5)
-    p.add_argument("--include-mine", action="store_true", help="Include a MINE/DV baseline (KL vs Uniform).")
+    p.add_argument("--include-mine", action="store_true", help="Include a MINE chain-rule TC baseline.")
+    p.add_argument("--include-infonce", action="store_true", help="Include an InfoNCE chain-rule TC baseline.")
+    p.add_argument("--include-nwj", action="store_true", help="Include an NWJ chain-rule TC baseline.")
     p.add_argument("--mine-steps", type=int, default=800)
     p.add_argument("--mine-batch-size", type=int, default=512)
     p.add_argument("--mine-lr", type=float, default=1e-4)
     p.add_argument("--mine-hidden", type=int, default=256)
     p.add_argument("--mine-layers", type=int, default=3)
+    p.add_argument("--mine-weight-decay", type=float, default=0.0)
+    p.add_argument("--mine-grad-clip", type=float, default=5.0)
+    p.add_argument("--mine-eval-batches", type=int, default=10)
+    p.add_argument("--nwj-t-clip", type=float, default=20.0)
     p.add_argument("--test-frac", type=float, default=0.25, help="Held-out fraction for DCD-Vine evaluation.")
     p.add_argument("--batch-edges", action="store_true", help="Enable tree-level edge batching (ours, faster).")
     p.add_argument("--edge-batch-size", type=int, default=256)
@@ -294,6 +336,9 @@ def main() -> None:
         raise SystemExit(f"Checkpoint not found: {ckpt}")
 
     loaded = _load_checkpoint_model(ckpt, device=str(args.device))
+    mi_mod = None
+    if bool(args.include_mine) or bool(args.include_infonce) or bool(args.include_nwj):
+        mi_mod = _load_mi_estimation_module(REPO_ROOT)
 
     dims = [int(d) for d in args.dims]
     rho = float(args.rho)
@@ -309,6 +354,10 @@ def main() -> None:
     tc_dcd_stds: List[float] = []
     tc_mine_means: List[float] = []
     tc_mine_stds: List[float] = []
+    tc_infonce_means: List[float] = []
+    tc_infonce_stds: List[float] = []
+    tc_nwj_means: List[float] = []
+    tc_nwj_stds: List[float] = []
 
     raw_by_dim: List[Dict[str, Any]] = []
 
@@ -320,6 +369,8 @@ def main() -> None:
         ksg_vals: List[float] = []
         dcd_vals: List[float] = []
         mine_vals: List[float] = []
+        infonce_vals: List[float] = []
+        nwj_vals: List[float] = []
 
         for t in range(n_trials):
             trial_seed = seed + 10_000 * d + 1_000 * t
@@ -332,17 +383,63 @@ def main() -> None:
             mine_time = None
             tc_mine = None
             if bool(args.include_mine):
-                tc_mine, mine_time = _tc_mine(
+                tc_mine, mine_time = _tc_neural_chain_rule(
                     U,
+                    estimator="mine",
+                    mi_mod=mi_mod,
                     device=str(args.device),
                     seed=trial_seed,
                     steps=int(args.mine_steps),
                     batch_size=int(args.mine_batch_size),
                     lr=float(args.mine_lr),
                     hidden=int(args.mine_hidden),
+                    weight_decay=float(args.mine_weight_decay),
+                    grad_clip=float(args.mine_grad_clip),
                     layers=int(args.mine_layers),
+                    eval_batches=int(args.mine_eval_batches),
                 )
                 mine_vals.append(float(tc_mine))
+
+            infonce_time = None
+            tc_infonce = None
+            if bool(args.include_infonce):
+                tc_infonce, infonce_time = _tc_neural_chain_rule(
+                    U,
+                    estimator="infonce",
+                    mi_mod=mi_mod,
+                    device=str(args.device),
+                    seed=trial_seed,
+                    steps=int(args.mine_steps),
+                    batch_size=int(args.mine_batch_size),
+                    lr=float(args.mine_lr),
+                    hidden=int(args.mine_hidden),
+                    weight_decay=float(args.mine_weight_decay),
+                    grad_clip=float(args.mine_grad_clip),
+                    layers=int(args.mine_layers),
+                    eval_batches=int(args.mine_eval_batches),
+                )
+                infonce_vals.append(float(tc_infonce))
+
+            nwj_time = None
+            tc_nwj = None
+            if bool(args.include_nwj):
+                tc_nwj, nwj_time = _tc_neural_chain_rule(
+                    U,
+                    estimator="nwj",
+                    mi_mod=mi_mod,
+                    device=str(args.device),
+                    seed=trial_seed,
+                    steps=int(args.mine_steps),
+                    batch_size=int(args.mine_batch_size),
+                    lr=float(args.mine_lr),
+                    hidden=int(args.mine_hidden),
+                    weight_decay=float(args.mine_weight_decay),
+                    grad_clip=float(args.mine_grad_clip),
+                    layers=int(args.mine_layers),
+                    eval_batches=int(args.mine_eval_batches),
+                    t_clip=float(args.nwj_t_clip),
+                )
+                nwj_vals.append(float(tc_nwj))
 
             print(
                 f"    fitting DCD-Vine (ddim={int(args.diffusion_steps)}, cfg={float(args.diffusion_cfg_scale):.2f})...",
@@ -381,9 +478,13 @@ def main() -> None:
                     "tc_true": float(true_val),
                     "tc_ksg": float(tc_ksg),
                     "tc_mine": float(tc_mine) if tc_mine is not None else None,
+                    "tc_infonce": float(tc_infonce) if tc_infonce is not None else None,
+                    "tc_nwj": float(tc_nwj) if tc_nwj is not None else None,
                     "tc_dcd": float(tc_dcd),
                     "time_ksg_s": float(ksg_time),
                     "time_mine_s": float(mine_time) if mine_time is not None else None,
+                    "time_infonce_s": float(infonce_time) if infonce_time is not None else None,
+                    "time_nwj_s": float(nwj_time) if nwj_time is not None else None,
                     "time_dcd_s": float(dcd_time),
                 }
             )
@@ -398,6 +499,14 @@ def main() -> None:
             m_mine, s_mine = _mean_std(mine_vals)
             tc_mine_means.append(m_mine)
             tc_mine_stds.append(s_mine)
+        if bool(args.include_infonce) and infonce_vals:
+            m_infonce, s_infonce = _mean_std(infonce_vals)
+            tc_infonce_means.append(m_infonce)
+            tc_infonce_stds.append(s_infonce)
+        if bool(args.include_nwj) and nwj_vals:
+            m_nwj, s_nwj = _mean_std(nwj_vals)
+            tc_nwj_means.append(m_nwj)
+            tc_nwj_stds.append(s_nwj)
 
     # Table entries (d fixed, n varies): absolute error + time.
     table_rows: List[Dict[str, Any]] = []
@@ -417,15 +526,20 @@ def main() -> None:
             tc_m = None
             t_mine = None
             if bool(args.include_mine):
-                tc_m, t_mine = _tc_mine(
+                tc_m, t_mine = _tc_neural_chain_rule(
                     U,
+                    estimator="mine",
+                    mi_mod=mi_mod,
                     device=str(args.device),
                     seed=trial_seed + 999,
                     steps=int(args.mine_steps),
                     batch_size=int(args.mine_batch_size),
                     lr=float(args.mine_lr),
                     hidden=int(args.mine_hidden),
+                    weight_decay=float(args.mine_weight_decay),
+                    grad_clip=float(args.mine_grad_clip),
                     layers=int(args.mine_layers),
+                    eval_batches=int(args.mine_eval_batches),
                 )
 
             tc_d, t_dcd = _tc_dcd_vine(
@@ -501,6 +615,10 @@ def main() -> None:
         "tc_ksg_std": tc_ksg_stds,
         "tc_mine_mean": tc_mine_means if bool(args.include_mine) else None,
         "tc_mine_std": tc_mine_stds if bool(args.include_mine) else None,
+        "tc_infonce_mean": tc_infonce_means if bool(args.include_infonce) else None,
+        "tc_infonce_std": tc_infonce_stds if bool(args.include_infonce) else None,
+        "tc_nwj_mean": tc_nwj_means if bool(args.include_nwj) else None,
+        "tc_nwj_std": tc_nwj_stds if bool(args.include_nwj) else None,
         "tc_dcd_mean": tc_dcd_means,
         "tc_dcd_std": tc_dcd_stds,
         "table": {

@@ -13,7 +13,7 @@ Tests:
 
 Estimators:
   - KSG (kNN MI, continuous)
-  - DCD-Vine (ours): bivariate MI from the predicted copula density grid;
+  - VDC (ours): bivariate MI from the predicted copula density grid;
     group MI via TC on the 4D copula (D-vine) for the additivity test.
 
 Outputs:
@@ -392,8 +392,8 @@ def _write_latex_table(rows: List[Dict[str, Any]], out_tex: Path) -> None:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="MI self-consistency tests (KSG vs DCD-Vine).")
-    ap.add_argument("--checkpoint", type=Path, default=None, help="Checkpoint for DCD-Vine MI (optional).")
+    ap = argparse.ArgumentParser(description="MI self-consistency tests (KSG vs VDC).")
+    ap.add_argument("--checkpoint", type=Path, default=None, help="Checkpoint for VDC MI (optional).")
     ap.add_argument("--n_samples", type=int, default=10000)
     ap.add_argument("--n_trials", type=int, default=5)
     ap.add_argument("--seed", type=int, default=42)
@@ -431,7 +431,7 @@ def main() -> None:
     }
     results.append(ksg_res)
 
-    # DCD-Vine (ours)
+    # VDC (ours)
     if args.checkpoint is not None and Path(args.checkpoint).exists():
         pred_noise_clip = None if float(args.dcd_pred_noise_clip) <= 0 else float(args.dcd_pred_noise_clip)
         ours = _DCDVineMI(
@@ -452,7 +452,7 @@ def main() -> None:
 
         t0 = perf_counter()
         ours_res = {
-            "estimator": "DCD-Vine",
+            "estimator": "VDC",
             "checkpoint": str(Path(args.checkpoint)),
             "dpi": _dpi_test(ours_bi, rng=rng, n=n, n_trials=n_trials, noise_levels=[0.0, 0.1, 0.3, 0.5]),
             "additivity": _additivity_test(ours_bi, ours_bi, ours_tc4, rng=rng, n=min(n, 4000), n_trials=n_trials),

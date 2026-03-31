@@ -19,8 +19,12 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-if [ -n "${SLURM_SUBMIT_DIR:-}" ] && [ -f "${SLURM_SUBMIT_DIR}/drafts/scripts/e9_real_edge_scaling_benchmark.py" ]; then
-  REPO_ROOT="${SLURM_SUBMIT_DIR}"
+if [ -n "${SLURM_SUBMIT_DIR:-}" ]; then
+  if [ -f "${SLURM_SUBMIT_DIR}/drafts/scripts/e9_real_edge_scaling_benchmark.py" ]; then
+    REPO_ROOT="${SLURM_SUBMIT_DIR}"
+  elif [ -f "${SLURM_SUBMIT_DIR}/vine_diffusion_copula/drafts/scripts/e9_real_edge_scaling_benchmark.py" ]; then
+    REPO_ROOT="${SLURM_SUBMIT_DIR}/vine_diffusion_copula"
+  fi
 fi
 OUTPUT_BASE="${OUTPUT_BASE:-/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula}"
 

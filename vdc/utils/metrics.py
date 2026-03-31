@@ -159,8 +159,9 @@ def mutual_information_from_density_grid(d: torch.Tensor, eps: float = 1e-12) ->
 
     B, _, m, _ = d_.shape
     du = 1.0 / m
-    d_n = _safe_normalize(d_.clamp_min(eps), eps=eps)
-    mi = (d_n * torch.log(d_n + eps)).sum(dim=(-2, -1)) * (du * du)  # (B,1)
+    p_mass = _safe_normalize(d_.clamp_min(eps), eps=eps)
+    density = p_mass / (du * du)
+    mi = (p_mass * torch.log(density.clamp_min(eps))).sum(dim=(-2, -1))  # (B,1)
     return mi.mean()
 
 

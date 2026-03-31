@@ -255,6 +255,76 @@ class VineRecursion:
                 cond_cache[(j, D | frozenset({i}))] = self._clip01(copula.h_v_given_u(u_j_D, u_i_D))
 
         return logpdf
+
+    def logpdf_decomposed(self, U: np.ndarray) -> Dict[str, object]:
+        """
+        Compute decomposed log-density contributions for a fitted vine.
+
+        Returns a dictionary with:
+        - ``per_sample``: (n,) total log-density values
+        - ``mean_total``: scalar mean total log-density
+        - ``per_tree_mean``: list of mean contributions by tree level
+        - ``per_edge_mean``: list of records keyed by edge and tree level
+        """
+        if not self.pair_copulas:
+            raise RuntimeError("No pair copulas set on VineRecursion; call fit() or set_pair_copulas().")
+
+        U = np.asarray(U, dtype=np.float64)
+        n, d = U.shape
+        if d != self.d:
+            raise ValueError(f"Expected U with d={self.d}, got shape {U.shape}")
+
+        cond_cache: Dict[Tuple[int, FrozenSet[int]], np.ndarray] = {
+            (i, frozenset()): self._clip01(U[:, i]) for i in range(d)
+        }
+
+        total_logpdf = np.zeros(n, dtype=np.float64)
+        per_tree_mean: List[float] = []
+        per_edge_mean: List[Dict[str, object]] = []
+
+        for tree_level, tree_copulas in enumerate(self.pair_copulas):
+            tree_total = np.zeros(n, dtype=np.float64)
+            for copula in tree_copulas:
+                i, j, cond_set = copula.edge
+                D = frozenset(cond_set)
+
+                try:
+                    u_i_D = cond_cache[(i, D)]
+                    u_j_D = cond_cache[(j, D)]
+                except KeyError as e:
+                    raise RuntimeError(
+                        f"Missing conditional pseudo-observations for edge ({i},{j}|{sorted(D)}) "
+                        f"at tree_level={tree_level}. This indicates an invalid structure or a "
+                        f"bug in transform propagation."
+                    ) from e
+
+                pair_logpdf = np.log(np.clip(copula.pdf(u_i_D, u_j_D), 1e-12, None))
+                total_logpdf += pair_logpdf
+                tree_total += pair_logpdf
+
+                cond_cache[(i, D | frozenset({j}))] = self._clip01(copula.h_u_given_v(u_i_D, u_j_D))
+                cond_cache[(j, D | frozenset({i}))] = self._clip01(copula.h_v_given_u(u_j_D, u_i_D))
+
+                per_edge_mean.append(
+                    {
+                        "tree_level": int(tree_level),
+                        "edge": {
+                            "i": int(i),
+                            "j": int(j),
+                            "conditioning_set": sorted(int(v) for v in D),
+                        },
+                        "mean_log_contribution": float(np.mean(pair_logpdf)),
+                    }
+                )
+
+            per_tree_mean.append(float(np.mean(tree_total)))
+
+        return {
+            "per_sample": total_logpdf,
+            "mean_total": float(np.mean(total_logpdf)),
+            "per_tree_mean": per_tree_mean,
+            "per_edge_mean": per_edge_mean,
+        }
     
     def pdf(self, U: np.ndarray) -> np.ndarray:
         """Compute density (not log-density)."""

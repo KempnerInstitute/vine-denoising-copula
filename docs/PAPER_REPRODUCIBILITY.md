@@ -76,6 +76,51 @@ python drafts/scripts/e6_theory_synthetic_benchmark.py \
   --checkpoint "${PAPER_CHECKPOINT}" \
   --device cuda \
   --out-json drafts/paper_outputs/e6_theory_synthetic_results.json
+
+# Synthetic density-scaling figures used in Figure 3 / Appendix A1.
+# These are separate from the main E6 artifact because they add the RealNVP flow
+# baseline on fixed Gaussian and Clayton vine families.
+python drafts/scripts/e6_theory_synthetic_benchmark.py \
+  --checkpoint "${PAPER_CHECKPOINT}" \
+  --device cuda \
+  --scenarios gaussian_ar1 \
+  --dims 5 10 20 50 \
+  --n-train 5000 \
+  --n-test 2000 \
+  --n-trials 2 \
+  --pyvine both \
+  --gaussian-copula \
+  --flow-realnvp \
+  --flow-epochs 25 \
+  --flow-batch-size 2048 \
+  --flow-eval-batch-size 4096 \
+  --mi-methods gaussian \
+  --mi-pairs-per-case 1 \
+  --mi-n-samples 1000 \
+  --out-json drafts/paper_outputs/e6_gaussian_density_with_flow.json
+
+python drafts/scripts/e6_theory_synthetic_benchmark.py \
+  --checkpoint "${PAPER_CHECKPOINT}" \
+  --device cuda \
+  --scenarios clayton_vine \
+  --dims 5 10 20 50 \
+  --n-train 5000 \
+  --n-test 2000 \
+  --n-trials 2 \
+  --pyvine both \
+  --gaussian-copula \
+  --flow-realnvp \
+  --flow-epochs 25 \
+  --flow-batch-size 2048 \
+  --flow-eval-batch-size 4096 \
+  --mi-methods gaussian \
+  --mi-pairs-per-case 1 \
+  --mi-n-samples 1000 \
+  --out-json drafts/paper_outputs/e6_clayton_density_with_flow.json
+
+python drafts/scripts/fig_density_scaling_e6.py \
+  --gaussian-json drafts/paper_outputs/e6_gaussian_density_with_flow.json \
+  --clayton-json drafts/paper_outputs/e6_clayton_density_with_flow.json
 ```
 
 ## Verification Checklist
@@ -83,5 +128,10 @@ python drafts/scripts/e6_theory_synthetic_benchmark.py \
 - Confirm `analysis/PAPER_CHECKPOINT.txt` and `analysis/PAPER_BEST_MODEL.json` point to the same checkpoint.
 - Confirm generated result JSON files contain that same checkpoint path.
 - Confirm `docs/reports/pretrained_release/PRETRAINED_RELEASE_VERIFICATION.md` and `docs/reports/pretrained_release/MI_BENCHMARK_DCD_RELEASE.md` were regenerated from the same checkpoint.
+- Confirm the synthetic density-scaling artifacts exist when building the final paper figures:
+  - `drafts/paper_outputs/e6_gaussian_density_with_flow.json`
+  - `drafts/paper_outputs/e6_clayton_density_with_flow.json`
+  - `drafts/figures/fig_density_scaling_clayton_main.pdf`
+  - `drafts/figures/fig_density_scaling_family_compare.pdf`
 - Keep this manifest frozen for camera-ready unless a deliberate model-change decision is made and documented.
 - Publish the actual checkpoint outside git and update `vdc/resources/pretrained/vdc_denoiser_m64_v1.json` once the public Hugging Face repo exists.
