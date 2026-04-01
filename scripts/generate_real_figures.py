@@ -515,11 +515,12 @@ def _generate_placeholder_nll_fig(output_path: Path):
 
 def main():
     parser = argparse.ArgumentParser(description="Generate figures from real experiment results")
+    repo_root = Path(__file__).resolve().parents[1]
     parser.add_argument("--output_base", type=str,
                         default="/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula",
                         help="Base output directory with experiment results")
     parser.add_argument("--figure_dir", type=str,
-                        default="/n/holylabs/kempner_dev/Users/hsafaai/Code/vine_diffusion_copula/drafts/figures",
+                        default=str(repo_root / "drafts" / "figures"),
                         help="Directory to save figures")
     args = parser.parse_args()
     

@@ -39,7 +39,7 @@ def _repo_root() -> Path:
 
 
 def _paper_outputs_dir() -> Path:
-    return Path(__file__).resolve().parent.parent / "paper_outputs"
+    return Path(__file__).resolve().parent.parent / "drafts" / "paper_outputs"
 
 
 def _clip_unit(U: np.ndarray, eps: float = 1e-6) -> np.ndarray:
