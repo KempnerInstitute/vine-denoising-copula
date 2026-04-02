@@ -288,7 +288,7 @@ class VineRecursion:
         """
         return self._traverse_logpdf(U)["per_sample"]
 
-    def logpdf_decomposed(self, U: np.ndarray) -> Dict[str, object]:
+    def logpdf_decomposed(self, U: np.ndarray) -> Dict[str, Any]:
         """
         Compute decomposed log-density contributions for a fitted vine.
 

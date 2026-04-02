@@ -67,6 +67,11 @@ def _tc_ksg_chain_rule(U: np.ndarray, *, k: int, seed: int) -> float:
 def _load_mi_estimation_module(repo_root: Path):
     """Load scripts/mi_estimation.py as a module for neural MI baselines."""
     mod_path = repo_root / "scripts" / "mi_estimation.py"
+    if not mod_path.exists():
+        raise RuntimeError(
+            f"MI estimation module not found at expected path: {mod_path}. "
+            "Check the repository layout or update _load_mi_estimation_module()."
+        )
     mod_name = "vdc_mi_estimation_tc_runtime"
     spec = importlib.util.spec_from_file_location(mod_name, str(mod_path))
     if spec is None or spec.loader is None:
