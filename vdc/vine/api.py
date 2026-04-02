@@ -827,6 +827,17 @@ class VineCopulaModel:
     def pdf(self, U: np.ndarray) -> np.ndarray:
         """Compute density (not log-density)."""
         return np.exp(self.logpdf(U))
+
+    def logpdf_decomposed(self, U: np.ndarray) -> Dict[str, Any]:
+        """
+        Compute decomposed log-density contributions for a fitted vine.
+
+        Returns mean total log-copula density together with per-tree and
+        per-edge mean contributions.
+        """
+        if not self.fitted:
+            raise RuntimeError("Model not fitted. Call fit() first.")
+        return self.vine.logpdf_decomposed(U)
     
     def simulate(self, n: int, seed: Optional[int] = None) -> np.ndarray:
         """

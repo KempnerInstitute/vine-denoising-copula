@@ -9,8 +9,8 @@ import torch
 
 from vdc.utils.probit_transform import (
     copula_density_to_probit_density,
-    probit_density_to_copula_density,
     copula_logdensity_to_probit_logdensity,
+    probit_density_to_copula_density,
     probit_logdensity_to_copula_logdensity,
 )
 
@@ -30,4 +30,3 @@ def test_probit_logdensity_roundtrip_identity():
     logfz = copula_logdensity_to_probit_logdensity(logc, m)
     logc2 = probit_logdensity_to_copula_logdensity(logfz, m)
     assert torch.allclose(logc2, logc, atol=1e-6, rtol=1e-6)
-

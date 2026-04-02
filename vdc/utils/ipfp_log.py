@@ -1,3 +1,4 @@
+# ruff: noqa: N806
 """Log-domain IPFP (Sinkhorn) projection for copula densities.
 
 Differentiable enforcement of uniform marginals:
@@ -9,12 +10,13 @@ Usage:
 
 Supports batching: input (B,1,m,m).
 """
-from typing import Optional
-import torch
 import math
+from typing import Optional
+
+import torch
 
 
-def ipfp_project_log(density: torch.Tensor, iters: int = 20, eps: float = 1e-12, fast_path: Optional[int] = None, 
+def ipfp_project_log(density: torch.Tensor, iters: int = 20, eps: float = 1e-12, fast_path: Optional[int] = None,
                      stabilize: bool = False, max_log_value: float = 15.0) -> torch.Tensor:
     """Project positive density to copula via log-domain IPFP.
 
@@ -34,11 +36,11 @@ def ipfp_project_log(density: torch.Tensor, iters: int = 20, eps: float = 1e-12,
     # Convert to masses and log domain, squeeze channel dim
     M0 = (density.squeeze(1).clamp_min(eps)) * (du * dv)  # (B,m,m)
     logM0 = M0.log()  # (B,m,m)
-    
+
     if stabilize:
         # Clamp log values to prevent overflow in exp
         logM0 = logM0.clamp(-max_log_value, max_log_value)
-    
+
     # Initialize dual potentials a (rows), b (cols)
     a = torch.zeros(B, m, device=density.device, dtype=density.dtype)
     b = torch.zeros(B, m, device=density.device, dtype=density.dtype)
@@ -48,22 +50,22 @@ def ipfp_project_log(density: torch.Tensor, iters: int = 20, eps: float = 1e-12,
         # Row update: log row sums of current matrix exp(logM0 + a_i + b_j)
         log_rows = torch.logsumexp(logM0 + a.unsqueeze(2) + b.unsqueeze(1), dim=2)  # (B,m)
         a = a + (target - log_rows)
-        
+
         if stabilize:
             a = a.clamp(-max_log_value, max_log_value)
-        
+
         # Col update
         log_cols = torch.logsumexp(logM0 + a.unsqueeze(2) + b.unsqueeze(1), dim=1)  # (B,m)
         b = b + (target - log_cols)
-        
+
         if stabilize:
             b = b.clamp(-max_log_value, max_log_value)
-    
+
     logM = logM0 + a.unsqueeze(2) + b.unsqueeze(1)
-    
+
     if stabilize:
         logM = logM.clamp(-max_log_value, max_log_value)
-    
+
     M = logM.exp()
     D = (M / (du * dv)).unsqueeze(1)
     return D

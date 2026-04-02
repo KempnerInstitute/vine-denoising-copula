@@ -29,8 +29,10 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Set up Pandoc
-        uses: r-lib/actions/setup-pandoc@v2
+      - name: Install Pandoc
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq pandoc
 
       - name: Build docs site
         run: python scripts/build_docs_site.py --out-dir site
@@ -39,7 +41,7 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: site
 

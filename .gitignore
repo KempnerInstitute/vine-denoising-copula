@@ -74,9 +74,11 @@ checkpoints/
 *.ckpt
 
 # Local archives and experiment results
+analysis/
 archive/
 results/
 slurm_logs/
+slurm_jobs/
 site/
 
 # External repos / vendored baseline code (kept out of git)
@@ -86,3 +88,6 @@ third_party/
 # OS
 .DS_Store
 Thumbs.db
+
+# Misc artifacts
+=*

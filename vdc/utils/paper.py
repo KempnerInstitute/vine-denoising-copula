@@ -12,8 +12,10 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 RUN_DIR_RE = re.compile(r"^vdc_paper_(?P<method>.+?)_(?P<ts>\d{8}_\d{6})_(?P<jobid>.+)$")
 REPO_ROOT = Path(__file__).resolve().parents[2]
-PAPER_CHECKPOINT_TXT = REPO_ROOT / "analysis" / "PAPER_CHECKPOINT.txt"
-PAPER_BEST_MODEL_JSON = REPO_ROOT / "analysis" / "PAPER_BEST_MODEL.json"
+PAPER_CHECKPOINT_CANDIDATES = [REPO_ROOT / "analysis" / "PAPER_CHECKPOINT.txt"]
+PAPER_BEST_MODEL_CANDIDATES = [REPO_ROOT / "analysis" / "PAPER_BEST_MODEL.json"]
+PAPER_CHECKPOINT_TXT = PAPER_CHECKPOINT_CANDIDATES[0]
+PAPER_BEST_MODEL_JSON = PAPER_BEST_MODEL_CANDIDATES[0]
 
 
 @dataclass(frozen=True)
@@ -71,24 +73,29 @@ def resolve_canonical_paper_checkpoint() -> Optional[Path]:
 
     Resolution order:
       1) `PAPER_CHECKPOINT` environment variable
-      2) `analysis/PAPER_CHECKPOINT.txt`
-      3) `analysis/PAPER_BEST_MODEL.json` (`checkpoint` key)
+      2) legacy local `analysis/PAPER_CHECKPOINT.txt`
+      3) legacy local `analysis/PAPER_BEST_MODEL.json`
+      4) packaged pretrained release (local path or Hugging Face download)
     """
     ckpt = _normalize_checkpoint_candidate(os.environ.get("PAPER_CHECKPOINT", ""))
     if ckpt is not None:
         return ckpt
 
-    if PAPER_CHECKPOINT_TXT.exists():
+    for txt_path in PAPER_CHECKPOINT_CANDIDATES:
+        if not txt_path.exists():
+            continue
         try:
-            ckpt = _normalize_checkpoint_candidate(PAPER_CHECKPOINT_TXT.read_text())
+            ckpt = _normalize_checkpoint_candidate(txt_path.read_text())
             if ckpt is not None:
                 return ckpt
         except Exception:
             pass
 
-    if PAPER_BEST_MODEL_JSON.exists():
+    for manifest_path in PAPER_BEST_MODEL_CANDIDATES:
+        if not manifest_path.exists():
+            continue
         try:
-            payload = json.loads(PAPER_BEST_MODEL_JSON.read_text())
+            payload = json.loads(manifest_path.read_text())
             if isinstance(payload, dict):
                 for key in ("checkpoint", "checkpoint_path"):
                     ckpt = _normalize_checkpoint_candidate(str(payload.get(key, "")))
@@ -96,6 +103,15 @@ def resolve_canonical_paper_checkpoint() -> Optional[Path]:
                         return ckpt
         except Exception:
             pass
+
+    try:
+        from vdc.pretrained import DEFAULT_PRETRAINED_MODEL_ID, resolve_pretrained_checkpoint
+
+        ckpt = resolve_pretrained_checkpoint(DEFAULT_PRETRAINED_MODEL_ID, prefer_local=True)
+        if ckpt is not None and ckpt.exists():
+            return ckpt
+    except Exception:
+        pass
 
     return None
 
@@ -113,7 +129,7 @@ def choose_best_checkpoint(
     Selection:
       - If `prefer_canonical=True`, first try canonical checkpoint files
         (`PAPER_CHECKPOINT`, `analysis/PAPER_CHECKPOINT.txt`,
-        `analysis/PAPER_BEST_MODEL.json`)
+        `analysis/PAPER_BEST_MODEL.json`, then the packaged pretrained release)
       - Consider runs with results/model_selection.json available
       - Filter by preferred_methods (in the given order)
       - Choose minimum of `metric` (ties broken by timestamp)

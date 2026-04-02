@@ -1,3 +1,4 @@
+# ruff: noqa: N806, N812
 """Evaluation metrics for copula density models.
 
 Includes:
@@ -9,8 +10,10 @@ Includes:
     - Upper / Lower tail dependence coefficients λ_U, λ_L (grid-based approximation)
 """
 from typing import Dict, Optional
+
 import torch
 import torch.nn.functional as F
+
 
 def _safe_normalize(d: torch.Tensor, eps: float = 1e-12) -> torch.Tensor:
     total = d.sum(dim=(-2,-1), keepdim=True).clamp(min=eps)
@@ -55,10 +58,10 @@ def tail_density(d: torch.Tensor, tail_region: float = 0.1) -> torch.Tensor:
 def kendall_tau(samples: torch.Tensor, max_points: int = 2000) -> torch.Tensor:
     """Approximate Kendall's tau from samples (N,2) or (B,N,2).
     Subsamples to max_points for O(n^2) concordance computation.
-    
+
     Returns Kendall's tau in [-1, 1].
     """
-    if samples.dim() == 2: 
+    if samples.dim() == 2:
         samples = samples.unsqueeze(0)
     B, N, _ = samples.shape
     if N > max_points:
@@ -67,21 +70,21 @@ def kendall_tau(samples: torch.Tensor, max_points: int = 2000) -> torch.Tensor:
         N = max_points
     u = samples[..., 0]  # (B, N)
     v = samples[..., 1]  # (B, N)
-    
+
     # (B, N, N) differences
     du = u.unsqueeze(-1) - u.unsqueeze(-2)
     dv = v.unsqueeze(-1) - v.unsqueeze(-2)
     sign = torch.sign(du * dv)
-    
+
     # Ignore zeros (ties) by masking
     mask = (du != 0) & (dv != 0)
-    
+
     # Apply mask and sum per batch
     # Concordant: sign > 0, Discordant: sign < 0
     concordant = ((sign > 0) & mask).float().sum(dim=(-2, -1))  # (B,)
     discordant = ((sign < 0) & mask).float().sum(dim=(-2, -1))  # (B,)
     total_pairs = mask.float().sum(dim=(-2, -1)).clamp_min(1.0)  # (B,)
-    
+
     # Kendall's tau = (concordant - discordant) / total_pairs
     tau = (concordant - discordant) / total_pairs
     return tau.mean()
@@ -99,7 +102,8 @@ def tail_dependence_from_grid(d: torch.Tensor, q_high: float = 0.95, q_low: floa
     u = torch.linspace(0.5/m, 1-0.5/m, m, device=d.device)
     v = torch.linspace(0.5/m, 1-0.5/m, m, device=d.device)
     U, V = torch.meshgrid(u, v, indexing='ij')
-    U = U.unsqueeze(0); V = V.unsqueeze(0)
+    U = U.unsqueeze(0)
+    V = V.unsqueeze(0)
     high_mask = (U > q_high) & (V > q_high)
     low_mask = (U < q_low) & (V < q_low)
     # Conditional probabilities
@@ -159,8 +163,9 @@ def mutual_information_from_density_grid(d: torch.Tensor, eps: float = 1e-12) ->
 
     B, _, m, _ = d_.shape
     du = 1.0 / m
-    d_n = _safe_normalize(d_.clamp_min(eps), eps=eps)
-    mi = (d_n * torch.log(d_n + eps)).sum(dim=(-2, -1)) * (du * du)  # (B,1)
+    p_mass = _safe_normalize(d_.clamp_min(0.0), eps=eps)
+    density = p_mass / (du * du)
+    mi = (p_mass * torch.log(density.clamp_min(eps))).sum(dim=(-2, -1))  # (B,1)
     return mi.mean()
 
 

@@ -10,20 +10,21 @@
     <header class="hero">
       <div class="hero-copy">
         <p class="eyebrow">Vine Diffusion Copula</p>
-        <h1>Pretrained copula estimation, vine fitting, and released-model verification.</h1>
+        <h1>Amortized vine copula estimation, information decomposition, and pretrained model verification.</h1>
         <p class="lede">
-          The codebase contains a released pretrained edge estimator, vine recursion utilities,
-          verification reports, and training code for denoising and diffusion-style copula models.
+          VDC trains a single bivariate edge estimator once on synthetic copulas and reuses it
+          across all O(d&sup2;) vine edges, replacing expensive per-edge fitting with cheap GPU
+          forward passes while preserving exact copula semantics, h-functions, and tractable likelihoods.
         </p>
         <div class="cta-row">
-          <a class="button primary" href="../README.md">Readme</a>
-          <a class="button" href="GETTING_STARTED.md">Getting Started</a>
-          <a class="button" href="MODEL_RELEASES.md">Model Releases</a>
-          <a class="button" href="PAPER_REPRODUCIBILITY.md">Paper Reproducibility</a>
+          <a class="button primary" href="readme.html">Readme</a>
+          <a class="button" href="GETTING_STARTED.html">Getting Started</a>
+          <a class="button" href="MODEL_RELEASES.html">Model Releases</a>
+          <a class="button" href="PAPER_REPRODUCIBILITY.html">Paper Reproducibility</a>
         </div>
       </div>
       <div class="hero-art">
-        <img src="assets/method_pipeline.png" alt="Method pipeline for VDC">
+        <img src="assets/method_pipeline.png" alt="VDC method pipeline: training and inference">
       </div>
     </header>
 
@@ -32,60 +33,49 @@
         <article class="card">
           <h2>Start Here</h2>
           <ul>
-            <li><a href="GETTING_STARTED.md">Getting Started</a></li>
-            <li><a href="USER_GUIDE.md">User Guide</a></li>
-            <li><a href="API.md">API Reference</a></li>
-            <li><a href="CONFIGURATION.md">Configuration Guide</a></li>
+            <li><a href="GETTING_STARTED.html">Getting Started</a></li>
+            <li><a href="USER_GUIDE.html">User Guide</a></li>
+            <li><a href="API.html">API Reference</a></li>
+            <li><a href="CONFIGURATION.html">Configuration Guide</a></li>
           </ul>
         </article>
         <article class="card">
           <h2>Reproducibility</h2>
           <ul>
-            <li><a href="MODEL_RELEASES.md">Versioned pretrained-model workflow</a></li>
-            <li><a href="PAPER_REPRODUCIBILITY.md">Canonical paper checkpoint</a></li>
-            <li><a href="reports/pretrained_release/PRETRAINED_RELEASE_VERIFICATION.md">Verification report</a></li>
-            <li><a href="reports/pretrained_release/MI_BENCHMARK_DCD_RELEASE.md">Released-checkpoint MI benchmark</a></li>
+            <li><a href="MODEL_RELEASES.html">Versioned pretrained-model workflow</a></li>
+            <li><a href="PAPER_REPRODUCIBILITY.html">Canonical paper checkpoint</a></li>
+            <li><a href="reports/pretrained_release/PRETRAINED_RELEASE_VERIFICATION.html">Verification report</a></li>
+            <li><a href="reports/pretrained_release/MI_BENCHMARK_DCD_RELEASE.html">Released-checkpoint MI benchmark</a></li>
           </ul>
         </article>
       </section>
 
       <section class="card">
         <h2>Quick Commands</h2>
-        <pre><code>python scripts/download_pretrained.py --list
-python scripts/download_pretrained.py --model-id vdc-denoiser-m64-v1
+        <pre><code>python scripts/download_pretrained.py --model-id vdc-denoiser-m64-v1
 python examples/use_pretrained_model.py --model-id vdc-denoiser-m64-v1
 python scripts/verify_pretrained_release.py --model-id vdc-denoiser-m64-v1 --device cpu</code></pre>
       </section>
 
-      <section class="gallery">
-        <article class="figure-card">
-          <img src="assets/copula_example_main.png" alt="Bivariate copula example">
-          <div>
-            <h3>Bivariate density estimation</h3>
-            <p>The released checkpoint reproduces the paper-side pair-copula workflow and qualitative figure generation.</p>
+      <section class="card">
+        <h2>Method Overview</h2>
+        <p>
+          VDC amortizes bivariate copula estimation: a single pretrained U-Net maps empirical
+          histograms to copula densities, IPFP projects to valid copulas, and the resulting edge
+          operator is reused across all vine edges for density estimation, sampling, and
+          information-theoretic decomposition.
+        </p>
+        <img src="assets/method_pipeline.png" alt="VDC method pipeline" style="width: 100%; border-radius: 16px; margin-top: 1rem;">
+        <div style="display: flex; gap: 2rem; margin-top: 1.5rem; align-items: flex-start;">
+          <div style="flex: 1;">
+            <h3>D-Vine Factorization</h3>
+            <img src="assets/vine_schematic.png" alt="D-vine structure" style="width: 100%; border-radius: 8px;">
           </div>
-        </article>
-        <article class="figure-card">
-          <img src="assets/pretrained_bivariate_verification.png" alt="Verification grid">
-          <div>
-            <h3>Released-model verification</h3>
-            <p>The release report checks analytic copulas, information accuracy, mass preservation, and figure regeneration.</p>
+          <div style="flex: 1;">
+            <h3>Qualitative Copula Estimation</h3>
+            <img src="assets/copula_example_main.png" alt="Copula density estimation example" style="width: 100%; border-radius: 8px;">
           </div>
-        </article>
-        <article class="figure-card">
-          <img src="assets/mi_comparison.png" alt="MI comparison">
-          <div>
-            <h3>Information estimation</h3>
-            <p>VDC can estimate mutual information and support total-correlation style decompositions through learned copula densities.</p>
-          </div>
-        </article>
-        <article class="figure-card">
-          <img src="assets/speed_comparison.png" alt="Speed comparison">
-          <div>
-            <h3>Vine-scale reuse</h3>
-            <p>The same pretrained edge estimator is reused across vine edges, which is the practical reason the method scales.</p>
-          </div>
-        </article>
+        </div>
       </section>
 
       <section class="grid two">
@@ -99,11 +89,12 @@ python scripts/verify_pretrained_release.py --model-id vdc-denoiser-m64-v1 --dev
           </ol>
         </article>
         <article class="card">
-          <h2>Project Notes</h2>
+          <h2>Key Assumptions</h2>
           <ul>
             <li>The pretrained model assumes continuous marginals and pseudo-observations in <code>[0,1]</code>.</li>
-            <li>Vine fitting uses the simplifying assumption.</li>
+            <li>Vine fitting uses the simplifying assumption (constant conditional copulas).</li>
             <li>The released checkpoint is frozen and versioned.</li>
+            <li>Default grid resolution is <code>m=64</code>; probit transform available for <code>m=128</code>.</li>
           </ul>
         </article>
       </section>

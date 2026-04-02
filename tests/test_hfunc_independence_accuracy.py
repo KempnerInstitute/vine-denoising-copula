@@ -15,8 +15,8 @@ def test_hfunc_independence_identity_and_inverse(m: int, use_spline: bool) -> No
       and inverses recover the input quantile.
     """
     rng = np.random.default_rng(0)
-    D = np.ones((m, m), dtype=np.float64)
-    h = HFuncLookup(D, use_spline=use_spline)
+    density = np.ones((m, m), dtype=np.float64)
+    h = HFuncLookup(density, use_spline=use_spline)
 
     u = rng.uniform(0.0, 1.0, size=2000)
     v = rng.uniform(0.0, 1.0, size=2000)
@@ -45,4 +45,3 @@ def test_hfunc_independence_identity_and_inverse(m: int, use_spline: bool) -> No
 
     q_rt = h.h_u_given_v(u_inv, v)
     assert float(np.max(np.abs(q_rt - q))) < 1e-3
-

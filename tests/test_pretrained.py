@@ -1,4 +1,8 @@
-from vdc.pretrained import DEFAULT_PRETRAINED_MODEL_ID, list_pretrained_models, load_pretrained_manifest
+from vdc.pretrained import (
+    DEFAULT_PRETRAINED_MODEL_ID,
+    list_pretrained_models,
+    load_pretrained_manifest,
+)
 
 
 def test_default_pretrained_manifest_exists():

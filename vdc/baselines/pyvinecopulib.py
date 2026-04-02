@@ -150,6 +150,8 @@ def fit_vinecop(
     *,
     mode: str = "parametric",
     trunc_lvl: Optional[int] = None,
+    structure: Optional[Any] = None,
+    matrix: Optional[np.ndarray] = None,
     tree_criterion: str = "tau",
     selection_criterion: str = "bic",
     allow_rotations: bool = True,
@@ -158,12 +160,21 @@ def fit_vinecop(
     nonparametric_mult: float = 1.0,
     nonparametric_grid_size: int = 30,
 ) -> Any:
-    """Fit a vine copula using pyvinecopulib (returns a `Vinecop`)."""
+    """Fit a vine copula using pyvinecopulib (returns a `Vinecop`).
+
+    Args:
+        u: (n, d) pseudo-observations in (0, 1).
+        mode: 'parametric' or 'nonparametric' (TLL).
+        trunc_lvl: Truncation level. Defaults to d - 1.
+        structure: Optional fixed vine structure, e.g. ``pv.DVineStructure``.
+        matrix: Optional fixed vine matrix. Provide either this or ``structure``.
+    """
     pv = _require()
     x = np.asarray(u, dtype=np.float64)
     if x.ndim != 2 or x.shape[1] < 2:
         raise ValueError(f"u must be (n,d), got shape={x.shape}")
     x = np.clip(x, 1e-10, 1.0 - 1e-10)
+    x = np.asfortranarray(x)
 
     mode_l = str(mode).lower()
     if mode_l in {"parametric", "param"}:
@@ -188,5 +199,10 @@ def fit_vinecop(
         nonparametric_grid_size=int(nonparametric_grid_size),
     )
     # In pyvinecopulib, fitting is done via `from_data` (constructor takes only dimension).
+    if structure is not None and matrix is not None:
+        raise ValueError("Provide either `structure` or `matrix`, not both.")
+    if structure is not None:
+        return pv.Vinecop.from_data(x, structure=structure, controls=controls)
+    if matrix is not None:
+        return pv.Vinecop.from_data(x, matrix=matrix, controls=controls)
     return pv.Vinecop.from_data(x, controls=controls)
-

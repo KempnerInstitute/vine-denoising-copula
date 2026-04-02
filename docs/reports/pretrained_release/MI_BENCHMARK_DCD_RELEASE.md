@@ -5,7 +5,7 @@ This report records a direct run of `scripts/mi_estimation.py` using the officia
 Command:
 
 ```bash
-export PAPER_CHECKPOINT="$(cat analysis/PAPER_CHECKPOINT.txt)"
+export PAPER_CHECKPOINT="$(python scripts/download_pretrained.py --model-id vdc-denoiser-m64-v1)"
 python scripts/mi_estimation.py \
   --estimator dcd \
   --checkpoint "${PAPER_CHECKPOINT}" \

@@ -587,12 +587,20 @@ def training_step(model_type, model, batch, device, config, diffusion=None, scal
             hist_out = hist_in.clone()
             flat_mass = (hist_in * area).view(hist_in.shape[0], -1).clamp_min(1e-12)
             flat_mass = flat_mass / flat_mass.sum(dim=1, keepdim=True)
+            if area.shape[0] == hist_in.shape[0]:
+                cell_area = area
+            elif area.shape[0] == 1:
+                cell_area = area.expand(hist_in.shape[0], -1, -1, -1)
+            else:
+                raise ValueError(
+                    f"Unexpected geometry area shape {tuple(area.shape)} for batch size {hist_in.shape[0]}"
+                )
             n_eff = torch.exp(log_n_local).round().clamp_min(float(min_count)).to(dtype=torch.int64)
             for b in range(hist_in.shape[0]):
                 counts = torch.multinomial(flat_mass[b], int(n_eff[b].item()), replacement=True)
                 binc = torch.bincount(counts, minlength=flat_mass.shape[1]).to(hist_in.dtype)
-                count_density = (binc.view(1, m, m) / float(max(int(n_eff[b].item()), 1))) / area[b]
-                count_density = count_density.unsqueeze(0)
+                count_density = binc.view(1, 1, m, m) / float(max(int(n_eff[b].item()), 1))
+                count_density = count_density / cell_area[b:b+1]
                 alpha = float(strength[b].item()) * mix_strength
                 hist_out[b:b+1] = (1.0 - alpha) * hist_in[b:b+1] + alpha * count_density
             return normalize_grid(hist_out)
