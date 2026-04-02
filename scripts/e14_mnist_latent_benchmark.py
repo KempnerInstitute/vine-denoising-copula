@@ -35,7 +35,7 @@ LOG_2PI = float(math.log(2.0 * math.pi))
 
 
 def _repo_root() -> Path:
-    return Path(__file__).resolve().parents[2]
+    return Path(__file__).resolve().parents[1]
 
 
 def _paper_outputs_dir() -> Path:

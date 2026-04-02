@@ -90,7 +90,6 @@ def _tc_neural_chain_rule(
     hidden: int,
     weight_decay: float,
     grad_clip: float,
-    layers: int = 3,
     eval_batches: int = 10,
     t_clip: float = 20.0,
 ) -> Tuple[float, float]:
@@ -294,7 +293,6 @@ def main() -> None:
     p.add_argument("--mine-batch-size", type=int, default=512)
     p.add_argument("--mine-lr", type=float, default=1e-4)
     p.add_argument("--mine-hidden", type=int, default=256)
-    p.add_argument("--mine-layers", type=int, default=3)
     p.add_argument("--mine-weight-decay", type=float, default=0.0)
     p.add_argument("--mine-grad-clip", type=float, default=5.0)
     p.add_argument("--mine-eval-batches", type=int, default=10)
@@ -395,7 +393,6 @@ def main() -> None:
                     hidden=int(args.mine_hidden),
                     weight_decay=float(args.mine_weight_decay),
                     grad_clip=float(args.mine_grad_clip),
-                    layers=int(args.mine_layers),
                     eval_batches=int(args.mine_eval_batches),
                 )
                 mine_vals.append(float(tc_mine))
@@ -415,7 +412,6 @@ def main() -> None:
                     hidden=int(args.mine_hidden),
                     weight_decay=float(args.mine_weight_decay),
                     grad_clip=float(args.mine_grad_clip),
-                    layers=int(args.mine_layers),
                     eval_batches=int(args.mine_eval_batches),
                 )
                 infonce_vals.append(float(tc_infonce))
@@ -435,7 +431,6 @@ def main() -> None:
                     hidden=int(args.mine_hidden),
                     weight_decay=float(args.mine_weight_decay),
                     grad_clip=float(args.mine_grad_clip),
-                    layers=int(args.mine_layers),
                     eval_batches=int(args.mine_eval_batches),
                     t_clip=float(args.nwj_t_clip),
                 )
@@ -538,7 +533,6 @@ def main() -> None:
                     hidden=int(args.mine_hidden),
                     weight_decay=float(args.mine_weight_decay),
                     grad_clip=float(args.mine_grad_clip),
-                    layers=int(args.mine_layers),
                     eval_batches=int(args.mine_eval_batches),
                 )
 
