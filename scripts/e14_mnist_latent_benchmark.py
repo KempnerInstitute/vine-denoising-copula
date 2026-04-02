@@ -29,7 +29,6 @@ import torch.nn as nn
 from scipy.stats import kstest, norm
 from sklearn.decomposition import PCA
 from torch.utils.data import DataLoader, TensorDataset
-from torchvision.datasets import MNIST, FashionMNIST
 
 LOG_2PI = float(math.log(2.0 * math.pi))
 
@@ -322,6 +321,14 @@ class LatentResult:
 
 
 def _load_image_dataset(name: str, root: Path, download: bool) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    try:
+        from torchvision.datasets import MNIST, FashionMNIST
+    except ImportError as exc:
+        raise RuntimeError(
+            "torchvision is required to run the MNIST latent benchmark. "
+            "Install it via `pip install torchvision` or the project requirements."
+        ) from exc
+
     name_l = str(name).lower()
     if name_l == "mnist":
         ds_cls = MNIST
