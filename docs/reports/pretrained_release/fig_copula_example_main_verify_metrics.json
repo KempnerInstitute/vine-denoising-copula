@@ -1,5 +1,5 @@
 {
-  "checkpoint": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_denoiser_cond_enhanced_20260207_105852_59344687/checkpoints/model_step_190000.pt",
+  "checkpoint": "vdc-denoiser-m64-v1",
   "model_type": "denoiser",
   "copula_name": "Complex-X",
   "copula_kind": "x",

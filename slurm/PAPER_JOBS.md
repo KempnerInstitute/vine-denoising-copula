@@ -1,4 +1,4 @@
-# Paper SLURM Jobs (ICML 2026) — Vine Diffusion Copula
+# Paper SLURM Jobs (ICML 2026): Vine Diffusion Copula
 
 This folder contains **paper-style SLURM jobs** that create a timestamped run directory with:
 
@@ -117,3 +117,32 @@ sbatch slurm/paper_vdc_mi_estimation.sh ksg
 sbatch slurm/paper_vdc_mi_estimation.sh mine
 sbatch slurm/paper_vdc_mi_estimation.sh minde
 ```
+
+## Seed-variance array (UCI NLL, 3 seeds)
+
+Generates per-seed UCI results used by the neural-pair and edge-scaling
+tables. Runs seeds `7, 17, 42` in parallel on `kempner_priority`.
+
+```bash
+sbatch slurm/paper_seed_variance_array.sh
+```
+
+Outputs `e10_uci_flow_results_seed{7,17,42}.json` under
+`drafts/paper_outputs/`. After the array completes, regenerate tables:
+
+```bash
+python drafts/scripts/paper_artifacts.py all
+```
+
+## IPFP iteration ablation
+
+Sweeps the number of Sinkhorn/IPFP projection iterations `K` and reports
+maximum marginal error and wall-clock cost. Produces the data behind
+`tab_ipfp_iter_ablation.tex`.
+
+```bash
+sbatch slurm/paper_ipfp_iter_ablation.sh
+```
+
+Output: `drafts/paper_outputs/ipfp_iter_ablation.json` and
+`drafts/tables/tab_ipfp_iter_ablation.tex`.

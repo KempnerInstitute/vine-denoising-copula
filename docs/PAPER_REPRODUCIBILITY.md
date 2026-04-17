@@ -8,13 +8,13 @@ The paper uses one fixed model/checkpoint for all reported DCD/VDC information r
 - Canonical structured manifest: local private `analysis/PAPER_BEST_MODEL.json` when available
 - Portable public fallback: the packaged pretrained release `vdc-denoiser-m64-v1`
 
-Current frozen checkpoint:
-
-`/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_denoiser_cond_enhanced_20260207_105852_59344687/checkpoints/model_step_190000.pt`
-
-Packaged release model id:
+Current public release model id:
 
 `vdc-denoiser-m64-v1`
+
+For lab-internal reruns, the local private manifest files above may still
+resolve to a specific frozen checkpoint path. The public release relies on
+the packaged model id rather than a machine-specific filesystem location.
 
 Model:
 

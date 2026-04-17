@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+message: "If you use this software or the Vine Denoising Copula method, please cite the paper and repository."
+title: "Vine Denoising Copula (VDC)"
+abstract: >-
+  Vine Denoising Copula (VDC) is an amortized vine-copula pipeline that
+  trains one bivariate denoising density operator and reuses it across
+  all vine edges. The project provides the trained edge estimator,
+  inference code for D-/C-/R-vines, IPFP projection, information-theoretic
+  estimators (MI, TC), and reproducibility scripts for the accompanying
+  paper.
+authors:
+  - family-names: "Safaai"
+    given-names: "Houman"
+    affiliation: "Kempner Institute at Harvard University"
+license: MIT
+repository-code: "https://github.com/KempnerInstitute/vine-diffusion-copula"
+url: "https://huggingface.co/hsafaai/vdc-denoiser-m64-v1"
+keywords:
+  - copula
+  - vine copula
+  - density estimation
+  - mutual information
+  - total correlation
+  - amortized inference
+version: "0.1.0"
+date-released: "2026-04-17"
+preferred-citation:
+  type: conference-paper
+  title: "Amortized Vine Copulas for High-Dimensional Density and Information Estimation"
+  authors:
+    - family-names: "Safaai"
+      given-names: "Houman"
+      affiliation: "Kempner Institute at Harvard University"
+  year: 2026

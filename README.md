@@ -134,6 +134,52 @@ python scripts/model_selection.py --checkpoints checkpoints/*/model_step_*.pt --
 - [Model Releases](docs/MODEL_RELEASES.md)
 - [Paper Reproducibility](docs/PAPER_REPRODUCIBILITY.md)
 
+## Reproducing the paper
+
+Every number, table, and figure in the paper is regenerated from stored experiment artifacts by `drafts/scripts/paper_artifacts.py`. The canonical workflow:
+
+1. Install the package and download the released checkpoint:
+   ```bash
+   pip install -e .
+   python scripts/download_pretrained.py --model-id vdc-denoiser-m64-v1
+   ```
+2. Run benchmarks (each produces JSON artifacts under `drafts/paper_outputs/`). See `slurm/PAPER_JOBS.md` for the full list; representative runs:
+   ```bash
+   bash slurm/paper_e2_uci.sh                       # UCI copula-space density
+   bash slurm/paper_e13_ablation_depth_dense.sh     # corruption ablation
+   bash slurm/paper_mi_benchmark.sh                 # MI estimation
+   bash slurm/paper_tc_benchmark.sh                 # TC scaling
+   bash slurm/paper_seed_variance_array.sh          # 3-seed variance sweep
+   ```
+3. Regenerate figures and tables:
+   ```bash
+   python drafts/scripts/paper_artifacts.py all
+   ```
+4. Build the paper (ICML two-column):
+   ```bash
+   cd drafts && pdflatex vine_diffusion.tex && bibtex vine_diffusion \
+     && pdflatex vine_diffusion.tex && pdflatex vine_diffusion.tex
+   ```
+   For the single-column arXiv variant use `vine_diffusion_arxiv.tex`. Both wrappers share the same content under `drafts/content/`.
+
+## Citation
+
+If you use this code or the Vine Denoising Copula method, please cite:
+
+```bibtex
+@misc{vdc2026,
+  title        = {Amortized Vine Copulas for High-Dimensional Density and Information Estimation},
+  howpublished = {Kempner Institute at Harvard University},
+  year         = {2026},
+}
+```
+
+A machine-readable citation record is available in [CITATION.cff](CITATION.cff).
+
+## License
+
+MIT; see [LICENSE](LICENSE).
+
 ## Notes
 
 - The released model assumes continuous marginals and pseudo-observations in `[0,1]`.
