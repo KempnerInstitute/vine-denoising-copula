@@ -1,5 +1,5 @@
 # =============================================================================
-# Vine Diffusion Copula - Master Configuration
+# Vine Denoising Copula - Master Configuration
 # =============================================================================
 # Default config file. Override values via command line or experiment configs.
 # Usage:

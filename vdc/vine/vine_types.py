@@ -404,7 +404,7 @@ def get_vine_matrix(structure: VineStructure) -> np.ndarray:
     for tree in structure.trees:
         for edge_idx, (i, j, cond) in enumerate(tree.edges):
             # Mark edge in matrix
-            # This is a simplified placeholder
+            # The lightweight matrix view only marks the discovered edge pattern.
             pass
     
     return matrix

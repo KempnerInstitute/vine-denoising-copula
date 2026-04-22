@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Diffusion Copula (ICML 2026) - PAPER RESULTS JOB
+# Vine Denoising Copula (ICML 2026) - PAPER RESULTS JOB
 # ============================================================================
 # Variant: Noise-conditioned single-pass denoiser (one-shot at t=0)
 #
@@ -51,7 +51,7 @@ MODEL_TYPE="${MODEL_TYPE:-denoiser}"
 METHOD_TAG="${METHOD_TAG:-denoiser_cond}"
 
 echo "============================================================================"
-echo "Vine Diffusion Copula PAPER JOB: ${METHOD_TAG}"
+echo "Vine Denoising Copula PAPER JOB: ${METHOD_TAG}"
 echo "============================================================================"
 echo "Job ID: ${SLURM_JOB_ID:-}"
 echo "Node: $(hostname)"

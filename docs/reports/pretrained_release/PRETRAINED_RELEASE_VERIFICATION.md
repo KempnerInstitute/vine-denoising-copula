@@ -1,7 +1,7 @@
 # Pretrained model verification
 
 - Model id: `vdc-denoiser-m64-v1`
-- Checkpoint: `/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_denoiser_cond_enhanced_20260207_105852_59344687/checkpoints/model_step_190000.pt`
+- Checkpoint: `/n/home13/hsafaai/.cache/vdc/vdc-denoiser-m64-v1/vdc-denoiser-m64-v1.pt`
 - Device: `cpu`
 - Mean ISE: `5.572113e-07`
 - Mean MI absolute error: `0.014998`
@@ -22,5 +22,5 @@
 
 - PNG: `/n/holylabs/kempner_dev/Users/hsafaai/Code/vine_diffusion_copula/docs/reports/pretrained_release/fig_copula_example_main_verify.png`
 - PDF: `/n/holylabs/kempner_dev/Users/hsafaai/Code/vine_diffusion_copula/docs/reports/pretrained_release/fig_copula_example_main_verify.pdf`
-- DCD ISE: `7.517040785387508e-07`
-- pyvine ISE: `0.00030537464185091396`
+- ise_gaussian: `1.2004651744277204e-06`
+- ise_independence: `9.77863762887049e-08`

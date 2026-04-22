@@ -5,10 +5,10 @@ This report records a direct run of `scripts/mi_estimation.py` using the officia
 Command:
 
 ```bash
-export PAPER_CHECKPOINT="$(python scripts/download_pretrained.py --model-id vdc-denoiser-m64-v1)"
+export VDC_CHECKPOINT="$(python scripts/download_pretrained.py --model-id vdc-denoiser-m64-v1)"
 python scripts/mi_estimation.py \
   --estimator dcd \
-  --checkpoint "${PAPER_CHECKPOINT}" \
+  --checkpoint "${VDC_CHECKPOINT}" \
   --device cpu \
   --n-samples 2000 \
   --seed 123 \

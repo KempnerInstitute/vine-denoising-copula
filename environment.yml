@@ -1,4 +1,4 @@
-name: diffuse_vine_cop
+name: vdc
 channels:
   - pytorch
   - nvidia
@@ -28,6 +28,7 @@ dependencies:
   # Data handling
   - h5py>=3.8.0
   - pyyaml>=6.0
+  - openpyxl>=3.1.0
   
   # Development tools
   - pip>=23.0

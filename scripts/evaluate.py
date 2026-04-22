@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Comprehensive Evaluation Script for Vine Diffusion Copula.
+Evaluation script for Vine Denoising Copula.
 
 Evaluates the trained model on:
 1. Bivariate copula density estimation (various families)
@@ -442,7 +442,7 @@ def create_vine_plots(results: List[Dict], output_dir: Path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Evaluate Vine Diffusion Copula")
+    parser = argparse.ArgumentParser(description="Evaluate Vine Denoising Copula")
     parser.add_argument('--checkpoint', type=Path, required=True, help='Model checkpoint')
     parser.add_argument('--output', type=Path, default=Path('results'), help='Output directory')
     parser.add_argument('--mode', choices=['all', 'bivariate', 'vine'], default='all')
@@ -456,7 +456,7 @@ def main():
     device = torch.device(args.device)
     
     print("=" * 60)
-    print("Vine Diffusion Copula - Evaluation")
+    print("Vine Denoising Copula - Evaluation")
     print("=" * 60)
     print(f"Checkpoint: {args.checkpoint}")
     print(f"Mode: {args.mode}")

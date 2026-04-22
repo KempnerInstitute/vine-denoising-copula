@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Diffusion Copula (ICML 2026) - E1 BASELINE (BIVARIATE) JOB
+# Vine Denoising Copula (ICML 2026) - E1 BASELINE (BIVARIATE) JOB
 # ============================================================================
 # Usage:
 #   sbatch slurm/paper_vdc_e1_baseline.sh <baseline_name>
@@ -43,7 +43,7 @@ fi
 BASELINE="$1"
 
 echo "============================================================================"
-echo "Vine Diffusion Copula PAPER E1 BASELINE"
+echo "Vine Denoising Copula PAPER E1 BASELINE"
 echo "============================================================================"
 echo "Job ID: ${SLURM_JOB_ID:-}"
 echo "Node: $(hostname)"

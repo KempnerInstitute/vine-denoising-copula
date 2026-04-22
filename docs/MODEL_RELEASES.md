@@ -1,17 +1,12 @@
 # Model Releases
 
-This project treats pretrained checkpoints as versioned artifacts. The repository contains the manifest, loader, packaging scripts, and verification tooling. The large model weights should live in a model store such as Hugging Face, not in git.
+This project treats pretrained checkpoints as versioned artifacts. The repository contains the manifest, loader, packaging scripts, and verification tooling. Large model weights should live in a model store such as Hugging Face, not in git.
 
-## Official Released Model
+## Released Model
 
 Current packaged model id:
 
 - `vdc-denoiser-m64-v1`
-
-Canonical paper sources:
-
-- local private `analysis/PAPER_CHECKPOINT.txt` and `analysis/PAPER_BEST_MODEL.json` when available
-- otherwise the packaged pretrained manifest plus Hugging Face release
 
 Packaged manifest:
 
@@ -50,7 +45,6 @@ The staged directory will contain:
 - `vdc-denoiser-m64-v1.pt`
 - `train_config.yaml`
 - `manifest.json`
-- `paper_best_model.json`
 - `model_selection_joint_best.json`
 - a model-card `README.md`
 
@@ -125,10 +119,10 @@ python examples/use_pretrained_model.py --model-id vdc-denoiser-m64-v1
 
 ## Notes On Versioning
 
-- Keep the paper checkpoint frozen.
+- Keep the released checkpoint frozen.
 - If you publish a better later model, give it a new model id and version.
 - Do not silently replace the checkpoint behind `vdc-denoiser-m64-v1`.
 
 ## Notes For This Repository
 
-At the time of writing, the repo-side release tooling is ready. The only thing required to perform the actual upload is a valid Hugging Face write token in `HF_TOKEN`.
+The packaged loader is designed to work from the public manifest plus the Hugging Face release. Local unpublished checkpoints should be treated as development artifacts rather than part of the public API.

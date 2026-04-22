@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Diffusion Copula (ICML 2026) - E4 IMPUTATION JOB
+# Vine Denoising Copula (ICML 2026) - E4 IMPUTATION JOB
 # ============================================================================
 # Produces:
 #   RUN_DIR/results/e4_imputation_results.json
@@ -32,7 +32,7 @@ OUTPUT_BASE="${OUTPUT_BASE:-/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusi
 export OUTPUT_BASE
 
 echo "============================================================================"
-echo "Vine Diffusion Copula PAPER JOB: E4 imputation"
+echo "Vine Denoising Copula PAPER JOB: E4 imputation"
 echo "============================================================================"
 echo "Job ID: ${SLURM_JOB_ID:-}"
 echo "Node: $(hostname)"

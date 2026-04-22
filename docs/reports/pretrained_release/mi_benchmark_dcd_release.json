@@ -103,7 +103,7 @@
     "minde_url": "https://github.com/MustaphaBounoua/minde",
     "mist_repo": null,
     "mist_url": "https://github.com/gritsai/mist",
-    "dcd_checkpoint": "/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula/vdc_paper_denoiser_cond_enhanced_20260207_105852_59344687/checkpoints/model_step_190000.pt",
+    "dcd_checkpoint": "vdc-denoiser-m64-v1",
     "dcd_model_type": "denoiser",
     "dcd_grid_size": 64,
     "dcd_projection_iters": 30,

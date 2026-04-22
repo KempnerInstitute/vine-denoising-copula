@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Comprehensive benchmark for copula density estimation.
+Benchmark for copula density estimation.
 
 Compares diffusion-based approach with:
 1. Kernel Density Estimation (KDE) with various kernels
@@ -560,7 +560,7 @@ def evaluate_estimator(estimator: BaseDensityEstimator,
                        samples: np.ndarray,
                        true_density: np.ndarray,
                        m: int) -> Dict:
-    """Comprehensive evaluation of an estimator."""
+    """Evaluate one estimator on the configured benchmark suite."""
     estimator.fit(samples)
     pred_density = estimator.evaluate(m)
     

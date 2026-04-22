@@ -21,7 +21,7 @@ fi
 OUTPUT_BASE="${OUTPUT_BASE:-/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula}"
 
 echo "============================================================================"
-echo "Vine Diffusion Copula PAPER JOB: E10 UCI flow benchmark"
+echo "Vine Denoising Copula PAPER JOB: E10 UCI flow benchmark"
 echo "============================================================================"
 echo "Job ID: ${SLURM_JOB_ID:-}"
 echo "Node: $(hostname)"

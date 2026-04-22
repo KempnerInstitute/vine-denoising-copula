@@ -540,7 +540,7 @@ def build_vine_from_copulas(
 if __name__ == "__main__":
     print("Testing vine recursion...")
     
-    # This is a placeholder - proper testing requires fitted copulas
+    # This quick check only covers object construction; fitted-copula tests live in the test suite.
     from .structure import build_rvine_structure
     
     np.random.seed(42)

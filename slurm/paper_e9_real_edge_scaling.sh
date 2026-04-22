@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Diffusion Copula (ICML 2026) - E9 real-edge neural copula scaling
+# Vine Denoising Copula (ICML 2026) - E9 real-edge neural copula scaling
 # ============================================================================
 
 set -euo pipefail
@@ -29,7 +29,7 @@ fi
 OUTPUT_BASE="${OUTPUT_BASE:-/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula}"
 
 echo "============================================================================"
-echo "Vine Diffusion Copula PAPER JOB: E9 real-edge scaling benchmark"
+echo "Vine Denoising Copula PAPER JOB: E9 real-edge scaling benchmark"
 echo "============================================================================"
 echo "Job ID: ${SLURM_JOB_ID:-}"
 echo "Node: $(hostname)"

@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Diffusion Copula (ICML 2026) - PAPER RESULTS JOB
+# Vine Denoising Copula (ICML 2026) - PAPER RESULTS JOB
 # ============================================================================
 # Variant: Enhanced CNN baseline (single-pass)
 #
@@ -39,7 +39,7 @@ MODEL_TYPE="enhanced_cnn"
 METHOD_TAG="enhanced_cnn_cond"
 
 echo "============================================================================"
-echo "Vine Diffusion Copula PAPER JOB: ${METHOD_TAG}"
+echo "Vine Denoising Copula PAPER JOB: ${METHOD_TAG}"
 echo "============================================================================"
 echo "Job ID: ${SLURM_JOB_ID:-}"
 echo "Node: $(hostname)"

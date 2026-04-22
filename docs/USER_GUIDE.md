@@ -1,6 +1,6 @@
-# Vine Diffusion Copula - User Guide
+# Vine Denoising Copula - User Guide
 
-A comprehensive guide to using the Vine Diffusion Copula package for copula density estimation and vine copula modeling.
+Reference guide for using the Vine Denoising Copula package for copula density estimation and vine copula modeling.
 
 ## Table of Contents
 

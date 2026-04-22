@@ -2,7 +2,7 @@
 """
 Example: Visualization of Copula Densities and Vine Structures.
 
-This provides comprehensive visualization utilities for:
+This provides visualization utilities for:
 1. Bivariate copula density heatmaps
 2. Comparison of true vs estimated densities
 3. Vine copula structure diagrams

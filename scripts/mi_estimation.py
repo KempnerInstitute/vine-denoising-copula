@@ -34,12 +34,26 @@ import torch
 import torch.nn.functional as F
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT))
 
-from vdc.data.generators import analytic_logpdf_grid, sample_bicop  # noqa: E402
-from vdc.inference.density import sample_density_grid  # noqa: E402
-from vdc.models.projection import copula_project  # noqa: E402
-from vdc.utils.information import ksg_mutual_information  # noqa: E402
+
+def _load_vdc_imports():
+    if str(REPO_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPO_ROOT))
+    from vdc.data.generators import analytic_logpdf_grid, sample_bicop
+    from vdc.inference.density import sample_density_grid
+    from vdc.models.projection import copula_project
+    from vdc.utils.information import ksg_mutual_information
+
+    return analytic_logpdf_grid, sample_bicop, sample_density_grid, copula_project, ksg_mutual_information
+
+
+(
+    analytic_logpdf_grid,
+    sample_bicop,
+    sample_density_grid,
+    copula_project,
+    ksg_mutual_information,
+) = _load_vdc_imports()
 
 
 DEFAULT_TEST_COPULAS = [
@@ -154,7 +168,7 @@ def _resolve_dcd_checkpoint(
     if not bases and os.environ.get("OUTPUT_BASE"):
         bases = [Path(os.environ["OUTPUT_BASE"])]
     if not bases:
-        bases = [Path("/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula")]
+        bases = [REPO_ROOT / "results"]
 
     from vdc.utils.paper import choose_best_checkpoint
 

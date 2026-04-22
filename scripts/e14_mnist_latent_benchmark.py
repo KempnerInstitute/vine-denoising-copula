@@ -574,7 +574,7 @@ def main() -> None:
     output_bases: List[Path] = []
     if os.environ.get("OUTPUT_BASE"):
         output_bases.append(Path(os.environ["OUTPUT_BASE"]))
-    output_bases.append(Path("/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula"))
+    output_bases.append(_repo_root() / "results")
     ckpt = choose_best_checkpoint(
         output_bases=output_bases,
         preferred_methods=["denoiser_cond_enhanced", "denoiser_cond", "enhanced_cnn_cond"],

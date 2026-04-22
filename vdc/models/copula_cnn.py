@@ -1,6 +1,8 @@
 """
-Powerful CNN for direct copula density estimation.
-Deep ResNet-style architecture with attention and residual connections.
+CNN for direct copula density estimation.
+
+This module provides a deeper residual architecture with attention and skip
+connections for experiments that do not use the main released U-Net path.
 """
 import torch
 import torch.nn as nn
@@ -63,7 +65,7 @@ class ChannelAttention(nn.Module):
 
 class CopulaDensityCNN(nn.Module):
     """
-    Powerful CNN for direct copula density estimation.
+    CNN for direct copula density estimation.
     
     Architecture:
     - Deep encoder with residual blocks

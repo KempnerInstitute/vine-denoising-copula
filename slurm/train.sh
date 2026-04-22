@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 
 # =============================================================================
-# Vine Diffusion Copula - Unified Training Script
+# Vine Denoising Copula - Unified Training Script
 # =============================================================================
 # Usage:
 #   sbatch slurm/train.sh                                    # Default config
@@ -32,7 +32,7 @@ cd /n/holylabs/kempner_dev/Users/hsafaai/Code/vine_diffusion_copula
 mkdir -p slurm_logs
 
 echo "=============================================="
-echo "Vine Diffusion Copula - Training"
+echo "Vine Denoising Copula - Training"
 echo "=============================================="
 echo "Job ID: $SLURM_JOB_ID"
 echo "Node: $SLURM_NODELIST"

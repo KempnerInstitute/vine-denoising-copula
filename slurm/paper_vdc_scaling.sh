@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Diffusion Copula (ICML 2026) - E2 SCALING JOB
+# Vine Denoising Copula (ICML 2026) - E2 SCALING JOB
 # ============================================================================
 # Runs the scaling benchmark (vine build time vs dimension) and writes:
 #   RUN_DIR/results/e2_scaling_results.json
@@ -29,7 +29,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 OUTPUT_BASE="${OUTPUT_BASE:-/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula}"
 
 echo "============================================================================"
-echo "Vine Diffusion Copula PAPER JOB: scaling (E2)"
+echo "Vine Denoising Copula PAPER JOB: scaling (E2)"
 echo "============================================================================"
 echo "Job ID: ${SLURM_JOB_ID:-}"
 echo "Node: $(hostname)"

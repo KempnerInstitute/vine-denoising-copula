@@ -35,7 +35,7 @@ MODEL_TYPE="denoiser"
 METHOD_TAG="denoiser_cond_enhanced"
 
 echo "============================================================================"
-echo "Vine Diffusion Copula: Enhanced Training (Conditional + BB)"
+echo "Vine Denoising Copula: Enhanced Training (Conditional + BB)"
 echo "============================================================================"
 echo "Job ID: ${SLURM_JOB_ID:-local}"
 echo "Node: $(hostname)"

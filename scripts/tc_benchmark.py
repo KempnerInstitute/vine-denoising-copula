@@ -14,9 +14,7 @@ We compare:
     estimate TC via mean log copula density on held-out samples:
       TC = E[log c(U)]  (since marginals are uniform in copula space)
 
-Outputs a JSON consumable by:
-  - drafts/scripts/fig_information_estimation.py (fig_tc_vs_dim.pdf)
-  - drafts/scripts/paper_artifacts.py (table generation)
+Outputs a JSON summary that can be post-processed into figures or tables.
 """
 
 from __future__ import annotations

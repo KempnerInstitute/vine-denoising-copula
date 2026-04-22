@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Unified Training Script for Vine Diffusion Copula.
+Unified training script for Vine Denoising Copula.
 
 This is the main entry point for training copula density estimation models.
 It wraps the unified trainer with a clean interface.
@@ -39,7 +39,7 @@ from vdc.config import Config, get_run_dir, save_run_config
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Train Vine Diffusion Copula Models",
+        description="Train Vine Denoising Copula models",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -121,7 +121,7 @@ Examples:
     
     if rank == 0:
         print("=" * 60)
-        print("Vine Diffusion Copula - Training")
+        print("Vine Denoising Copula - Training")
         print("=" * 60)
         print(f"Config: {args.config}")
         print(f"Model type: {args.model_type}")

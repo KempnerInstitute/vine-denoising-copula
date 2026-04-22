@@ -13,7 +13,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Diffusion Copula (ICML 2026) - E3 VaR BACKTEST JOB
+# Vine Denoising Copula (ICML 2026) - E3 VaR BACKTEST JOB
 # ============================================================================
 # Produces:
 #   RUN_DIR/results/e3_var_results.json
@@ -33,7 +33,7 @@ OUTPUT_BASE="${OUTPUT_BASE:-/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusi
 export OUTPUT_BASE
 
 echo "============================================================================"
-echo "Vine Diffusion Copula PAPER JOB: E3 VaR backtest"
+echo "Vine Denoising Copula PAPER JOB: E3 VaR backtest"
 echo "============================================================================"
 echo "Job ID: ${SLURM_JOB_ID:-}"
 echo "Node: $(hostname)"

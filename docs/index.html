@@ -3,14 +3,14 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Vine Diffusion Copula Docs</title>
+    <title>Vine Denoising Copula Docs</title>
     <link rel="stylesheet" href="assets/site.css">
   </head>
   <body>
     <header class="hero">
       <div class="hero-copy">
-        <p class="eyebrow">Vine Diffusion Copula</p>
-        <h1>Amortized vine copula estimation, information decomposition, and pretrained model verification.</h1>
+        <p class="eyebrow">Vine Denoising Copula</p>
+        <h1>Library, released model, and verification tools for amortized vine-copula estimation.</h1>
         <p class="lede">
           VDC trains a single bivariate edge estimator once on synthetic copulas and reuses it
           across all O(d&sup2;) vine edges, replacing expensive per-edge fitting with cheap GPU
@@ -20,7 +20,7 @@
           <a class="button primary" href="readme.html">Readme</a>
           <a class="button" href="GETTING_STARTED.html">Getting Started</a>
           <a class="button" href="MODEL_RELEASES.html">Model Releases</a>
-          <a class="button" href="PAPER_REPRODUCIBILITY.html">Paper Reproducibility</a>
+          <a class="button" href="API.html">API Reference</a>
         </div>
       </div>
       <div class="hero-art">
@@ -40,10 +40,9 @@
           </ul>
         </article>
         <article class="card">
-          <h2>Reproducibility</h2>
+          <h2>Released Model</h2>
           <ul>
             <li><a href="MODEL_RELEASES.html">Versioned pretrained-model workflow</a></li>
-            <li><a href="PAPER_REPRODUCIBILITY.html">Canonical paper checkpoint</a></li>
             <li><a href="reports/pretrained_release/PRETRAINED_RELEASE_VERIFICATION.html">Verification report</a></li>
             <li><a href="reports/pretrained_release/MI_BENCHMARK_DCD_RELEASE.html">Released-checkpoint MI benchmark</a></li>
           </ul>
@@ -80,9 +79,9 @@ python scripts/verify_pretrained_release.py --model-id vdc-denoiser-m64-v1 --dev
 
       <section class="grid two">
         <article class="card">
-          <h2>Model Release Checklist</h2>
+          <h2>Release Workflow</h2>
           <ol>
-            <li>Package the bundle from the canonical checkpoint.</li>
+            <li>Package the bundle from the released checkpoint.</li>
             <li>Upload the bundle to a Hugging Face model repo.</li>
             <li>Update the packaged manifest with the public repo id and revision.</li>
             <li>Run the verification script against the published model.</li>

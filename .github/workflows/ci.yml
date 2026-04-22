@@ -27,8 +27,6 @@ jobs:
       - name: Install Ruff
         run: python -m pip install --upgrade pip ruff
 
-      # Lint only clean paths; legacy research scripts have ~4700 violations
-      # (mostly W293/N806) that are not worth bulk-fixing in a scientific codebase.
       - name: Run Ruff on maintained paths
         run: |
           ruff check \

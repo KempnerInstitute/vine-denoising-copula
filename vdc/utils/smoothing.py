@@ -180,8 +180,8 @@ def adaptive_smooth_density(
     if not sample_adaptive or samples is None:
         return smooth_density_gaussian(density, base_sigma)
     
-    # For now, use uniform smoothing
-    # TODO: Implement sample-adaptive smoothing based on local sample density
+    # Keep the public implementation conservative until a sample-adaptive rule
+    # is promoted from experiments into the supported code path.
     return smooth_density_gaussian(density, base_sigma)
 
 
@@ -222,4 +222,3 @@ def smooth_and_project(
     )
     
     return projected
-

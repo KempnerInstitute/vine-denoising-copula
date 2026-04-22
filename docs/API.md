@@ -1,6 +1,13 @@
-# Vine Diffusion Copula - API Documentation
+# Vine Denoising Copula - API Documentation
 
-Complete API reference for the Vine Diffusion Copula package.
+API reference for the Vine Denoising Copula package.
+
+The public API for the released package is:
+
+- `vdc.load_pretrained_model`
+- `vdc.estimate_pair_density_from_samples`
+- `vdc.VineCopulaModel`
+- the `vdc` command-line interface for listing models, resolving checkpoints, pair estimation, and vine fitting
 
 ---
 
@@ -18,10 +25,38 @@ Complete API reference for the Vine Diffusion Copula package.
 ## Installation
 
 ```bash
-git clone https://github.com/KempnerInstitute/vine_diffusion_copula.git
-cd vine_diffusion_copula
+git clone https://github.com/KempnerInstitute/vine-denoising-copula.git vine-denoising-copula
+cd vine-denoising-copula
 pip install -e .
 ```
+
+---
+
+## Stable Public API
+
+```python
+import numpy as np
+from vdc import VineCopulaModel, estimate_pair_density_from_samples, load_pretrained_model
+
+bundle = load_pretrained_model("vdc-denoiser-m64-v1", device="cpu")
+pair_samples = np.random.rand(2000, 2)
+density = estimate_pair_density_from_samples(bundle, pair_samples)
+
+U = np.random.rand(1000, 5)
+vine = VineCopulaModel(vine_type="dvine", m=bundle.config["data"]["m"], device="cpu")
+vine.fit(U, bundle.model, diffusion=bundle.diffusion)
+```
+
+Command-line entry points:
+
+```bash
+vdc list-models
+vdc resolve-model --model-id vdc-denoiser-m64-v1
+vdc estimate-pair data/pair.npy --output results/density.npy
+vdc fit-vine data/pseudo_obs.npy --output results/vine.pkl --vine-type dvine
+```
+
+The lower-level classes documented below remain available for advanced use, but most users should start with the public API above.
 
 ---
 
@@ -417,4 +452,3 @@ vine.save('fitted_dvine.pkl')
 ## License
 
 MIT License
-

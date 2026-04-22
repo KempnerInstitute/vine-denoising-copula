@@ -51,7 +51,7 @@ class TrainingLogger:
         # Create initial summary
         self._write_summary_header()
         
-        print(f"📊 Logging initialized:")
+        print("Logging initialized:")
         print(f"  Training log: {self.train_log_path}")
         print(f"  Validation log: {self.val_log_path}")
         print(f"  Summary: {self.summary_path}")
@@ -308,7 +308,7 @@ def plot_training_curves(log_path: Path, output_path: Optional[Path] = None):
     
     if output_path:
         plt.savefig(output_path, dpi=150, bbox_inches='tight')
-        print(f"✓ Saved training curves to: {output_path}")
+        print(f"Saved training curves to: {output_path}")
     else:
         plt.show()
 

@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Diffusion Copula (ICML 2026) - MODEL SELECTION / EVAL JOB
+# Vine Denoising Copula (ICML 2026) - MODEL SELECTION / EVAL JOB
 # ============================================================================
 # Usage:
 #   sbatch slurm/paper_vdc_model_selection.sh /path/to/ckpt1.pt /path/to/ckpt2.pt ...
@@ -41,7 +41,7 @@ if [ "$#" -lt 1 ]; then
 fi
 
 echo "============================================================================"
-echo "Vine Diffusion Copula PAPER EVAL: model_selection"
+echo "Vine Denoising Copula PAPER EVAL: model_selection"
 echo "============================================================================"
 echo "Job ID: ${SLURM_JOB_ID:-}"
 echo "Node: $(hostname)"

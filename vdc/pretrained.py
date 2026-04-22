@@ -116,8 +116,9 @@ def resolve_pretrained_checkpoint(
     expected_sha = str(manifest.get("sha256", "")).strip() or None
     sources = manifest.get("sources", {})
 
-    local_path = Path(str(sources.get("local_checkpoint", "")).strip()).expanduser()
-    if prefer_local and local_path.exists():
+    local_raw = str(sources.get("local_checkpoint", "") or "").strip()
+    local_path = Path(local_raw).expanduser() if local_raw else None
+    if prefer_local and local_path is not None and local_path.exists():
         _verify_sha256(local_path, expected_sha)
         return local_path
 

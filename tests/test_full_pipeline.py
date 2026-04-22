@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Comprehensive test for the vine diffusion copula pipeline.
+End-to-end test for the vine denoising copula pipeline.
 
 Tests:
 1. Bivariate copula density estimation from samples
@@ -129,7 +129,7 @@ class TestHFunctions:
         # Check roundtrip error
         error = np.abs(u_recovered - u_test).mean()
         assert error < 0.1, f"Roundtrip error too large: {error:.4f}"
-        print(f"✓ Inverse roundtrip test passed (mean error: {error:.4f})")
+        print(f"Inverse roundtrip test passed (mean error: {error:.4f})")
 
 
 class TestCopulaProjection:
@@ -159,7 +159,7 @@ class TestCopulaProjection:
         
         assert row_error < 0.01, f"Row marginal error too large: {row_error}"
         assert col_error < 0.01, f"Col marginal error too large: {col_error}"
-        print(f"✓ Projection test passed (row_err={row_error:.4f}, col_err={col_error:.4f})")
+        print(f"Projection test passed (row_err={row_error:.4f}, col_err={col_error:.4f})")
     
     def test_preserves_structure(self):
         """Projection should preserve dependence structure (roughly)."""
@@ -188,7 +188,7 @@ class TestCopulaProjection:
         
         assert diag_mean > off_diag_mean, \
             f"Diagonal ({diag_mean:.4f}) should be > off-diagonal ({off_diag_mean:.4f})"
-        print(f"✓ Structure preservation test passed (diag={diag_mean:.4f} > off_diag={off_diag_mean:.4f})")
+        print(f"Structure preservation test passed (diag={diag_mean:.4f} > off_diag={off_diag_mean:.4f})")
 
 
 class TestVineStructure:
@@ -219,7 +219,7 @@ class TestVineStructure:
         # Check that we have some edges
         assert structure.num_edges() >= 1, "Should have at least 1 edge"
         
-        print(f"✓ R-vine structure built: {len(structure.trees)} trees, {structure.num_edges()} edges")
+        print(f"R-vine structure built: {len(structure.trees)} trees, {structure.num_edges()} edges")
     
     def test_build_dvine(self):
         """Test D-vine construction."""
@@ -242,7 +242,7 @@ class TestVineStructure:
             tree1 = structure.trees[0]
             assert len(tree1.edges) == d - 1
         
-        print(f"✓ D-vine structure built with order: {structure.order}")
+        print(f"D-vine structure built with order: {structure.order}")
     
     def test_build_cvine(self):
         """Test C-vine construction."""
@@ -263,7 +263,7 @@ class TestVineStructure:
             tree1 = structure.trees[0]
             assert len(tree1.edges) == d - 1
         
-        print(f"✓ C-vine structure built with order: {structure.order}")
+        print(f"C-vine structure built with order: {structure.order}")
 
 
 class TestDensityEstimation:
@@ -286,7 +286,7 @@ class TestDensityEstimation:
         # Check shape
         assert hist.shape == (m, m)
         
-        print("✓ Histogram creation test passed")
+        print("Histogram creation test passed")
     
     def test_analytic_density(self):
         """Test analytic density computation."""
@@ -314,7 +314,7 @@ class TestDensityEstimation:
             pdf = np.exp(np.clip(log_pdf, -15, 15))
             assert pdf.min() >= 0, f"{family} has negative pdf values"
             
-        print("✓ Analytic density test passed for multiple families")
+        print("Analytic density test passed for multiple families")
 
 
 class TestEndToEnd:
@@ -351,13 +351,13 @@ class TestEndToEnd:
         mass = (density * du * dv).sum()
         assert abs(mass - 1.0) < 0.1, f"Estimated density mass = {mass}"
         
-        print("✓ Density estimation with model passed")
+        print("Density estimation with model passed")
 
 
 def run_all_tests():
     """Run all tests manually."""
     print("=" * 60)
-    print("Running Vine Diffusion Copula Pipeline Tests")
+    print("Running Vine Denoising Copula pipeline tests")
     print("=" * 60)
     
     # H-function tests
@@ -401,4 +401,3 @@ def run_all_tests():
 
 if __name__ == "__main__":
     run_all_tests()
-

@@ -1,119 +1,190 @@
-"""
-Command-line interface for vine diffusion copula operations.
+"""Stable command-line interface for the public VDC release."""
 
-Provides easy access to all major functionality:
-- Data generation
-- Model training
-- Vine fitting
-- Evaluation
-"""
+from __future__ import annotations
 
 import argparse
-import sys
+import json
 from pathlib import Path
+from typing import Any
+
+import numpy as np
+
+from vdc.pretrained import (
+    DEFAULT_PRETRAINED_MODEL_ID,
+    estimate_pair_density_from_samples,
+    list_pretrained_models,
+    load_pretrained_model,
+    resolve_pretrained_checkpoint,
+)
+from vdc.vine.api import VineCopulaModel
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Vine Diffusion Copula CLI",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  # Generate synthetic training data
-  vdc generate --output data/synthetic --n-samples 2000000 --m 64
-
-  # Train model (single GPU)
-  vdc train --data-root data/synthetic --m 64 --batch-size 32
-
-  # Train model (multi-GPU)
-  torchrun --nproc_per_node=4 -m vdc.cli train --data-root data/synthetic
-
-  # Fit vine to data
-  vdc fit --data my_data.csv --model checkpoints/best.pt --output my_vine.pkl
-
-  # Evaluate vine
-  vdc evaluate --vine my_vine.pkl --test my_test.csv
-
-For more information, see: https://github.com/KempnerInstitute/vine-diffusion-copula
-        """
-    )
-    
-    subparsers = parser.add_subparsers(dest='command', help='Command to run')
-    
-    # ========== Generate Data ==========
-    gen_parser = subparsers.add_parser('generate', help='Generate synthetic training data')
-    gen_parser.add_argument('--output', type=str, required=True, help='Output directory')
-    gen_parser.add_argument('--n-samples', type=int, default=2000000, help='Number of samples')
-    gen_parser.add_argument('--m', type=int, default=64, help='Grid resolution')
-    gen_parser.add_argument('--families', type=str, default='all', help='Copula families (comma-separated)')
-    gen_parser.add_argument('--seed', type=int, default=42, help='Random seed')
-    
-    # ========== Train Model ==========
-    train_parser = subparsers.add_parser('train', help='Train diffusion copula model')
-    train_parser.add_argument('--data-root', type=str, required=True, help='Training data directory')
-    train_parser.add_argument('--m', type=int, default=64, help='Grid resolution')
-    train_parser.add_argument('--batch-size', type=int, default=32, help='Batch size per GPU')
-    train_parser.add_argument('--lr', type=float, default=3e-4, help='Learning rate')
-    train_parser.add_argument('--max-steps', type=int, default=400000, help='Max training steps')
-    train_parser.add_argument('--checkpoint-dir', type=str, default='checkpoints', help='Checkpoint directory')
-    train_parser.add_argument('--use-wandb', action='store_true', help='Use W&B logging')
-    train_parser.add_argument('--resume', type=str, default=None, help='Resume from checkpoint')
-    
-    # ========== Fit Vine ==========
-    fit_parser = subparsers.add_parser('fit', help='Fit vine copula to data')
-    fit_parser.add_argument('--data', type=str, required=True, help='Data file (CSV/NPY)')
-    fit_parser.add_argument('--model', type=str, required=True, help='Trained model checkpoint')
-    fit_parser.add_argument('--output', type=str, required=True, help='Output vine file (PKL)')
-    fit_parser.add_argument('--m', type=int, default=64, help='Grid resolution')
-    fit_parser.add_argument('--max-trees', type=int, default=None, help='Maximum vine trees')
-    fit_parser.add_argument('--device', type=str, default='cuda', help='Device')
-    
-    # ========== Evaluate Vine ==========
-    eval_parser = subparsers.add_parser('evaluate', help='Evaluate fitted vine')
-    eval_parser.add_argument('--vine', type=str, required=True, help='Fitted vine file (PKL)')
-    eval_parser.add_argument('--test', type=str, required=True, help='Test data (CSV/NPY)')
-    eval_parser.add_argument('--output', type=str, default=None, help='Output metrics file (JSON)')
-    eval_parser.add_argument('--plot', action='store_true', help='Generate plots')
-    
-    # ========== Sample from Vine ==========
-    sample_parser = subparsers.add_parser('sample', help='Generate samples from vine')
-    sample_parser.add_argument('--vine', type=str, required=True, help='Fitted vine file (PKL)')
-    sample_parser.add_argument('--n', type=int, default=1000, help='Number of samples')
-    sample_parser.add_argument('--output', type=str, required=True, help='Output file (CSV/NPY)')
-    sample_parser.add_argument('--seed', type=int, default=None, help='Random seed')
-    
-    args = parser.parse_args()
-    
-    if args.command is None:
-        parser.print_help()
-        sys.exit(1)
-    
-    # Route to appropriate function
-    if args.command == 'generate':
-        from vdc.data.generators import generate_synthetic_dataset
-        generate_synthetic_dataset(args)
-    
-    elif args.command == 'train':
-        from vdc.train.train_grid import main as train_main
-        train_main()
-    
-    elif args.command == 'fit':
-        from vdc.vine.api import fit_vine_from_cli
-        fit_vine_from_cli(args)
-    
-    elif args.command == 'evaluate':
-        from vdc.eval.vine import evaluate_vine_from_cli
-        evaluate_vine_from_cli(args)
-    
-    elif args.command == 'sample':
-        from vdc.vine.api import sample_from_vine_cli
-        sample_from_vine_cli(args)
-    
+def _load_array(path: Path) -> np.ndarray:
+    suffix = path.suffix.lower()
+    if suffix == ".npy":
+        arr = np.load(path)
+    elif suffix in {".csv", ".txt"}:
+        delimiter = "," if suffix == ".csv" else None
+        arr = np.loadtxt(path, delimiter=delimiter)
     else:
-        print(f"Unknown command: {args.command}")
-        parser.print_help()
-        sys.exit(1)
+        raise ValueError(f"Unsupported input format: {path.suffix}. Use .npy, .csv, or .txt.")
+    return np.asarray(arr, dtype=np.float64)
 
 
-if __name__ == '__main__':
+def _save_json(path: Path, payload: dict[str, Any]) -> None:
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+
+
+def _build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="vdc",
+        description="Command-line tools for the public Vine Denoising Copula release.",
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    list_parser = subparsers.add_parser("list-models", help="List packaged pretrained model ids.")
+    list_parser.set_defaults(func=_cmd_list_models)
+
+    resolve_parser = subparsers.add_parser(
+        "resolve-model",
+        help="Resolve or download a packaged pretrained checkpoint.",
+    )
+    resolve_parser.add_argument("--model-id", default=DEFAULT_PRETRAINED_MODEL_ID)
+    resolve_parser.add_argument("--cache-dir", type=Path, default=None)
+    resolve_parser.add_argument("--repo-id", type=str, default=None)
+    resolve_parser.add_argument("--revision", type=str, default=None)
+    resolve_parser.add_argument("--force-download", action="store_true")
+    resolve_parser.add_argument(
+        "--no-local",
+        action="store_true",
+        help="Ignore any configured local checkpoint path and use the cache/download path only.",
+    )
+    resolve_parser.set_defaults(func=_cmd_resolve_model)
+
+    pair_parser = subparsers.add_parser(
+        "estimate-pair",
+        help="Estimate a bivariate copula density from pseudo-observations.",
+    )
+    pair_parser.add_argument("input", type=Path, help="Input pseudo-observations (.npy, .csv, .txt) with shape (n, 2).")
+    pair_parser.add_argument("--output", type=Path, required=True, help="Output density grid (.npy).")
+    pair_parser.add_argument("--summary-json", type=Path, default=None, help="Optional JSON summary path.")
+    pair_parser.add_argument("--model-id", default=DEFAULT_PRETRAINED_MODEL_ID)
+    pair_parser.add_argument("--device", default="cpu")
+    pair_parser.add_argument("--repo-id", type=str, default=None)
+    pair_parser.add_argument("--m", type=int, default=None)
+    pair_parser.add_argument("--projection-iters", type=int, default=50)
+    pair_parser.add_argument("--diffusion-steps", type=int, default=None)
+    pair_parser.add_argument("--cfg-scale", type=float, default=1.0)
+    pair_parser.set_defaults(func=_cmd_estimate_pair)
+
+    vine_parser = subparsers.add_parser(
+        "fit-vine",
+        help="Fit a vine copula to pseudo-observations and save the fitted model.",
+    )
+    vine_parser.add_argument("input", type=Path, help="Input pseudo-observations (.npy, .csv, .txt) with shape (n, d).")
+    vine_parser.add_argument("--output", type=Path, required=True, help="Output pickle path for the fitted vine.")
+    vine_parser.add_argument("--summary-json", type=Path, default=None, help="Optional JSON summary path.")
+    vine_parser.add_argument("--model-id", default=DEFAULT_PRETRAINED_MODEL_ID)
+    vine_parser.add_argument("--device", default="cpu")
+    vine_parser.add_argument("--repo-id", type=str, default=None)
+    vine_parser.add_argument("--vine-type", choices=["dvine", "cvine", "rvine"], default="dvine")
+    vine_parser.add_argument("--truncation-level", type=int, default=None)
+    vine_parser.add_argument("--quiet", action="store_true")
+    vine_parser.set_defaults(func=_cmd_fit_vine)
+
+    return parser
+
+
+def _cmd_list_models(args: argparse.Namespace) -> int:
+    for payload in list_pretrained_models():
+        print(f"{payload['model_id']}: {payload.get('display_name', '')}")
+    return 0
+
+
+def _cmd_resolve_model(args: argparse.Namespace) -> int:
+    ckpt = resolve_pretrained_checkpoint(
+        args.model_id,
+        cache_dir=args.cache_dir,
+        force_download=args.force_download,
+        prefer_local=not args.no_local,
+        repo_id=args.repo_id,
+        revision=args.revision,
+    )
+    print(ckpt)
+    return 0
+
+
+def _cmd_estimate_pair(args: argparse.Namespace) -> int:
+    pair_data = _load_array(args.input)
+    if pair_data.ndim != 2 or pair_data.shape[1] != 2:
+        raise SystemExit(f"Expected input with shape (n, 2), found {pair_data.shape}.")
+
+    bundle = load_pretrained_model(args.model_id, device=args.device, repo_id=args.repo_id)
+    density = estimate_pair_density_from_samples(
+        bundle,
+        pair_data,
+        m=args.m,
+        diffusion_steps=args.diffusion_steps,
+        cfg_scale=args.cfg_scale,
+        projection_iters=args.projection_iters,
+    )
+
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    np.save(args.output, density)
+    print(f"Saved density grid to {args.output}")
+
+    if args.summary_json is not None:
+        m = int(density.shape[0])
+        du = 1.0 / float(m)
+        summary = {
+            "model_id": bundle.model_id,
+            "input": str(args.input),
+            "output": str(args.output),
+            "shape": list(density.shape),
+            "mass": float(density.sum() * du * du),
+            "density_min": float(density.min()),
+            "density_max": float(density.max()),
+        }
+        args.summary_json.parent.mkdir(parents=True, exist_ok=True)
+        _save_json(args.summary_json, summary)
+        print(f"Saved summary to {args.summary_json}")
+    return 0
+
+
+def _cmd_fit_vine(args: argparse.Namespace) -> int:
+    U = _load_array(args.input)
+    if U.ndim != 2:
+        raise SystemExit(f"Expected a 2D input array with shape (n, d), found {U.shape}.")
+
+    bundle = load_pretrained_model(args.model_id, device=args.device, repo_id=args.repo_id)
+    vine = VineCopulaModel(
+        vine_type=args.vine_type,
+        truncation_level=args.truncation_level,
+        m=int(bundle.config.get("data", {}).get("m", 64)),
+        device=str(bundle.device),
+        batch_edges=(bundle.diffusion is None),
+    )
+    vine.fit(U, bundle.model, diffusion=bundle.diffusion, verbose=not args.quiet)
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    vine.save(args.output)
+    print(f"Saved fitted vine to {args.output}")
+
+    if args.summary_json is not None:
+        summary = vine.summary()
+        summary["input"] = str(args.input)
+        summary["output"] = str(args.output)
+        summary["model_id"] = bundle.model_id
+        args.summary_json.parent.mkdir(parents=True, exist_ok=True)
+        _save_json(args.summary_json, summary)
+        print(f"Saved summary to {args.summary_json}")
+    return 0
+
+
+def main() -> None:
+    parser = _build_parser()
+    args = parser.parse_args()
+    raise SystemExit(args.func(args))
+
+
+if __name__ == "__main__":
     main()

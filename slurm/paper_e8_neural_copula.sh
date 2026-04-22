@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Diffusion Copula (ICML 2026) - E8 Neural Copula Benchmark
+# Vine Denoising Copula (ICML 2026) - E8 Neural Copula Benchmark
 # ============================================================================
 # Focused rebuttal benchmark comparing VDC to ACNet on matched Archimedean
 # pair-copula edge tasks. Uses the existing paper VDC artifact by default,
@@ -29,7 +29,7 @@ fi
 OUTPUT_BASE="${OUTPUT_BASE:-/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula}"
 
 echo "============================================================================"
-echo "Vine Diffusion Copula PAPER JOB: E8 neural copula benchmark"
+echo "Vine Denoising Copula PAPER JOB: E8 neural copula benchmark"
 echo "============================================================================"
 echo "Job ID: ${SLURM_JOB_ID:-}"
 echo "Node: $(hostname)"

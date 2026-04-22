@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Diffusion Copula (ICML 2026) - E5 ANOMALY DETECTION JOB
+# Vine Denoising Copula (ICML 2026) - E5 ANOMALY DETECTION JOB
 # ============================================================================
 # Produces:
 #   RUN_DIR/results/e5_anomaly_results.json
@@ -32,7 +32,7 @@ OUTPUT_BASE="${OUTPUT_BASE:-/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusi
 export OUTPUT_BASE
 
 echo "============================================================================"
-echo "Vine Diffusion Copula PAPER JOB: E5 anomaly detection"
+echo "Vine Denoising Copula PAPER JOB: E5 anomaly detection"
 echo "============================================================================"
 echo "Job ID: ${SLURM_JOB_ID:-}"
 echo "Node: $(hostname)"

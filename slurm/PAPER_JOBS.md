@@ -1,119 +1,53 @@
-# Paper SLURM Jobs (ICML 2026) — Vine Diffusion Copula
+# Cluster Job Wrappers for Released Benchmarks
 
-This folder contains **paper-style SLURM jobs** that create a timestamped run directory with:
+This directory contains SLURM wrappers that were used during research and release validation. They are convenience scripts for managed cluster environments rather than part of the stable package API.
 
-```
+For portable public reproduction, prefer the Python commands in [docs/PAPER_REPRODUCIBILITY.md](../docs/PAPER_REPRODUCIBILITY.md).
+
+## Output Layout
+
+Most training and benchmark jobs write into an `OUTPUT_BASE` directory with run folders of the form:
+
+```text
 <OUTPUT_BASE>/
   vdc_paper_<method>_<timestamp>_<jobid>/
-    results/      # JSON/CSV metrics (model_selection)
-    logs/         # train/eval logs + env.txt
-    figures/      # symlink to training visualizations (if available)
-    checkpoints/  # model_step_*.pt + visualizations/
-    analysis/     # exact config copy + git info + slurm script copy
+    results/
+    logs/
+    checkpoints/
+    analysis/
 ```
 
-## One-command submission (per method)
+Set `OUTPUT_BASE` explicitly before submission. If you do not set it, many scripts fall back to a repo-local `results/` directory or to the script's own defaults.
 
-All scripts default to:
-
-- `OUTPUT_BASE=/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula`
-
-Override as needed:
+Example:
 
 ```bash
-OUTPUT_BASE=/n/holylfs06/LABS/kempner_project_b/Lab/<your_folder> sbatch slurm/paper_vdc_diffusion_cond.sh
-OUTPUT_BASE=/n/holylfs06/LABS/kempner_project_b/Lab/<your_folder> sbatch slurm/paper_vdc_denoiser_cond.sh
-OUTPUT_BASE=/n/holylfs06/LABS/kempner_project_b/Lab/<your_folder> sbatch slurm/paper_vdc_enhanced_cnn_cond.sh
+OUTPUT_BASE="$PWD/results" sbatch slurm/paper_train_enhanced.sh
 ```
 
-Each training job will automatically run `scripts/model_selection.py` on the latest checkpoint and write:
+## Recommended Public Jobs
 
-- `results/model_selection.json`
-- `results/model_selection.csv`
+These wrappers are the most useful ones to keep in sync with the public repo:
 
-## Scaling job (E2)
+- `paper_train_enhanced.sh`
+- `paper_mi_benchmark.sh`
+- `paper_tc_benchmark.sh`
+- `paper_mi_consistency.sh`
 
-To generate the real scaling plot used in the draft (`drafts/figures/scaling_time_vs_d.pdf`), submit:
-
-```bash
-OUTPUT_BASE=/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula \
-sbatch slurm/paper_vdc_scaling.sh
-```
-
-This writes a scaling JSON under a new run directory and also updates:
-
-- `drafts/paper_outputs/e2_scaling_results.json`
-
-Then it runs `drafts/scripts/paper_artifacts.py all --force` so the paper figure is refreshed automatically.
-
-## Evaluation-only job
-
-If you already have checkpoints and just want the standardized benchmark:
+Typical usage:
 
 ```bash
-sbatch slurm/paper_vdc_model_selection.sh \
-  /path/to/model_step_100000.pt \
-  /path/to/other_model_step_100000.pt
-```
+OUTPUT_BASE="$PWD/results" sbatch slurm/paper_train_enhanced.sh
 
-This writes one combined JSON/CSV under a fresh run directory.
-
-## New Information Estimation Jobs (ICML 2026)
-
-### MI Self-Consistency Tests
-
-Tests Data Processing Inequality, Additivity, and Monotone Invariance:
-
-```bash
-sbatch slurm/paper_mi_consistency.sh
-```
-
-Output: `drafts/tables/tab_self_consistency.tex`
-
-### MI Estimation Benchmark
-
-Compares all MI estimators (KSG, MINE, InfoNCE, NWJ, MINDE):
-
-```bash
+PAPER_CHECKPOINT=/path/to/checkpoint.pt \
+OUTPUT_BASE="$PWD/results" \
 sbatch slurm/paper_mi_benchmark.sh
-```
 
-Output: `results/mi_benchmark_summary.json`
-
-### Total Correlation Benchmark
-
-Evaluates TC estimation across dimensions:
-
-```bash
+PAPER_CHECKPOINT=/path/to/checkpoint.pt \
+OUTPUT_BASE="$PWD/results" \
 sbatch slurm/paper_tc_benchmark.sh
 ```
 
-Output: `results/tc_benchmark.json`
+## Paper-Specific Jobs
 
-### Enhanced Training (Conditional + BB Families)
-
-Train with conditional copulas and two-parameter BB families for better vine estimation:
-
-```bash
-sbatch slurm/paper_train_enhanced.sh
-```
-
-This includes:
-- Conditional copulas (`conditional_gaussian`, `conditional_clayton`)
-- BB1/BB7 two-parameter families
-- Complex synthetic patterns
-
-## Notes
-
-- These jobs run `scripts/train_unified.py` via `torchrun` (DDP) for training.
-- The training configs in `configs/train/*.yaml` are copied into the run directory and augmented with a top-level `checkpoint_dir` so the run is self-contained.
-
-## MI estimators (KSG / MINE / MINDE)
-
-To run MI estimation baselines:
-
-```bash
-sbatch slurm/paper_vdc_mi_estimation.sh ksg
-sbatch slurm/paper_vdc_mi_estimation.sh mine
-sbatch slurm/paper_vdc_mi_estimation.sh minde
-```
+Several `paper_*` scripts were written to support manuscript assembly in a separate paper workspace. They are retained for completeness, but they are not required for package use and should be treated as research automation rather than supported public interfaces.

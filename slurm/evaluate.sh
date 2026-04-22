@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 
 # =============================================================================
-# Vine Diffusion Copula - Unified Evaluation Script
+# Vine Denoising Copula - Unified Evaluation Script
 # =============================================================================
 # Usage:
 #   CHECKPOINT=path/to/model.pt sbatch slurm/evaluate.sh
@@ -39,7 +39,7 @@ cd /n/holylabs/kempner_dev/Users/hsafaai/Code/vine_diffusion_copula
 mkdir -p slurm_logs
 
 echo "=============================================="
-echo "Vine Diffusion Copula - Evaluation"
+echo "Vine Denoising Copula - Evaluation"
 echo "=============================================="
 echo "Job ID: $SLURM_JOB_ID"
 echo "Node: $SLURM_NODELIST"

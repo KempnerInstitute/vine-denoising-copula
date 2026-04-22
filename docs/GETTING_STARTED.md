@@ -1,22 +1,23 @@
 # Getting Started
 
-This guide is the quickest path from a fresh clone to a working copula estimate or vine fit.
+This guide is a short path from a fresh clone to a working copula estimate or vine fit.
 
 ## Choose Your Path
 
 Most users want one of these:
 
-1. Use the official pretrained model
-2. Reproduce the paper checkpoint and figures
-3. Train a new model
+1. Use the released pretrained model
+2. Verify the released checkpoint
+3. Fit a vine copula
+4. Train a new model
 
 If you are not sure, start with the pretrained model.
 
 ## Installation
 
 ```bash
-git clone https://github.com/KempnerInstitute/vine_diffusion_copula.git
-cd vine_diffusion_copula
+git clone https://github.com/KempnerInstitute/vine-denoising-copula.git vine-denoising-copula
+cd vine-denoising-copula
 conda env create -f environment.yml
 conda activate vdc
 pip install -e .
@@ -33,13 +34,13 @@ python -c "import vdc; print(vdc.__version__)"
 List the packaged model ids:
 
 ```bash
-python scripts/download_pretrained.py --list
+vdc list-models
 ```
 
-Resolve the frozen paper model:
+Resolve the released model:
 
 ```bash
-python scripts/download_pretrained.py --model-id vdc-denoiser-m64-v1
+vdc resolve-model --model-id vdc-denoiser-m64-v1
 ```
 
 Run the example:
@@ -52,7 +53,7 @@ In Python:
 
 ```python
 import numpy as np
-from vdc.pretrained import estimate_pair_density_from_samples, load_pretrained_model
+from vdc import estimate_pair_density_from_samples, load_pretrained_model
 
 bundle = load_pretrained_model("vdc-denoiser-m64-v1", device="cpu")
 samples = np.random.rand(2000, 2)
@@ -60,13 +61,7 @@ density = estimate_pair_density_from_samples(bundle, samples)
 print(density.shape)
 ```
 
-## Path 2: Reproduce The Released Checkpoint
-
-Show the canonical paper checkpoint:
-
-```bash
-python scripts/show_paper_checkpoint.py
-```
+## Path 2: Verify The Released Checkpoint
 
 Run the release verification:
 
@@ -87,7 +82,6 @@ This produces:
 See:
 
 - [docs/reports/pretrained_release/PRETRAINED_RELEASE_VERIFICATION.md](reports/pretrained_release/PRETRAINED_RELEASE_VERIFICATION.md)
-- [docs/PAPER_REPRODUCIBILITY.md](PAPER_REPRODUCIBILITY.md)
 
 ## Path 3: Fit A Vine Copula
 
@@ -95,8 +89,7 @@ VDC expects pseudo-observations, meaning each marginal has already been mapped i
 
 ```python
 import numpy as np
-from vdc.pretrained import load_pretrained_model
-from vdc.vine.api import VineCopulaModel
+from vdc import VineCopulaModel, load_pretrained_model
 
 bundle = load_pretrained_model("vdc-denoiser-m64-v1", device="cpu")
 U = np.random.rand(1000, 5)
@@ -106,6 +99,13 @@ vine.fit(U, bundle.model, diffusion=bundle.diffusion)
 
 logpdf = vine.logpdf(U[:50])
 print(logpdf[:5])
+```
+
+The same flow is available from the command line when your data is already in pseudo-observation space:
+
+```bash
+vdc estimate-pair data/pair.npy --output results/density.npy
+vdc fit-vine data/pseudo_obs.npy --output results/vine.pkl --vine-type dvine
 ```
 
 ## Path 4: Train A New Model
@@ -161,13 +161,13 @@ Compare checkpoints:
 python scripts/model_selection.py --checkpoints checkpoints/*/model_step_*.pt --n-samples 2000
 ```
 
-Estimate MI with the paper checkpoint:
+Estimate MI with the released checkpoint:
 
 ```bash
-export PAPER_CHECKPOINT="$(python scripts/download_pretrained.py --model-id vdc-denoiser-m64-v1)"
+export VDC_CHECKPOINT="$(python scripts/download_pretrained.py --model-id vdc-denoiser-m64-v1)"
 python scripts/mi_estimation.py \
   --estimator dcd \
-  --checkpoint "${PAPER_CHECKPOINT}" \
+  --checkpoint "${VDC_CHECKPOINT}" \
   --device cpu \
   --n-samples 2000 \
   --out-json results/mi_benchmark_dcd.json
@@ -179,4 +179,3 @@ python scripts/mi_estimation.py \
 - [docs/USER_GUIDE.md](USER_GUIDE.md)
 - [docs/API.md](API.md)
 - [docs/MODEL_RELEASES.md](MODEL_RELEASES.md)
-- [docs/PAPER_REPRODUCIBILITY.md](PAPER_REPRODUCIBILITY.md)

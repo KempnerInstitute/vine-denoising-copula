@@ -137,7 +137,7 @@ def create_config(output_path: str = 'configs/train/custom_experiment.yaml'):
 
 def main():
     print("=" * 70)
-    print("Vine Diffusion Copula - Custom Training Example")
+    print("Vine Denoising Copula - Custom Training Example")
     print("=" * 70)
     
     # =========================================================================
@@ -280,4 +280,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

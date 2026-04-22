@@ -50,7 +50,7 @@ def demo_bivariate_estimation():
     print(f"\nLoading model on {device}...")
     
     model = DiffusionCopulaModel.from_checkpoint(checkpoint_path, device=device)
-    print("✓ Model loaded successfully")
+    print("Model loaded successfully")
     
     # Generate test data: Gaussian copula with strong correlation
     print("\nGenerating test data (Gaussian copula, ρ=0.7)...")
@@ -62,7 +62,7 @@ def demo_bivariate_estimation():
     Z[:, 1] = rho * Z[:, 0] + np.sqrt(1 - rho**2) * Z[:, 1]
     U = stats.norm.cdf(Z)
     
-    print(f"✓ Generated {n_samples} samples")
+    print(f"Generated {n_samples} samples")
     print(f"  Empirical Kendall's tau: {stats.kendalltau(U[:, 0], U[:, 1])[0]:.4f}")
     print(f"  Expected tau: {2/np.pi * np.arcsin(rho):.4f}")
     
@@ -72,7 +72,7 @@ def demo_bivariate_estimation():
         U, m=64, projection_iters=15
     )
     
-    print(f"✓ Density estimated on {density.shape[0]}×{density.shape[1]} grid")
+    print(f"Density estimated on {density.shape[0]}x{density.shape[1]} grid")
     print(f"  Density range: [{density.min():.4f}, {density.max():.4f}]")
     
     # Check normalization
@@ -116,7 +116,7 @@ def demo_hfunction():
     # Create h-function lookup
     hfunc = HFuncLookup(D_gauss)
     
-    print("\n✓ H-function lookup created")
+    print("\nH-function lookup created")
     
     # Test h-functions at specific points
     u_test = np.array([0.2, 0.5, 0.8])
@@ -141,7 +141,7 @@ def demo_hfunction():
         print(f"  q={q_test[i]:.1f} → u={u_recovered[i]:.4f} → h(u|v)={q_roundtrip[i]:.4f}")
     
     error = np.abs(q_roundtrip - q_test).mean()
-    print(f"\n✓ Mean roundtrip error: {error:.6f}")
+    print(f"\nMean roundtrip error: {error:.6f}")
     
     return hfunc
 
@@ -171,13 +171,13 @@ def demo_vine_structure():
     Z = np.random.multivariate_normal(np.zeros(d), Sigma, n)
     U = stats.norm.cdf(Z)
     
-    print("✓ Data generated")
+    print("Data generated")
     
     # Build D-vine
     print("\nBuilding D-vine structure...")
     dvine = build_dvine_structure(U)
     
-    print(f"\n✓ D-vine structure built:")
+    print("\nD-vine structure built:")
     print(f"  Dimension: {dvine.d}")
     print(f"  Number of trees: {len(dvine.trees)}")
     print(f"  Total edges: {dvine.num_edges()}")
@@ -213,7 +213,7 @@ def demo_vine_fitting():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"\nLoading diffusion model on {device}...")
     diff_model = DiffusionCopulaModel.from_checkpoint(checkpoint_path, device=device)
-    print("✓ Model loaded")
+    print("Model loaded")
     
     # Generate 4-dimensional data
     np.random.seed(123)
@@ -234,7 +234,7 @@ def demo_vine_fitting():
     # Build structure
     print("\nBuilding D-vine structure...")
     structure = build_dvine_structure(U)
-    print(f"✓ Structure built with order: {structure.order}")
+    print(f"Structure built with order: {structure.order}")
     
     # Fit pair copulas for Tree 1
     print("\nFitting Tree 1 pair copulas...")
@@ -264,7 +264,7 @@ def demo_vine_fitting():
         
         print(f"    Density range: [{density.min():.4f}, {density.max():.4f}]")
     
-    print(f"\n✓ Fitted {len(pair_copulas)} pair copulas for Tree 1")
+    print(f"\nFitted {len(pair_copulas)} pair copulas for Tree 1")
     
     # Demonstrate h-function transform for Tree 2
     print("\nDemonstrating h-function transform for Tree 2...")
@@ -293,7 +293,7 @@ def demo_vine_fitting():
         ks_stat, ks_pval = kstest(h_0_1, 'uniform')
         print(f"\n  PIT test for h(U_{order[0]}|U_{order[1]}): KS p-value = {ks_pval:.4f}")
     
-    print("\n✓ Vine copula fitting demonstration complete!")
+    print("\nVine copula fitting demonstration complete.")
     
     return pair_copulas
 
@@ -349,4 +349,3 @@ the bivariate diffusion copula model as a building block!
 
 if __name__ == "__main__":
     main()
-
