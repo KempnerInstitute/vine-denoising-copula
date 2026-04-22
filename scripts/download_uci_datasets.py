@@ -5,15 +5,21 @@ Downloads Power, Gas, HEPMASS, and MiniBoone datasets and saves them
 in the expected format for vdc.data.tabular.maybe_load_uci().
 """
 
-import os
-import sys
 import argparse
+import sys
 import urllib.request
-import zipfile
-import tarfile
 import gzip
 from pathlib import Path
+import tarfile
+import zipfile
+
 import numpy as np
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from vdc.data.paths import data_root
 
 # Dataset URLs and configurations
 UCI_DATASETS = {
@@ -86,11 +92,11 @@ def preprocess_power(raw_dir: Path, out_dir: Path):
         except Exception as e:
             print(f"  pandas failed: {e}")
     
-    # Create placeholder if all else fails
     if data is None:
-        print("  Warning: Could not load Power dataset, creating placeholder")
-        np.random.seed(42)
-        data = np.random.randn(9568, 4).astype(np.float32)
+        raise RuntimeError(
+            "Could not load the Power dataset from the downloaded archive. "
+            "Install openpyxl and verify the archive contents."
+        )
     
     # Split into train/test (80/20)
     n = len(data)
@@ -135,19 +141,15 @@ def preprocess_gas(raw_dir: Path, out_dir: Path):
                 pass
     
     if not all_data:
-        print("  Warning: Could not parse Gas dataset, creating placeholder")
-        # Create placeholder
-        np.random.seed(42)
-        train = np.random.randn(10000, 8).astype(np.float32)
-        test = np.random.randn(2000, 8).astype(np.float32)
-    else:
-        data = np.array(all_data, dtype=np.float32)
-        n = len(data)
-        np.random.seed(42)
-        idx = np.random.permutation(n)
-        split = int(0.8 * n)
-        train = data[idx[:split]]
-        test = data[idx[split:]]
+        raise RuntimeError("Could not parse the Gas dataset after download and extraction.")
+
+    data = np.array(all_data, dtype=np.float32)
+    n = len(data)
+    np.random.seed(42)
+    idx = np.random.permutation(n)
+    split = int(0.8 * n)
+    train = data[idx[:split]]
+    test = data[idx[split:]]
     
     out_dir.mkdir(parents=True, exist_ok=True)
     np.savez(out_dir / 'gas.npz', train=train, test=test)
@@ -170,9 +172,7 @@ def preprocess_hepmass(raw_dir: Path, out_dir: Path):
             # Remove mass column (column 0 after removing label)
             data = np.delete(data, 0, axis=1)
     else:
-        print("  Warning: Could not find HEPMASS CSV, creating placeholder")
-        np.random.seed(42)
-        data = np.random.randn(100000, 21).astype(np.float32)
+        raise RuntimeError("Could not find the HEPMASS CSV after download and extraction.")
     
     data = data.astype(np.float32)
     n = len(data)
@@ -204,9 +204,7 @@ def preprocess_miniboone(raw_dir: Path, out_dir: Path):
         # Use signal events only for cleaner distribution
         data = data[:n_signal]
     else:
-        print("  Warning: Could not find MiniBooNE data, creating placeholder")
-        np.random.seed(42)
-        data = np.random.randn(50000, 50).astype(np.float32)
+        raise RuntimeError("Could not find the MiniBooNE data after download.")
     
     data = data.astype(np.float32)
     n = len(data)
@@ -247,16 +245,7 @@ def download_and_prepare(dataset: str, output_base: Path):
         try:
             download_file(url, dl_path)
         except Exception as e:
-            print(f"  Download failed: {e}")
-            print("  Creating placeholder dataset...")
-            # Create placeholder and continue
-            out_dir.mkdir(parents=True, exist_ok=True)
-            np.random.seed(42)
-            train = np.random.randn(10000, 10).astype(np.float32)
-            test = np.random.randn(2000, 10).astype(np.float32)
-            np.savez(out_dir / f'{dataset}.npz', train=train, test=test)
-            print(f"  Created placeholder {dataset}.npz")
-            return True
+            raise RuntimeError(f"Download failed for {dataset}: {e}") from e
     
     # Extract
     if cfg['extract'] == 'zip':
@@ -284,25 +273,38 @@ def download_and_prepare(dataset: str, output_base: Path):
 
 def main():
     parser = argparse.ArgumentParser(description='Download UCI datasets')
-    parser.add_argument('--output-base', type=str, 
-                        default=os.environ.get('OUTPUT_BASE', 
-                            '/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula'),
-                        help='Base output directory')
+    parser.add_argument(
+        '--output-base',
+        type=str,
+        default=None,
+        help='Directory that will contain raw/ and uci/ subdirectories (defaults to DATA_ROOT or repo-local data/).',
+    )
     parser.add_argument('--datasets', nargs='+', 
                         default=['power', 'gas', 'hepmass', 'miniboone'],
                         help='Datasets to download')
     args = parser.parse_args()
     
-    output_base = Path(args.output_base) / 'datasets'
+    output_base = Path(args.output_base).expanduser() if args.output_base else data_root()
     print(f"Output base: {output_base}")
-    
+
+    failures = []
     for ds in args.datasets:
         if ds not in UCI_DATASETS:
             print(f"Unknown dataset: {ds}")
             continue
-        download_and_prepare(ds, output_base)
+        try:
+            download_and_prepare(ds, output_base)
+        except Exception as exc:
+            failures.append((ds, exc))
+            print(f"Failed to prepare {ds}: {exc}")
     
     print("\n" + "="*60)
+    if failures:
+        print("Completed with failures.")
+        for ds, exc in failures:
+            print(f"  {ds}: {exc}")
+        print("="*60)
+        raise SystemExit(1)
     print("Done! Datasets saved to:", output_base / 'uci')
     print("="*60)
 

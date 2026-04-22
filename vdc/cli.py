@@ -38,7 +38,7 @@ def _save_json(path: Path, payload: dict[str, Any]) -> None:
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="vdc",
-        description="Command-line tools for the public Vine Diffusion Copula release.",
+        description="Command-line tools for the public Vine Denoising Copula release.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 

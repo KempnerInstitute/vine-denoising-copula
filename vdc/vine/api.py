@@ -161,7 +161,7 @@ class VineCopulaModel:
             )
         
         if verbose:
-            print(f"✓ Built {self.vine_type.upper()} structure:")
+            print(f"Built {self.vine_type.upper()} structure:")
             print(f"  Trees: {len(self.structure.trees)}")
             print(f"  Total edges: {self.structure.num_edges()}")
             print(f"  Order: {self.structure.order}")
@@ -283,7 +283,7 @@ class VineCopulaModel:
         self.fitted = True
         
         if verbose:
-            print(f"\n✓ Vine fitting complete!")
+            print("\nVine fitting complete.")
             print(f"{'='*60}\n")
 
     @torch.no_grad()
@@ -618,7 +618,7 @@ class VineCopulaModel:
         self.fitted = True
 
         if verbose:
-            print(f"\n✓ R-vine fitting complete!")
+            print("\nR-vine fitting complete.")
             print(f"  Trees: {len(self.structure.trees)}")
             print(f"  Total edges: {self.structure.num_edges()}")
             if self.structure.order is not None:
@@ -924,7 +924,7 @@ class VineCopulaModel:
         with open(filepath, 'wb') as f:
             pickle.dump(state, f)
         
-        print(f"✓ Saved vine model to {filepath}")
+        print(f"Saved vine model to {filepath}")
     
     @classmethod
     def load(cls, filepath: Union[str, Path]) -> 'VineCopulaModel':
@@ -958,7 +958,7 @@ class VineCopulaModel:
         model.vine = state['vine']
         model.fitted = state['fitted']
         
-        print(f"✓ Loaded vine model from {filepath}")
+        print(f"Loaded vine model from {filepath}")
         return model
     
     def summary(self) -> Dict[str, Any]:
@@ -1095,7 +1095,7 @@ if __name__ == "__main__":
     cvine_model = VineCopulaModel(vine_type='cvine', m=64, device='cpu')
     # cvine_model.fit(U, dummy_model, verbose=True)
     
-    print("\n✓ High-level API test completed!")
+    print("\nHigh-level API test completed.")
     print("\nUsage example:")
     print("""
     # Load trained diffusion model

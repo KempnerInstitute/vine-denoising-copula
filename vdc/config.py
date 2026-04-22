@@ -1,5 +1,5 @@
 """
-Configuration Management for Vine Diffusion Copula.
+Configuration management for Vine Denoising Copula.
 
 Provides utilities for:
 - Loading YAML configurations

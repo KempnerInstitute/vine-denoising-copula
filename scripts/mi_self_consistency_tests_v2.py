@@ -17,8 +17,8 @@ Estimators:
     group MI via TC on the 4D copula (D-vine) for the additivity test.
 
 Outputs:
-  - JSON: results/mi_self_consistency.json (for paper_artifacts.py)
-  - LaTeX table: drafts/tables/tab_self_consistency.tex (optional convenience)
+  - JSON: results/mi_self_consistency.json
+  - LaTeX table: an optional user-chosen output path
 """
 
 from __future__ import annotations

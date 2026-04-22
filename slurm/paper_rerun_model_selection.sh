@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Diffusion Copula (ICML 2026) - RERUN MODEL SELECTION INTO AN EXISTING RUN
+# Vine Denoising Copula (ICML 2026) - RERUN MODEL SELECTION INTO AN EXISTING RUN
 # ============================================================================
 # Motivation:
 #   Sometimes a training run finishes but the post-hoc model_selection step fails
@@ -43,7 +43,7 @@ RUN_DIR="$1"
 shift
 
 echo "============================================================================"
-echo "Vine Diffusion Copula PAPER EVAL (rerun): model_selection"
+echo "Vine Denoising Copula PAPER EVAL (rerun): model_selection"
 echo "============================================================================"
 echo "Job ID: ${SLURM_JOB_ID:-}"
 echo "Node: $(hostname)"

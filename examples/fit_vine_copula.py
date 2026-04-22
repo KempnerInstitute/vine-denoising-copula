@@ -307,7 +307,7 @@ def main():
     args = parser.parse_args()
     
     print("=" * 70)
-    print("Vine Diffusion Copula - Vine Copula Fitting Example")
+    print("Vine Denoising Copula - Vine Copula Fitting Example")
     print("=" * 70)
     
     d = args.dimension
@@ -388,7 +388,7 @@ def main():
     for j in range(d):
         _, pval = kstest(W[:, j], 'uniform')
         ks_pvalues.append(pval)
-        status = "✓" if pval > 0.05 else "✗"
+        status = "pass" if pval > 0.05 else "fail"
         print(f"    W{j+1}: p = {pval:.4f} {status}")
     
     print(f"\n  Mean KS p-value: {np.mean(ks_pvalues):.4f}")

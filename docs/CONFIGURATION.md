@@ -1,6 +1,6 @@
 # Configuration Guide
 
-This guide explains how to configure the Vine Diffusion Copula package for different tasks:
+This guide explains how to configure the Vine Denoising Copula package for different tasks:
 1. **Training** - Train a diffusion model for copula density estimation
 2. **Density Estimation** - Use a trained model to estimate copula densities
 3. **Vine Sampling** - Fit a vine copula and generate samples

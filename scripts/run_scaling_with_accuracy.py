@@ -360,7 +360,7 @@ def run_pyvine_experiment(
         rho=rho,
         repeat=repeat,
         seed=seed,
-        m=64,  # placeholder
+        m=64,
         tc_true=tc_true,
         tc_pred=tc_pred,
         tc_err=tc_err,

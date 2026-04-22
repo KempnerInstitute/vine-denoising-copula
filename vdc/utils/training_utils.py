@@ -247,7 +247,7 @@ def check_density_sanity(D, name='density', verbose=True):
         issues.append(f"{name}_total_mass = {total_mass:.3f} far from 1.0")
     
     if verbose and issues:
-        print(f"⚠️  Sanity check warnings for {name}:")
+        print(f"Sanity check warnings for {name}:")
         for issue in issues:
             print(f"   {issue}")
     

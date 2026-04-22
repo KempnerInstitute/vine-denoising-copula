@@ -1,5 +1,5 @@
 # =============================================================================
-# Vine Diffusion Copula - Training Configuration
+# Vine Denoising Copula - Training Configuration
 # =============================================================================
 # Main training configuration. Override via command line or experiment configs.
 # Usage:

@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Diffusion Copula (ICML 2026) - RERUN "COMPLEX" BENCHMARK INTO AN EXISTING RUN
+# Vine Denoising Copula (ICML 2026) - RERUN "COMPLEX" BENCHMARK INTO AN EXISTING RUN
 # ============================================================================
 # Evaluates a checkpoint on the *complex synthetic* copula suite (X / ring / double-banana),
 # writes results back into an existing RUN_DIR under OUTPUT_BASE.
@@ -42,7 +42,7 @@ RUN_DIR="$1"
 shift
 
 echo "============================================================================"
-echo "Vine Diffusion Copula PAPER EVAL (rerun): model_selection (COMPLEX SUITE)"
+echo "Vine Denoising Copula PAPER EVAL (rerun): model_selection (COMPLEX SUITE)"
 echo "============================================================================"
 echo "Job ID: ${SLURM_JOB_ID:-}"
 echo "Node: $(hostname)"

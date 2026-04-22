@@ -1,6 +1,6 @@
-"""Public package surface for Vine Diffusion Copula (VDC).
+"""Public package surface for Vine Denoising Copula (VDC).
 
-The release-ready API is centered on:
+The public API is centered on:
 
 - ``load_pretrained_model`` for loading the published checkpoint
 - ``estimate_pair_density_from_samples`` for bivariate copula estimation

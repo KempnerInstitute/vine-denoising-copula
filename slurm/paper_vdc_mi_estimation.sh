@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Diffusion Copula (ICML 2026) - MI ESTIMATION JOB
+# Vine Denoising Copula (ICML 2026) - MI ESTIMATION JOB
 # ============================================================================
 # Usage:
 #   sbatch slurm/paper_vdc_mi_estimation.sh <estimator>
@@ -47,7 +47,7 @@ EST="$1"
 METHOD="mi_${EST}"
 
 echo "============================================================================"
-echo "Vine Diffusion Copula PAPER MI ESTIMATION"
+echo "Vine Denoising Copula PAPER MI ESTIMATION"
 echo "============================================================================"
 echo "Job ID: ${SLURM_JOB_ID:-}"
 echo "Node: $(hostname)"

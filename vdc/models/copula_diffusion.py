@@ -373,4 +373,4 @@ if __name__ == "__main__":
     print(f"V marginal std: {v_marginal.std():.6f} (should be small)")
     print(f"Total mass: {density_proj.mean():.6f} (should be ~1/{m**2} = {1/m**2:.6f})")
     
-    print("\n✓ Copula-aware diffusion tests passed!")
+    print("\nCopula-aware diffusion tests passed.")

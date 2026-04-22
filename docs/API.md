@@ -1,8 +1,8 @@
-# Vine Diffusion Copula - API Documentation
+# Vine Denoising Copula - API Documentation
 
-Complete API reference for the Vine Diffusion Copula package.
+API reference for the Vine Denoising Copula package.
 
-The stable public API for the released package is:
+The public API for the released package is:
 
 - `vdc.load_pretrained_model`
 - `vdc.estimate_pair_density_from_samples`
@@ -56,7 +56,7 @@ vdc estimate-pair data/pair.npy --output results/density.npy
 vdc fit-vine data/pseudo_obs.npy --output results/vine.pkl --vine-type dvine
 ```
 
-The lower-level classes documented below remain available for advanced use, but the release-ready path above is the best starting point for most users.
+The lower-level classes documented below remain available for advanced use, but most users should start with the public API above.
 
 ---
 

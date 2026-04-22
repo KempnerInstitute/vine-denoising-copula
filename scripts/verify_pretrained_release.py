@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-# ruff: noqa: E402, I001
 """Verify that the official pretrained checkpoint is usable and paper-aligned."""
 
 from __future__ import annotations
 
 import argparse
 import json
-import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -19,15 +17,37 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT))
 
-from vdc.data.generators import analytic_logpdf_grid, sample_bicop  # noqa: E402
-from vdc.models.projection import copula_project  # noqa: E402
-from vdc.pretrained import (  # noqa: E402
+
+def _load_vdc_imports():
+    if str(REPO_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPO_ROOT))
+    from vdc.data.generators import analytic_logpdf_grid, sample_bicop
+    from vdc.models.projection import copula_project
+    from vdc.pretrained import (
+        DEFAULT_PRETRAINED_MODEL_ID,
+        estimate_pair_density_from_samples,
+        load_pretrained_model,
+    )
+
+    return (
+        analytic_logpdf_grid,
+        sample_bicop,
+        copula_project,
+        DEFAULT_PRETRAINED_MODEL_ID,
+        estimate_pair_density_from_samples,
+        load_pretrained_model,
+    )
+
+
+(
+    analytic_logpdf_grid,
+    sample_bicop,
+    copula_project,
     DEFAULT_PRETRAINED_MODEL_ID,
     estimate_pair_density_from_samples,
     load_pretrained_model,
-)
+) = _load_vdc_imports()
 
 
 DEFAULT_CASES: List[Tuple[str, Dict[str, float], int, str]] = [
@@ -70,26 +90,43 @@ def _ise(d_pred: np.ndarray, d_true: np.ndarray, m: int) -> float:
     return float(np.mean((d_pred - d_true) ** 2) * du * du)
 
 
-def _run_qualitative_figure(checkpoint: Path, out_dir: Path, device: str) -> Dict[str, Any]:
+def _write_qualitative_figure(cases: List[Dict[str, Any]], out_dir: Path) -> Dict[str, Any]:
+    subset = cases[: min(3, len(cases))]
+    fig, axes = plt.subplots(2, len(subset), figsize=(3.2 * len(subset), 4.4), squeeze=False)
+    metrics: Dict[str, Any] = {}
+
+    for idx, row in enumerate(subset):
+        d_true = np.asarray(row["density_true"], dtype=np.float64)
+        d_pred = np.asarray(row["density_pred"], dtype=np.float64)
+        vmax = float(max(d_true.max(), d_pred.max()))
+
+        axes[0, idx].imshow(d_true, origin="lower", extent=[0, 1, 0, 1], cmap="magma", vmin=0.0, vmax=vmax)
+        axes[1, idx].imshow(d_pred, origin="lower", extent=[0, 1, 0, 1], cmap="magma", vmin=0.0, vmax=vmax)
+        axes[0, idx].set_title(str(row["label"]), fontsize=9)
+        axes[0, idx].set_xticks([])
+        axes[0, idx].set_yticks([])
+        axes[1, idx].set_xticks([])
+        axes[1, idx].set_yticks([])
+        axes[1, idx].set_xlabel(f"ISE={row['ise']:.2e}", fontsize=8)
+        metrics[f"ise_{str(row['family']).lower()}"] = float(row["ise"])
+
+    axes[0, 0].set_ylabel("True", fontsize=9)
+    axes[1, 0].set_ylabel("VDC", fontsize=9)
+    fig.tight_layout()
+
     out_pdf = out_dir / "fig_copula_example_main_verify.pdf"
     out_png = out_dir / "fig_copula_example_main_verify.png"
     out_json = out_dir / "fig_copula_example_main_verify_metrics.json"
-    cmd = [
-        sys.executable,
-        str(REPO_ROOT / "drafts" / "scripts" / "generate_fig_copula_example_main.py"),
-        "--checkpoint",
-        str(checkpoint),
-        "--device",
-        device,
-        "--out-pdf",
-        str(out_pdf),
-        "--out-png",
-        str(out_png),
-        "--out-json",
-        str(out_json),
-    ]
-    subprocess.run(cmd, check=True, cwd=REPO_ROOT)
-    return json.loads(out_json.read_text())
+    fig.savefig(out_pdf)
+    fig.savefig(out_png, dpi=200)
+    plt.close(fig)
+    out_json.write_text(json.dumps(metrics, indent=2) + "\n")
+
+    return {
+        "pdf": str(out_pdf),
+        "png": str(out_png),
+        "metrics": metrics,
+    }
 
 
 def _write_summary_markdown(summary: Dict[str, Any], out_path: Path) -> None:
@@ -118,8 +155,8 @@ def _write_summary_markdown(summary: Dict[str, Any], out_path: Path) -> None:
         lines.append("")
         lines.append(f"- PNG: `{fig['png']}`")
         lines.append(f"- PDF: `{fig['pdf']}`")
-        lines.append(f"- DCD ISE: `{fig['metrics'].get('ise_dcd_one_shot', float('nan'))}`")
-        lines.append(f"- pyvine ISE: `{fig['metrics'].get('ise_pyvine_selected', float('nan'))}`")
+        for key, value in sorted(fig["metrics"].items()):
+            lines.append(f"- {key}: `{value}`")
     out_path.write_text("\n".join(lines) + "\n")
 
 
@@ -181,6 +218,8 @@ def main() -> None:
             "mass_err": abs(mass - 1.0),
             "density_min": float(d_pred.min()),
             "density_max": float(d_pred.max()),
+            "density_true": d_true_eval.tolist(),
+            "density_pred": d_pred.tolist(),
         }
         records.append(rec)
 
@@ -219,12 +258,11 @@ def main() -> None:
     }
 
     if not args.skip_qualitative_figure:
-        qual = _run_qualitative_figure(bundle.checkpoint_path, out_dir, args.device)
-        summary["qualitative_figure"] = {
-            "pdf": str(out_dir / "fig_copula_example_main_verify.pdf"),
-            "png": str(out_dir / "fig_copula_example_main_verify.png"),
-            "metrics": qual,
-        }
+        summary["qualitative_figure"] = _write_qualitative_figure(records, out_dir)
+
+    for row in summary["cases"]:
+        row.pop("density_true", None)
+        row.pop("density_pred", None)
 
     json_path = out_dir / "pretrained_release_verification.json"
     json_path.write_text(json.dumps(summary, indent=2) + "\n")

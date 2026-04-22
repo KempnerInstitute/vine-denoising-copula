@@ -374,7 +374,7 @@ def test_sample_size_invariance():
         corr, _ = spearmanr(h1, h2)
         print(f"  n={n_values[i]} vs n={n_values[i+1]}: ρ={corr:.4f}")
     
-    print("\n✓ Histograms are sample-size invariant (after normalization)")
+    print("\nHistograms are sample-size invariant after normalization.")
 
 
 if __name__ == "__main__":

@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -207,9 +207,7 @@ def fig_scaling_time_vs_dim(scaling_data: Dict, output_path: Path):
 def fig_tc_vs_dim_real(accuracy_data: Dict, output_path: Path):
     """Generate TC error vs dimension figure from real data."""
     if not accuracy_data:
-        print("No accuracy data found, generating placeholder")
-        _generate_placeholder_tc_fig(output_path)
-        return
+        raise FileNotFoundError("No scaling-accuracy results were found under the selected output base.")
     
     fig, ax = plt.subplots(figsize=(6, 4))
     
@@ -259,9 +257,7 @@ def fig_tc_vs_dim_real(accuracy_data: Dict, output_path: Path):
 def fig_nll_vs_dim_real(accuracy_data: Dict, output_path: Path):
     """Generate NLL error vs dimension figure from real data."""
     if not accuracy_data:
-        print("No accuracy data found, generating placeholder")
-        _generate_placeholder_nll_fig(output_path)
-        return
+        raise FileNotFoundError("No scaling-accuracy results were found under the selected output base.")
     
     fig, ax = plt.subplots(figsize=(6, 4))
     
@@ -462,70 +458,25 @@ def fig_mi_comparison(mi_data: Dict[str, Dict], output_path: Path):
     print(f"Saved: {output_path}")
 
 
-def _generate_placeholder_tc_fig(output_path: Path):
-    """Generate placeholder TC figure with synthetic data."""
-    fig, ax = plt.subplots(figsize=(6, 4))
-    
-    dims = [2, 5, 10, 20, 50, 100, 200]
-    
-    # Synthetic data - replace with real when available
-    for method, base_err, growth, color, marker in [
-        ('DCD (ours)', 0.02, 0.3, COLORS['ours'], 'o'),
-        ('pyvine (param)', 0.03, 0.35, COLORS['pyvine_param'], 'v'),
-        ('pyvine (TLL)', 0.025, 0.32, COLORS['pyvine_nonpar'], '<'),
-    ]:
-        y = [base_err * (d ** growth) for d in dims]
-        ax.loglog(dims, y, marker=marker, color=color, label=method, markersize=6, linewidth=2)
-    
-    ax.set_xlabel("Dimension $d$")
-    ax.set_ylabel("TC Error (nats)")
-    ax.set_title("Total Correlation Estimation Error vs. Dimension\n(placeholder - run scaling experiments for real data)")
-    ax.legend(loc='upper left')
-    ax.grid(True, alpha=0.3)
-    
-    fig.savefig(output_path, bbox_inches='tight')
-    plt.close(fig)
-    print(f"Saved (placeholder): {output_path}")
-
-
-def _generate_placeholder_nll_fig(output_path: Path):
-    """Generate placeholder NLL figure with synthetic data."""
-    fig, ax = plt.subplots(figsize=(6, 4))
-    
-    dims = [2, 5, 10, 20, 50, 100, 200]
-    
-    for method, base_err, growth, color, marker in [
-        ('DCD (ours)', 0.05, 0.25, COLORS['ours'], 'o'),
-        ('pyvine (param)', 0.08, 0.28, COLORS['pyvine_param'], 'v'),
-        ('pyvine (TLL)', 0.06, 0.26, COLORS['pyvine_nonpar'], '<'),
-    ]:
-        y = [base_err * (d ** growth) for d in dims]
-        ax.loglog(dims, y, marker=marker, color=color, label=method, markersize=6, linewidth=2)
-    
-    ax.set_xlabel("Dimension $d$")
-    ax.set_ylabel("NLL Error (nats)")
-    ax.set_title("NLL Error vs. Dimension\n(placeholder - run scaling experiments for real data)")
-    ax.legend(loc='upper left')
-    ax.grid(True, alpha=0.3)
-    
-    fig.savefig(output_path, bbox_inches='tight')
-    plt.close(fig)
-    print(f"Saved (placeholder): {output_path}")
-
-
 def main():
     parser = argparse.ArgumentParser(description="Generate figures from real experiment results")
     repo_root = Path(__file__).resolve().parents[1]
-    parser.add_argument("--output_base", type=str,
-                        default="/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusion_copula",
-                        help="Base output directory with experiment results")
-    parser.add_argument("--figure_dir", type=str,
-                        default=str(repo_root / "drafts" / "figures"),
-                        help="Directory to save figures")
+    parser.add_argument(
+        "--output_base",
+        type=str,
+        default=os.environ.get("OUTPUT_BASE", str(repo_root / "results")),
+        help="Base output directory with experiment results",
+    )
+    parser.add_argument(
+        "--figure_dir",
+        type=str,
+        default=None,
+        help="Directory to save figures (defaults to <output_base>/figures)",
+    )
     args = parser.parse_args()
     
     output_base = Path(args.output_base)
-    figure_dir = Path(args.figure_dir)
+    figure_dir = Path(args.figure_dir) if args.figure_dir else (output_base / "figures")
     figure_dir.mkdir(parents=True, exist_ok=True)
     
     print("="*60)

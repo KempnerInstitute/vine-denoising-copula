@@ -1,12 +1,12 @@
 # Getting Started
 
-This guide is the quickest path from a fresh clone to a working copula estimate or vine fit.
+This guide is a short path from a fresh clone to a working copula estimate or vine fit.
 
 ## Choose Your Path
 
 Most users want one of these:
 
-1. Use the official pretrained model
+1. Use the released pretrained model
 2. Reproduce the paper checkpoint and figures
 3. Train a new model
 
@@ -60,9 +60,9 @@ density = estimate_pair_density_from_samples(bundle, samples)
 print(density.shape)
 ```
 
-## Path 2: Reproduce The Released Checkpoint
+## Path 2: Verify The Released Checkpoint
 
-Show the canonical paper checkpoint:
+Show the released checkpoint:
 
 ```bash
 python scripts/show_paper_checkpoint.py

@@ -156,7 +156,7 @@ def wrap_doc_page(*, title: str, body_html: str, current_out_rel: Path, repo_bas
   <body class="docs-page">
     <div class="doc-shell">
       <aside class="doc-sidebar">
-        <p class="eyebrow">Vine Diffusion Copula</p>
+        <p class="eyebrow">Vine Denoising Copula</p>
         <h1>{html.escape(title)}</h1>
         <p class="sidebar-copy">Usage, release, and reproducibility documentation for the VDC codebase.</p>
         <nav>

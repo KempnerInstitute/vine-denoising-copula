@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "vine-diffusion-copula"
 version = "0.1.0"
-description = "High-dimensional vine-copula modeling with diffusion-based bivariate copula estimation"
+description = "Vine Denoising Copula for high-dimensional vine-copula modeling and information estimation"
 readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "MIT"}

@@ -1,4 +1,4 @@
-# Vine Diffusion Copula (VDC)
+# Vine Denoising Copula (VDC)
 
 <p>
   <a href="https://github.com/KempnerInstitute/vine-diffusion-copula/actions/workflows/ci.yml"><img src="https://github.com/KempnerInstitute/vine-diffusion-copula/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
@@ -77,7 +77,7 @@ samples = vine.simulate(n=500)
 
 ### Command-line tools
 
-The installed `vdc` command exposes a small stable release surface:
+The installed `vdc` command supports the following public commands:
 
 ```bash
 vdc list-models
@@ -144,33 +144,15 @@ python scripts/model_selection.py --checkpoints checkpoints/*/model_step_*.pt --
 - [Model Releases](docs/MODEL_RELEASES.md)
 - [Paper Reproducibility](docs/PAPER_REPRODUCIBILITY.md)
 
-## Reproducing the paper
+## Reproducing released results
 
-Every number, table, and figure in the paper is regenerated from stored experiment artifacts by `drafts/scripts/paper_artifacts.py`. The canonical workflow is:
+This public repository supports:
 
-1. Install the package and download the released checkpoint:
-   ```bash
-   pip install -e .
-   python scripts/download_pretrained.py --model-id vdc-denoiser-m64-v1
-   ```
-2. Run benchmarks (each produces JSON artifacts under `drafts/paper_outputs/`). See `slurm/PAPER_JOBS.md` for the full list; representative runs:
-   ```bash
-   bash slurm/paper_e2_uci.sh                       # UCI copula-space density
-   bash slurm/paper_e13_ablation_depth_dense.sh     # corruption ablation
-   bash slurm/paper_mi_benchmark.sh                 # MI estimation
-   bash slurm/paper_tc_benchmark.sh                 # TC scaling
-   bash slurm/paper_seed_variance_array.sh          # 3-seed variance sweep
-   ```
-3. Regenerate figures and tables:
-   ```bash
-   python drafts/scripts/paper_artifacts.py all
-   ```
-4. Build the paper (ICML two-column):
-   ```bash
-   cd drafts && pdflatex vine_diffusion.tex && bibtex vine_diffusion \
-     && pdflatex vine_diffusion.tex && pdflatex vine_diffusion.tex
-   ```
-   For the single-column arXiv variant use `vine_diffusion_arxiv.tex`. Both wrappers share the same content under `drafts/content/`.
+- loading and verifying the released checkpoint
+- rerunning benchmark scripts that live in the package repo
+- regenerating the public verification reports under `docs/reports/`
+
+The manuscript sources and paper-only artifact assembly live in a separate paper workspace and are intentionally not part of this package release. For the public reproduction workflow, see [docs/PAPER_REPRODUCIBILITY.md](docs/PAPER_REPRODUCIBILITY.md).
 
 ## Citation
 

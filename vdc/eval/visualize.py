@@ -168,7 +168,7 @@ def plot_comparison(
     scale_mode: str = "independent",
 ) -> plt.Figure:
     """
-    Create comprehensive comparison plot: predicted vs true vs difference.
+    Create a comparison plot showing predicted, true, and error panels.
     
     Args:
         density_pred: (m, m) predicted density
@@ -244,7 +244,7 @@ def plot_comparison(
     
     if save_path:
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"✓ Saved: {save_path}")
+        print(f"Saved: {save_path}")
     
     return fig
 
@@ -365,7 +365,7 @@ def plot_marginals(
     
     if save_path:
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"✓ Saved: {save_path}")
+        print(f"Saved: {save_path}")
     
     return fig
 
@@ -443,7 +443,7 @@ def plot_multi_comparison(
     
     if save_path:
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"✓ Saved: {save_path}")
+        print(f"Saved: {save_path}")
     
     return fig
 
@@ -501,7 +501,7 @@ def plot_metrics_summary(
     
     if save_path:
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"✓ Saved: {save_path}")
+        print(f"Saved: {save_path}")
     
     return fig
 
@@ -590,7 +590,7 @@ def create_paper_figure(
     fig.suptitle(title, fontsize=16, fontweight='bold', y=0.99)
     
     plt.savefig(save_path, dpi=300, bbox_inches='tight')
-    print(f"✓ Saved publication figure: {save_path}")
+    print(f"Saved publication figure: {save_path}")
     
     return fig
 
@@ -632,19 +632,19 @@ if __name__ == "__main__":
     print("1. Testing density heatmap...")
     fig, ax, im = plot_density_heatmap(density_pred, title="Test Density", points=points)
     plt.close(fig)
-    print("✓ Density heatmap OK\n")
+    print("Density heatmap OK\n")
     
     print("2. Testing comparison plot...")
     metrics = {'ise': 0.0234, 'nll': -0.156, 'tau_error': 0.012}
     fig = plot_comparison(density_pred, density_true, title="Test Comparison", 
                           points=points, metrics=metrics)
     plt.close(fig)
-    print("✓ Comparison plot OK\n")
+    print("Comparison plot OK\n")
     
     print("3. Testing marginals plot...")
     fig = plot_marginals(density_pred, title="Test Marginals")
     plt.close(fig)
-    print("✓ Marginals plot OK\n")
+    print("Marginals plot OK\n")
     
     print("4. Testing multi-comparison...")
     results = [
@@ -655,7 +655,7 @@ if __name__ == "__main__":
     ]
     fig = plot_multi_comparison(results)
     plt.close(fig)
-    print("✓ Multi-comparison OK\n")
+    print("Multi-comparison OK\n")
     
     print("5. Testing metrics summary...")
     metrics_dict = {
@@ -665,7 +665,7 @@ if __name__ == "__main__":
     }
     fig = plot_metrics_summary(metrics_dict)
     plt.close(fig)
-    print("✓ Metrics summary OK\n")
+    print("Metrics summary OK\n")
     
     print("6. Testing paper figure...")
     fig = create_paper_figure(
@@ -675,8 +675,8 @@ if __name__ == "__main__":
         metrics=metrics
     )
     plt.close(fig)
-    print("✓ Paper figure OK\n")
+    print("Paper figure OK\n")
     
     print("="*60)
-    print("All visualization tests passed! ✓")
+    print("All visualization tests passed.")
     print("="*60)

@@ -1,5 +1,5 @@
 # =============================================================================
-# Vine Diffusion Copula - Inference Configuration
+# Vine Denoising Copula - Inference Configuration
 # =============================================================================
 # Configuration for evaluation, sampling, and visualization.
 # Usage:

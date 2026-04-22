@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Inference Script for Vine Diffusion Copula.
+Inference script for Vine Denoising Copula.
 
 Supports:
 - Density estimation from samples
@@ -75,7 +75,7 @@ def load_model(checkpoint_path: Path, device: torch.device) -> Tuple[torch.nn.Mo
     
     step = checkpoint.get('step', 'unknown')
     n_params = sum(p.numel() for p in model.parameters())
-    print(f"✓ Model loaded (step {step}, {n_params:,} parameters)")
+    print(f"Model loaded (step {step}, {n_params:,} parameters)")
     
     return model, diffusion, config
 
@@ -118,7 +118,7 @@ def visualize_density(
     plt.tight_layout()
     plt.savefig(output_path, dpi=150, bbox_inches='tight')
     plt.close()
-    print(f"✓ Saved visualization: {output_path}")
+    print(f"Saved visualization: {output_path}")
 
 
 def cmd_density(args):
@@ -168,7 +168,7 @@ def cmd_density(args):
     
     # Save density
     np.save(output_dir / 'density.npy', density)
-    print(f"✓ Saved density: {output_dir / 'density.npy'}")
+    print(f"Saved density: {output_dir / 'density.npy'}")
     
     # Visualize
     visualize_density(density, samples, output_dir / 'figures' / 'density.png')
@@ -185,7 +185,7 @@ def cmd_density(args):
     with open(output_dir / 'metadata.json', 'w') as f:
         json.dump(metadata, f, indent=2)
     
-    print(f"\n✓ Results saved to: {output_dir}")
+    print(f"\nResults saved to: {output_dir}")
 
 
 def cmd_sample(args):
@@ -198,8 +198,8 @@ def cmd_sample(args):
     
     print(f"Generating {args.n_samples} samples...")
     
-    # For now, generate from uniform and use inverse Rosenblatt
-    # This is a placeholder - full vine sampling would be more sophisticated
+    # This command provides a simple uniform-sample baseline. Structured vine
+    # sampling is available through the fitted-model APIs.
     np.random.seed(args.seed)
     samples = np.random.uniform(0, 1, (args.n_samples, args.dim))
     
@@ -213,7 +213,7 @@ def cmd_sample(args):
     
     # Save samples
     np.save(output_dir / 'samples.npy', samples)
-    print(f"✓ Saved samples: {output_dir / 'samples.npy'}")
+    print(f"Saved samples: {output_dir / 'samples.npy'}")
     
     # Visualize first two dimensions
     fig, ax = plt.subplots(figsize=(8, 8))
@@ -227,7 +227,7 @@ def cmd_sample(args):
     plt.savefig(output_dir / 'figures' / 'samples.png', dpi=150, bbox_inches='tight')
     plt.close()
     
-    print(f"\n✓ Results saved to: {output_dir}")
+    print(f"\nResults saved to: {output_dir}")
 
 
 def cmd_visualize(args):
@@ -280,12 +280,12 @@ def cmd_visualize(args):
             title=name
         )
     
-    print(f"\n✓ Results saved to: {output_dir}")
+    print(f"\nResults saved to: {output_dir}")
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Inference for Vine Diffusion Copula",
+        description="Inference for Vine Denoising Copula",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     
@@ -324,7 +324,7 @@ def main():
         sys.exit(1)
     
     print("=" * 60)
-    print("Vine Diffusion Copula - Inference")
+    print("Vine Denoising Copula - Inference")
     print("=" * 60)
     
     if args.command == 'density':

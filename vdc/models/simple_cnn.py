@@ -129,4 +129,4 @@ if __name__ == "__main__":
     
     print(f"Input shape: {x.shape}")
     print(f"Output shape: {out.shape}")
-    print(f"✓ Success!")
+    print("Success.")

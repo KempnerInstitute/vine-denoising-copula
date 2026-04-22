@@ -259,7 +259,7 @@ def evaluate_vine_copula(
     verbose: bool = True
 ) -> Dict[str, float]:
     """
-    Comprehensive evaluation of a vine copula model.
+    Evaluation of a vine copula model.
     
     Args:
         U_test: Test pseudo-observations

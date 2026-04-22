@@ -187,9 +187,9 @@ def _write_e1_examples_density_and_hfuncs(
     # Local import so headless SLURM eval jobs remain robust.
     import matplotlib
 
-    matplotlib.use("Agg")  # noqa: E402
-    import matplotlib.pyplot as plt  # noqa: E402
-    from matplotlib.backends.backend_pdf import PdfPages  # noqa: E402
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_pdf import PdfPages
 
     out_pdf.parent.mkdir(parents=True, exist_ok=True)
 

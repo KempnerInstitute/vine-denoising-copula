@@ -324,7 +324,7 @@ def generate_mixture_dataset(
             for idx in tqdm(range(n_samples))
         )
     
-    print(f"✓ Generated {n_samples} mixture samples in {output_path}")
+    print(f"Generated {n_samples} mixture samples in {output_path}")
 
 
 if __name__ == "__main__":

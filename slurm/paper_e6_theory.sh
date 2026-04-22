@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Diffusion Copula (ICML 2026) - E6 SYNTHETIC THEORY BENCHMARK JOB
+# Vine Denoising Copula (ICML 2026) - E6 SYNTHETIC THEORY BENCHMARK JOB
 # ============================================================================
 # Produces:
 #   RUN_DIR/results/e6_theory_synthetic_results.json
@@ -32,7 +32,7 @@ OUTPUT_BASE="${OUTPUT_BASE:-/n/holylfs06/LABS/kempner_project_b/Lab/vine_diffusi
 export OUTPUT_BASE
 
 echo "============================================================================"
-echo "Vine Diffusion Copula PAPER JOB: E6 synthetic theory benchmark"
+echo "Vine Denoising Copula PAPER JOB: E6 synthetic theory benchmark"
 echo "============================================================================"
 echo "Job ID: ${SLURM_JOB_ID:-}"
 echo "Node: $(hostname)"
