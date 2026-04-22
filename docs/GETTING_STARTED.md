@@ -15,8 +15,8 @@ If you are not sure, start with the pretrained model.
 ## Installation
 
 ```bash
-git clone https://github.com/KempnerInstitute/vine_diffusion_copula.git
-cd vine_diffusion_copula
+git clone https://github.com/KempnerInstitute/vine-diffusion-copula.git
+cd vine-diffusion-copula
 conda env create -f environment.yml
 conda activate vdc
 pip install -e .
@@ -33,13 +33,13 @@ python -c "import vdc; print(vdc.__version__)"
 List the packaged model ids:
 
 ```bash
-python scripts/download_pretrained.py --list
+vdc list-models
 ```
 
 Resolve the frozen paper model:
 
 ```bash
-python scripts/download_pretrained.py --model-id vdc-denoiser-m64-v1
+vdc resolve-model --model-id vdc-denoiser-m64-v1
 ```
 
 Run the example:
@@ -52,7 +52,7 @@ In Python:
 
 ```python
 import numpy as np
-from vdc.pretrained import estimate_pair_density_from_samples, load_pretrained_model
+from vdc import estimate_pair_density_from_samples, load_pretrained_model
 
 bundle = load_pretrained_model("vdc-denoiser-m64-v1", device="cpu")
 samples = np.random.rand(2000, 2)
@@ -95,8 +95,7 @@ VDC expects pseudo-observations, meaning each marginal has already been mapped i
 
 ```python
 import numpy as np
-from vdc.pretrained import load_pretrained_model
-from vdc.vine.api import VineCopulaModel
+from vdc import VineCopulaModel, load_pretrained_model
 
 bundle = load_pretrained_model("vdc-denoiser-m64-v1", device="cpu")
 U = np.random.rand(1000, 5)
@@ -106,6 +105,13 @@ vine.fit(U, bundle.model, diffusion=bundle.diffusion)
 
 logpdf = vine.logpdf(U[:50])
 print(logpdf[:5])
+```
+
+The same flow is available from the command line when your data is already in pseudo-observation space:
+
+```bash
+vdc estimate-pair data/pair.npy --output results/density.npy
+vdc fit-vine data/pseudo_obs.npy --output results/vine.pkl --vine-type dvine
 ```
 
 ## Path 4: Train A New Model

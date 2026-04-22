@@ -141,6 +141,7 @@ class CopulaPairs(Dataset):
             'hist': hist_tensor,
             'points': points_tensor,
             'log_pdf_grid': log_pdf_tensor,
+            'teacher_logpdf': log_pdf_tensor,
             'meta': meta,
         }
 
@@ -187,6 +188,7 @@ def collate_fn(batch: List[Dict[str, Any]]) -> Dict[str, Any]:
         'points': points,
         'points_mask': masks,
         'log_pdf_grid': log_pdfs,
+        'teacher_logpdf': log_pdfs,
         'meta': meta,
     }
 
@@ -243,6 +245,10 @@ def get_dataloader(
     )
     
     return loader
+
+
+# Backward-compatible alias used by older training entry points.
+CopulaPairsDataset = CopulaPairs
 
 
 if __name__ == "__main__":

@@ -10,7 +10,19 @@ readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "MIT"}
 authors = [
-    {name = "Kempner Institute", email = "hsafaai@fas.harvard.edu"}
+    {name = "Houman Safaai", email = "hsafaai@fas.harvard.edu"}
+]
+keywords = ["copulas", "vine copulas", "density estimation", "mutual information", "machine learning"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Mathematics",
 ]
 
 dependencies = [
@@ -22,17 +34,16 @@ dependencies = [
     "hydra-core>=1.3.0",
     "tqdm>=4.65.0",
     "h5py>=3.8.0",
-    "pandas>=2.0.0",
-    "seaborn>=0.12.0",
+    "PyYAML>=6.0",
     "scikit-learn>=1.2.0",
     "pyvinecopulib>=0.7.5",
-    "diffusers>=0.21.0",
-    "typer>=0.9.0",
-    "rich>=13.0.0",
-    "tensorboard>=2.13.0",
-    "pytest>=7.3.0",
-    "hypothesis>=6.75.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/KempnerInstitute/vine-diffusion-copula"
+Repository = "https://github.com/KempnerInstitute/vine-diffusion-copula"
+Issues = "https://github.com/KempnerInstitute/vine-diffusion-copula/issues"
+Documentation = "https://github.com/KempnerInstitute/vine-diffusion-copula/tree/main/docs"
 
 [project.optional-dependencies]
 dev = [
@@ -40,8 +51,18 @@ dev = [
     "black>=23.3.0",
     "mypy>=1.3.0",
     "pytest-cov>=4.1.0",
+    "pytest>=7.3.0",
+    "hypothesis>=6.75.0",
     "ipython>=8.12.0",
     "jupyter>=1.0.0",
+]
+test = [
+    "pytest>=7.3.0",
+    "hypothesis>=6.75.0",
+]
+viz = [
+    "seaborn>=0.12.0",
+    "pandas>=2.0.0",
 ]
 
 r-baselines = [
@@ -55,7 +76,7 @@ paper-baselines = [
 ]
 
 [project.scripts]
-vdc = "vdc.cli:app"
+vdc = "vdc.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

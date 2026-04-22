@@ -29,8 +29,8 @@
 ### Install
 
 ```bash
-git clone https://github.com/KempnerInstitute/vine_diffusion_copula.git
-cd vine_diffusion_copula
+git clone https://github.com/KempnerInstitute/vine-diffusion-copula.git
+cd vine-diffusion-copula
 conda env create -f environment.yml
 conda activate vdc
 pip install -e .
@@ -47,7 +47,7 @@ python examples/use_pretrained_model.py --model-id vdc-denoiser-m64-v1
 
 ```python
 import numpy as np
-from vdc.pretrained import estimate_pair_density_from_samples, load_pretrained_model
+from vdc import estimate_pair_density_from_samples, load_pretrained_model
 
 # Load pretrained edge estimator
 bundle = load_pretrained_model("vdc-denoiser-m64-v1", device="cpu")
@@ -62,8 +62,7 @@ print(density.shape)  # (64, 64)
 
 ```python
 import numpy as np
-from vdc.pretrained import load_pretrained_model
-from vdc.vine.api import VineCopulaModel
+from vdc import VineCopulaModel, load_pretrained_model
 
 bundle = load_pretrained_model("vdc-denoiser-m64-v1", device="cpu")
 U = np.random.rand(1000, 5)
@@ -74,6 +73,17 @@ vine.fit(U, bundle.model, diffusion=bundle.diffusion)
 # Evaluate
 loglik = vine.logpdf(U)
 samples = vine.simulate(n=500)
+```
+
+### Command-line tools
+
+The installed `vdc` command exposes a small stable release surface:
+
+```bash
+vdc list-models
+vdc resolve-model --model-id vdc-denoiser-m64-v1
+vdc estimate-pair data/pair.npy --output results/density.npy
+vdc fit-vine data/pseudo_obs.npy --output results/vine.pkl --vine-type dvine
 ```
 
 ## Core Workflow
@@ -136,7 +146,7 @@ python scripts/model_selection.py --checkpoints checkpoints/*/model_step_*.pt --
 
 ## Reproducing the paper
 
-Every number, table, and figure in the paper is regenerated from stored experiment artifacts by `drafts/scripts/paper_artifacts.py`. The canonical workflow:
+Every number, table, and figure in the paper is regenerated from stored experiment artifacts by `drafts/scripts/paper_artifacts.py`. The canonical workflow is:
 
 1. Install the package and download the released checkpoint:
    ```bash
