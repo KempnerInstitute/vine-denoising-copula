@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "vine-diffusion-copula"
+name = "vine-denoising-copula"
 version = "0.1.0"
 description = "Vine Denoising Copula for high-dimensional vine-copula modeling and information estimation"
 readme = "README.md"
@@ -40,10 +40,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/KempnerInstitute/vine-diffusion-copula"
-Repository = "https://github.com/KempnerInstitute/vine-diffusion-copula"
-Issues = "https://github.com/KempnerInstitute/vine-diffusion-copula/issues"
-Documentation = "https://github.com/KempnerInstitute/vine-diffusion-copula/tree/main/docs"
+Homepage = "https://github.com/KempnerInstitute/vine-denoising-copula"
+Repository = "https://github.com/KempnerInstitute/vine-denoising-copula"
+Issues = "https://github.com/KempnerInstitute/vine-denoising-copula/issues"
+Documentation = "https://github.com/KempnerInstitute/vine-denoising-copula/tree/main/docs"
 
 [project.optional-dependencies]
 dev = [
@@ -78,9 +78,18 @@ paper-baselines = [
 [project.scripts]
 vdc = "vdc.cli:main"
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["vdc*"]
+[tool.setuptools]
+packages = [
+    "vdc",
+    "vdc.baselines",
+    "vdc.data",
+    "vdc.losses",
+    "vdc.models",
+    "vdc.resources",
+    "vdc.resources.pretrained",
+    "vdc.train",
+    "vdc.utils",
+]
 
 [tool.setuptools.package-data]
 vdc = ["resources/pretrained/*.json"]

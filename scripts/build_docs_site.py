@@ -22,7 +22,6 @@ NAV_ITEMS = [
     ("API", Path("API.html")),
     ("Configuration", Path("CONFIGURATION.html")),
     ("Model Releases", Path("MODEL_RELEASES.html")),
-    ("Paper Reproducibility", Path("PAPER_REPRODUCIBILITY.html")),
 ]
 
 
@@ -34,7 +33,7 @@ def repo_web_base() -> str:
             text=True,
         ).strip()
     except Exception:
-        return "https://github.com/KempnerInstitute/vine-diffusion-copula"
+        return "https://github.com/KempnerInstitute/vine-denoising-copula"
 
     if raw.startswith("git@github.com:"):
         path = raw.split(":", 1)[1]
@@ -43,7 +42,7 @@ def repo_web_base() -> str:
         return f"https://github.com/{path}"
     if raw.startswith("https://github.com/"):
         return raw[:-4] if raw.endswith(".git") else raw
-    return "https://github.com/KempnerInstitute/vine-diffusion-copula"
+    return "https://github.com/KempnerInstitute/vine-denoising-copula"
 
 
 def rel_link(current: Path, target: Path) -> str:
@@ -158,7 +157,7 @@ def wrap_doc_page(*, title: str, body_html: str, current_out_rel: Path, repo_bas
       <aside class="doc-sidebar">
         <p class="eyebrow">Vine Denoising Copula</p>
         <h1>{html.escape(title)}</h1>
-        <p class="sidebar-copy">Usage, release, and reproducibility documentation for the VDC codebase.</p>
+        <p class="sidebar-copy">Usage, release, and verification documentation for the VDC codebase.</p>
         <nav>
           <ul>
             {nav_html}

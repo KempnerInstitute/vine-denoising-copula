@@ -1,24 +1,4 @@
 {
-  "checkpoint": "vdc-denoiser-m64-v1",
-  "model_type": "denoiser",
-  "copula_name": "Complex-X",
-  "copula_kind": "x",
-  "copula_params": {
-    "sigma": 0.03,
-    "w2": 1.0
-  },
-  "n_samples": 5000,
-  "n_plot": 2500,
-  "m": 64,
-  "seed": 123,
-  "device": "cpu",
-  "pyvine_selected_mode": "nonparametric_tll",
-  "ise_pyvine_selected": 0.00030537464185091396,
-  "time_ms_pyvine_selected": 892.0762469060719,
-  "ise_pyvine_tll": 0.00030537464185091396,
-  "ise_pyvine_param": 0.0008848131289672036,
-  "time_ms_pyvine_tll": 892.0762469060719,
-  "time_ms_pyvine_param": 1735.0397580303252,
-  "ise_dcd_one_shot": 7.517040785387508e-07,
-  "time_ms_dcd_one_shot": 557.3215531185269
+  "ise_independence": 9.77863762887049e-08,
+  "ise_gaussian": 1.2004651744277204e-06
 }

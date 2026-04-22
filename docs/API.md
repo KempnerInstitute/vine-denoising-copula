@@ -25,8 +25,8 @@ The public API for the released package is:
 ## Installation
 
 ```bash
-git clone https://github.com/KempnerInstitute/vine-diffusion-copula.git
-cd vine-diffusion-copula
+git clone https://github.com/KempnerInstitute/vine-denoising-copula.git vine-denoising-copula
+cd vine-denoising-copula
 pip install -e .
 ```
 

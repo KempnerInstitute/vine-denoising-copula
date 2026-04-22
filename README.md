@@ -1,13 +1,13 @@
 # Vine Denoising Copula (VDC)
 
 <p>
-  <a href="https://github.com/KempnerInstitute/vine-diffusion-copula/actions/workflows/ci.yml"><img src="https://github.com/KempnerInstitute/vine-diffusion-copula/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/KempnerInstitute/vine-diffusion-copula"><img src="https://img.shields.io/badge/python-3.9%2B-1f6feb" alt="Python"></a>
-  <a href="https://github.com/KempnerInstitute/vine-diffusion-copula/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-137333" alt="License"></a>
+  <a href="https://github.com/KempnerInstitute/vine-denoising-copula/actions/workflows/ci.yml"><img src="https://github.com/KempnerInstitute/vine-denoising-copula/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/KempnerInstitute/vine-denoising-copula"><img src="https://img.shields.io/badge/python-3.9%2B-1f6feb" alt="Python"></a>
+  <a href="https://github.com/KempnerInstitute/vine-denoising-copula/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-137333" alt="License"></a>
   <a href="https://huggingface.co/hsafaai/vdc-denoiser-m64-v1"><img src="https://img.shields.io/badge/Hugging%20Face-vdc--denoiser--m64--v1-f9d649" alt="Model"></a>
 </p>
 
-**VDC** is a method for fast high-dimensional vine copula inference via amortized bivariate estimation. It trains a single neural edge estimator once on synthetic copulas and reuses it across all O(d^2) vine edges, replacing expensive per-edge optimization with cheap GPU forward passes while preserving exact copula semantics.
+**VDC** is a Python package and released model for amortized vine-copula estimation. It trains a single neural edge estimator once on synthetic copulas and reuses it across all $O(d^2)$ vine edges, replacing repeated per-edge optimization with fast forward passes while preserving explicit copula structure.
 
 <p align="center">
   <img src="docs/assets/method_pipeline.png" alt="VDC method pipeline" width="100%">
@@ -29,8 +29,8 @@
 ### Install
 
 ```bash
-git clone https://github.com/KempnerInstitute/vine-diffusion-copula.git
-cd vine-diffusion-copula
+git clone https://github.com/KempnerInstitute/vine-denoising-copula.git vine-denoising-copula
+cd vine-denoising-copula
 conda env create -f environment.yml
 conda activate vdc
 pip install -e .
@@ -142,9 +142,8 @@ python scripts/model_selection.py --checkpoints checkpoints/*/model_step_*.pt --
 - [API Reference](docs/API.md)
 - [Configuration](docs/CONFIGURATION.md)
 - [Model Releases](docs/MODEL_RELEASES.md)
-- [Paper Reproducibility](docs/PAPER_REPRODUCIBILITY.md)
 
-## Reproducing released results
+## Verification
 
 This public repository supports:
 
@@ -152,17 +151,17 @@ This public repository supports:
 - rerunning benchmark scripts that live in the package repo
 - regenerating the public verification reports under `docs/reports/`
 
-The manuscript sources and paper-only artifact assembly live in a separate paper workspace and are intentionally not part of this package release. For the public reproduction workflow, see [docs/PAPER_REPRODUCIBILITY.md](docs/PAPER_REPRODUCIBILITY.md).
-
 ## Citation
 
-If you use this code or the Vine Denoising Copula method, please cite:
+If you use this software, please cite:
 
 ```bibtex
-@misc{vdc2026,
-  title        = {Amortized Vine Copulas for High-Dimensional Density and Information Estimation},
-  howpublished = {Kempner Institute at Harvard University},
-  year         = {2026},
+@software{safaai2026vdc,
+  author  = {Houman Safaai},
+  title   = {Vine Denoising Copula (VDC)},
+  year    = {2026},
+  version = {0.1.0},
+  url     = {https://github.com/KempnerInstitute/vine-denoising-copula}
 }
 ```
 

@@ -45,7 +45,6 @@ The staged directory will contain:
 - `vdc-denoiser-m64-v1.pt`
 - `train_config.yaml`
 - `manifest.json`
-- `paper_best_model.json`
 - `model_selection_joint_best.json`
 - a model-card `README.md`
 
@@ -120,7 +119,7 @@ python examples/use_pretrained_model.py --model-id vdc-denoiser-m64-v1
 
 ## Notes On Versioning
 
-- Keep the paper checkpoint frozen.
+- Keep the released checkpoint frozen.
 - If you publish a better later model, give it a new model id and version.
 - Do not silently replace the checkpoint behind `vdc-denoiser-m64-v1`.
 
