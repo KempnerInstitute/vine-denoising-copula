@@ -143,6 +143,14 @@ python scripts/model_selection.py --checkpoints checkpoints/*/model_step_*.pt --
 - [Configuration](docs/CONFIGURATION.md)
 - [Model Releases](docs/MODEL_RELEASES.md)
 
+## Associated Paper
+
+The public method paper for VDC is:
+
+- Houman Safaai, *Amortized Vine Copulas for High-Dimensional Density and Information Estimation*, arXiv:2604.20568, 2026
+- arXiv: https://arxiv.org/abs/2604.20568
+- DOI: https://doi.org/10.48550/arXiv.2604.20568
+
 ## Verification
 
 This public repository supports:
@@ -153,7 +161,7 @@ This public repository supports:
 
 ## Citation
 
-If you use this software, please cite:
+If you use this software, please cite the repository:
 
 ```bibtex
 @software{safaai2026vdc,
@@ -162,6 +170,19 @@ If you use this software, please cite:
   year    = {2026},
   version = {0.1.0},
   url     = {https://github.com/KempnerInstitute/vine-denoising-copula}
+}
+```
+
+If you use the VDC method, please also cite the paper:
+
+```bibtex
+@article{safaai2026amortized,
+  author  = {Houman Safaai},
+  title   = {Amortized Vine Copulas for High-Dimensional Density and Information Estimation},
+  journal = {arXiv preprint arXiv:2604.20568},
+  year    = {2026},
+  doi     = {10.48550/arXiv.2604.20568},
+  url     = {https://arxiv.org/abs/2604.20568}
 }
 ```
 
