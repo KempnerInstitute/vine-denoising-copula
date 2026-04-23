@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-message: "If you use this software, please cite this repository."
+message: "If you use this software, please cite the repository. If you use the VDC method, please also cite the associated paper."
 title: "Vine Denoising Copula (VDC)"
 abstract: >-
   Vine Denoising Copula (VDC) is an amortized vine-copula pipeline that
@@ -23,3 +23,14 @@ keywords:
   - amortized inference
 version: "0.1.0"
 date-released: "2026-04-22"
+preferred-citation:
+  type: article
+  title: "Amortized Vine Copulas for High-Dimensional Density and Information Estimation"
+  authors:
+    - family-names: "Safaai"
+      given-names: "Houman"
+      affiliation: "Kempner Institute for the Study of Natural and Artificial Intelligence at Harvard University"
+  year: 2026
+  doi: "10.48550/arXiv.2604.20568"
+  url: "https://arxiv.org/abs/2604.20568"
+  journal: "arXiv preprint arXiv:2604.20568"
