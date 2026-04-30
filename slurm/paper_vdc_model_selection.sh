@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Denoising Copula (ICML 2026) - MODEL SELECTION / EVAL JOB
+# Vine Denoising Copula (NeurIPS 2026) - MODEL SELECTION / EVAL JOB
 # ============================================================================
 # Usage:
 #   sbatch slurm/paper_vdc_model_selection.sh /path/to/ckpt1.pt /path/to/ckpt2.pt ...

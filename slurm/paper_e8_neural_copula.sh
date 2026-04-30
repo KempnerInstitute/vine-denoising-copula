@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Denoising Copula (ICML 2026) - E8 Neural Copula Benchmark
+# Vine Denoising Copula (NeurIPS 2026) - E8 Neural Copula Benchmark
 # ============================================================================
 # Focused rebuttal benchmark comparing VDC to ACNet on matched Archimedean
 # pair-copula edge tasks. Uses the existing paper VDC artifact by default,

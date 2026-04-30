@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Denoising Copula (ICML 2026) - E6 SYNTHETIC THEORY BENCHMARK JOB
+# Vine Denoising Copula (NeurIPS 2026) - E6 SYNTHETIC THEORY BENCHMARK JOB
 # ============================================================================
 # Produces:
 #   RUN_DIR/results/e6_theory_synthetic_results.json

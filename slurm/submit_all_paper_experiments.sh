@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================================
-# Master Script: Submit All Paper Experiments for ICML 2026
+# Master Script: Submit All Paper Experiments for NeurIPS 2026
 # ============================================================================
 # This script submits all E2-E5 experiments and TC/MI benchmarks that are
 # needed to populate the paper tables and figures.
@@ -19,7 +19,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${REPO_ROOT}"
 
 echo "============================================================================"
-echo "Submitting All Paper Experiments for ICML 2026"
+echo "Submitting All Paper Experiments for NeurIPS 2026"
 echo "============================================================================"
 echo "Date: $(date)"
 echo ""

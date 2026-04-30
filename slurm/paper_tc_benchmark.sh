@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Total Correlation (TC) Estimation Benchmark for ICML 2026 Paper
+# Total Correlation (TC) Estimation Benchmark for NeurIPS 2026 Paper
 # ============================================================================
 # Evaluates DCD-Vine's ability to estimate TC in high dimensions
 # via the vine decomposition: TC = Σ_edges I(U_i; U_j | U_D)

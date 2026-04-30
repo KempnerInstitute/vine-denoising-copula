@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Denoising Copula (ICML 2026) - MI ESTIMATION JOB
+# Vine Denoising Copula (NeurIPS 2026) - MI ESTIMATION JOB
 # ============================================================================
 # Usage:
 #   sbatch slurm/paper_vdc_mi_estimation.sh <estimator>

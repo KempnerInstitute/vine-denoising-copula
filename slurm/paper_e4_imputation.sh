@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Denoising Copula (ICML 2026) - E4 IMPUTATION JOB
+# Vine Denoising Copula (NeurIPS 2026) - E4 IMPUTATION JOB
 # ============================================================================
 # Produces:
 #   RUN_DIR/results/e4_imputation_results.json

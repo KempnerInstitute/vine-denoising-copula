@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Denoising Copula (ICML 2026) - E2 SCALING JOB
+# Vine Denoising Copula (NeurIPS 2026) - E2 SCALING JOB
 # ============================================================================
 # Runs the scaling benchmark (vine build time vs dimension) and writes:
 #   RUN_DIR/results/e2_scaling_results.json

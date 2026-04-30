@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Denoising Copula (ICML 2026) - E7 BIOMEDICAL BENCHMARK JOB
+# Vine Denoising Copula (NeurIPS 2026) - E7 BIOMEDICAL BENCHMARK JOB
 # ============================================================================
 # Produces:
 #   RUN_DIR/results/e7_biomed_results.json

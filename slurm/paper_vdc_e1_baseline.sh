@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Denoising Copula (ICML 2026) - E1 BASELINE (BIVARIATE) JOB
+# Vine Denoising Copula (NeurIPS 2026) - E1 BASELINE (BIVARIATE) JOB
 # ============================================================================
 # Usage:
 #   sbatch slurm/paper_vdc_e1_baseline.sh <baseline_name>

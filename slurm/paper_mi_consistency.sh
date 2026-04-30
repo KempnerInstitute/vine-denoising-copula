@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# MI Self-Consistency Tests for ICML 2026 Paper
+# MI Self-Consistency Tests for NeurIPS 2026 Paper
 # ============================================================================
 # Tests Data Processing Inequality, Additivity, and Monotone Invariance
 # for DCD-Vine vs baseline MI estimators (KSG, etc.)
