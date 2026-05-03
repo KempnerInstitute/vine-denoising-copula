@@ -26,7 +26,7 @@ from .recursion import VineRecursion, VinePairCopula
 from ..models.unet_grid import GridUNet
 from ..models.hfunc import HFuncLookup
 from ..models.projection import copula_project
-from ..inference.density import sample_density_grid, scatter_to_hist
+from ..inference.density import sample_density_grid, scatter_to_hist, scatter_to_hist_batch_gpu
 
 
 class VineCopulaModel:
@@ -69,6 +69,7 @@ class VineCopulaModel:
         hfunc_use_spline: bool = True,
         batch_edges: bool = False,
         edge_batch_size: int = 256,
+        gpu_histogram: bool = True,
     ):
         """
         Initialize vine copula model.
@@ -103,6 +104,7 @@ class VineCopulaModel:
         self.hfunc_use_spline = bool(hfunc_use_spline)
         self.batch_edges = bool(batch_edges)
         self.edge_batch_size = int(edge_batch_size)
+        self.gpu_histogram = bool(gpu_histogram)
         
         self.structure: Optional[VineStructure] = None
         self.vine: Optional[VineRecursion] = None
@@ -346,12 +348,17 @@ class VineCopulaModel:
             vv = torch.erfinv(2 * vv.clamp(eps, 1 - eps) - 1) * (2.0 ** 0.5)
         coords_1 = torch.stack([uu, vv], dim=0).unsqueeze(0)  # (1,2,m,m)
 
+        use_gpu_hist = bool(getattr(self, "gpu_histogram", True)) and (device.type == "cuda")
         for start in range(0, B_total, bs):
             chunk = pair_data_list[start : start + bs]
 
-            # Histograms (density integrating to 1).
-            hists = [scatter_to_hist(p, m=m, reflect=True) for p in chunk]
-            hist_t = torch.from_numpy(np.stack(hists, axis=0)).float().unsqueeze(1).to(device)  # (B,1,m,m)
+            # Histograms (density integrating to 1). The GPU path runs all
+            # edges in the chunk through a single batched scatter_add kernel.
+            if use_gpu_hist:
+                hist_t = scatter_to_hist_batch_gpu(chunk, m=m, device=device, reflect=True).unsqueeze(1)  # (B,1,m,m)
+            else:
+                hists = [scatter_to_hist(p, m=m, reflect=True) for p in chunk]
+                hist_t = torch.from_numpy(np.stack(hists, axis=0)).float().unsqueeze(1).to(device)
             x = hist_t
 
             if use_log_n:

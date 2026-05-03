@@ -599,6 +599,172 @@ def generate_clayton_vine(n: int, d: int, theta: float = 2.0, seed: Optional[int
     return U
 
 
+def generate_gaussian_clayton_vine(
+    n: int,
+    d: int,
+    seed: Optional[int] = None,
+    rho_range: Tuple[float, float] = (0.4, 0.8),
+    theta_range: Tuple[float, float] = (1.5, 4.0),
+) -> np.ndarray:
+    """Simple alternating Gaussian/Clayton D-vine generator.
+
+    Tree-1 edges alternate between Gaussian (with random rho per edge, sign
+    randomized) and Clayton (with random theta per edge). All formulas are
+    closed-form, so the resulting U has clean uniform marginals and valid
+    h-functions.
+
+    Hypothesis: pyvine-parametric must select the right family per edge
+    (Gaussian vs Clayton). pyvine-TLL must fit a kernel density per edge.
+    VDC's pretrained operator was trained on the full family zoo and should
+    handle both families uniformly.
+    """
+    rng = np.random.default_rng(seed)
+
+    def gauss_hinv(w, v, rho):
+        z_v = norm.ppf(np.clip(v, 1e-10, 1 - 1e-10))
+        z_w = norm.ppf(np.clip(w, 1e-10, 1 - 1e-10))
+        z = rho * z_v + np.sqrt(1.0 - rho * rho) * z_w
+        return norm.cdf(z)
+
+    def clayton_hinv(w, v, theta):
+        if theta < 1e-10:
+            return w
+        t = v ** (-theta) * (w ** (-theta / (1 + theta)) - 1) + 1
+        return np.clip(t ** (-1 / theta), 1e-10, 1 - 1e-10)
+
+    U = np.zeros((n, d))
+    W = rng.uniform(0, 1, size=(n, d))
+    U[:, 0] = W[:, 0]
+    edge_records: list[tuple[str, float]] = []
+    for j in range(1, d):
+        v = U[:, j - 1]
+        w = W[:, j]
+        if j % 2 == 1:
+            rho = float(rng.uniform(*rho_range)) * (1.0 if rng.random() < 0.5 else -1.0)
+            U[:, j] = np.clip(gauss_hinv(w, v, rho), 1e-10, 1 - 1e-10)
+            edge_records.append(("gaussian", rho))
+        else:
+            theta = float(rng.uniform(*theta_range))
+            U[:, j] = clayton_hinv(w, v, theta)
+            edge_records.append(("clayton", theta))
+    return U
+
+
+def generate_heterogeneous_vine(
+    n: int,
+    d: int,
+    seed: Optional[int] = None,
+    rotate_prob: float = 0.5,
+) -> np.ndarray:
+    """Generate samples from a D-vine where each tree-1 edge uses a randomly
+    chosen non-Gaussian family with a random per-edge parameter and (with prob
+    `rotate_prob`) a 180-degree rotation. This is the harder counterpart to
+    `generate_clayton_vine` -- it is not in the Gaussian-copula family, not in
+    a single Archimedean family, and pyvine-parametric must select per-edge.
+
+    Families used (mapped to Kendall tau in [0.3, 0.75]):
+      - clayton, gumbel, frank, joe, student-t (df=4)
+    """
+    rng = np.random.default_rng(seed)
+
+    def clayton_hinv(u, v, theta):
+        if theta < 1e-10:
+            return u
+        t = v ** (-theta) * (u ** (-theta / (1 + theta)) - 1) + 1
+        return np.clip(t ** (-1 / theta), 1e-10, 1 - 1e-10)
+
+    def gumbel_hinv(u, v, theta):
+        # Inverse of h-function for Gumbel; use Newton on h(z|v) = u with h
+        # numerically. Robust fallback: invert via bisection on z in (0,1).
+        z_lo = np.full_like(u, 1e-10)
+        z_hi = np.full_like(u, 1 - 1e-10)
+        for _ in range(40):
+            z = 0.5 * (z_lo + z_hi)
+            # Gumbel h_{U|V}(z|v) =  C(z,v)/v * (1 - log(z)/(log(z)+log(v))) (per Aas et al.)
+            log_z = np.log(np.clip(z, 1e-12, None))
+            log_v = np.log(np.clip(v, 1e-12, None))
+            t = ((-log_z) ** theta + (-log_v) ** theta) ** (1.0 / theta)
+            C = np.exp(-t)
+            h = (C / v) * ((-log_v) ** (theta - 1)) * t ** (1.0 / theta - 1)
+            # h is monotone increasing in z; if h<u we need higher z
+            z_lo = np.where(h < u, z, z_lo)
+            z_hi = np.where(h >= u, z, z_hi)
+        return 0.5 * (z_lo + z_hi)
+
+    def frank_hinv(u, v, theta):
+        if abs(theta) < 1e-8:
+            return u
+        em = np.exp(-theta)
+        emv = np.exp(-theta * v)
+        return -np.log(1.0 + u * (em - 1.0) / (emv + u * (1.0 - emv))) / theta
+
+    def joe_hinv(u, v, theta):
+        # bisection
+        z_lo = np.full_like(u, 1e-10)
+        z_hi = np.full_like(u, 1 - 1e-10)
+        for _ in range(40):
+            z = 0.5 * (z_lo + z_hi)
+            a = (1 - z) ** theta
+            b = (1 - v) ** theta
+            C = 1.0 - (a + b - a * b) ** (1.0 / theta)
+            h = (a + b - a * b) ** (1.0 / theta - 1) * b * (1 - a) / (1 - v)
+            z_lo = np.where(h < u, z, z_lo)
+            z_hi = np.where(h >= u, z, z_hi)
+        return 0.5 * (z_lo + z_hi)
+
+    def student_t_hinv(u, v, rho, df):
+        # Student-t conditional CDF inverse via numerical bisection on the standard
+        # parameterization in (-1,1) correlation rho and df.
+        z_lo = np.full_like(u, 1e-10)
+        z_hi = np.full_like(u, 1 - 1e-10)
+        for _ in range(40):
+            z = 0.5 * (z_lo + z_hi)
+            # h_{U|V}(z|v) = T_{df+1}( (T^{-1}_df(z) - rho T^{-1}_df(v)) / sqrt((df + T^{-1}_df(v)^2)(1-rho^2)/(df+1)) )
+            tu = student_t.ppf(np.clip(z, 1e-6, 1 - 1e-6), df=df)
+            tv = student_t.ppf(np.clip(v, 1e-6, 1 - 1e-6), df=df)
+            num = tu - rho * tv
+            denom = np.sqrt(((df + tv * tv) * (1 - rho * rho)) / (df + 1.0))
+            h = student_t.cdf(num / denom, df=df + 1)
+            z_lo = np.where(h < u, z, z_lo)
+            z_hi = np.where(h >= u, z, z_hi)
+        return 0.5 * (z_lo + z_hi)
+
+    families = ["clayton", "gumbel", "frank", "joe", "student"]
+    U = np.zeros((n, d))
+    W = rng.uniform(0, 1, size=(n, d))
+    U[:, 0] = W[:, 0]
+    chosen: list[tuple[str, dict, bool]] = []
+    for j in range(1, d):
+        v = U[:, j - 1]
+        w = W[:, j]
+        fam = families[rng.integers(0, len(families))]
+        rotate = bool(rng.random() < rotate_prob)
+        if fam == "clayton":
+            theta = float(rng.uniform(1.5, 4.0))
+            u_j = clayton_hinv(w, v if not rotate else 1 - v, theta)
+            if rotate:
+                u_j = 1 - u_j
+        elif fam == "gumbel":
+            theta = float(rng.uniform(1.5, 3.5))
+            u_j = gumbel_hinv(w, v if not rotate else 1 - v, theta)
+            if rotate:
+                u_j = 1 - u_j
+        elif fam == "frank":
+            theta = float(rng.uniform(3.0, 9.0)) * (1.0 if rng.random() < 0.5 else -1.0)
+            u_j = frank_hinv(w, v, theta)  # frank is symmetric, no rotation
+        elif fam == "joe":
+            theta = float(rng.uniform(1.6, 3.2))
+            u_j = joe_hinv(w, v if not rotate else 1 - v, theta)
+            if rotate:
+                u_j = 1 - u_j
+        else:
+            rho = float(rng.uniform(0.4, 0.85)) * (1.0 if rng.random() < 0.5 else -1.0)
+            u_j = student_t_hinv(w, v, rho, df=4)
+        U[:, j] = np.clip(u_j, 1e-10, 1 - 1e-10)
+        chosen.append((fam, {"theta_or_rho": float(theta) if fam != "student" else float(rho)}, rotate))
+    return U
+
+
 def generate_mixed_vine(n: int, d: int, seed: Optional[int] = None) -> np.ndarray:
     """Generate samples from mixed D-vine with alternating families."""
     if seed is not None:

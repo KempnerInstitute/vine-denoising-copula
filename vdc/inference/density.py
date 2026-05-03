@@ -12,6 +12,84 @@ import torch
 from vdc.models.projection import copula_project
 
 
+def scatter_to_hist_batch_gpu(
+    pair_data_list: list,
+    m: int,
+    device: torch.device,
+    reflect: bool = True,
+) -> torch.Tensor:
+    """Batched 2D-histogram on GPU. Equivalent to stacking
+    ``scatter_to_hist(p, m, reflect=reflect)`` for each ``p`` in
+    ``pair_data_list``, but runs in a single GPU kernel.
+
+    Args:
+        pair_data_list: list of B numpy arrays, each (n_b, 2) in [0,1]. Edges
+            in the same tree level can have different sample counts (e.g. when
+            some pseudo-observations are cached vs recomputed).
+        m: grid size.
+        device: torch device.
+        reflect: if True, applies the same boundary-reflection-style copies as
+            the numpy fallback (5 shift offsets, kept points only where they
+            still lie in [0,1]^2).
+
+    Returns:
+        Tensor of shape (B, m, m), each slice integrating to 1 with bin
+        spacing 1/m.
+    """
+    B = len(pair_data_list)
+    # Pad uneven n_b with NaN sentinels so we can scatter in one kernel.
+    n_b = [int(p.shape[0]) for p in pair_data_list]
+    n_max = int(max(n_b)) if n_b else 0
+    if n_max == 0:
+        return torch.zeros(B, m, m, device=device)
+
+    coords_buf = np.full((B, n_max, 2), np.nan, dtype=np.float64)
+    valid_buf = np.zeros((B, n_max), dtype=bool)
+    for b, p in enumerate(pair_data_list):
+        n = int(p.shape[0])
+        coords_buf[b, :n, :] = p
+        valid_buf[b, :n] = True
+    coords = torch.from_numpy(coords_buf).to(device=device, dtype=torch.float32)
+    valid = torch.from_numpy(valid_buf).to(device=device)
+
+    if reflect:
+        offsets = torch.tensor(
+            [[0.0, 0.0], [0.0, -1.0], [0.0, 1.0], [-1.0, 0.0], [1.0, 0.0]],
+            device=device,
+            dtype=torch.float32,
+        )  # (5,2)
+    else:
+        offsets = torch.zeros(1, 2, device=device, dtype=torch.float32)
+
+    flat_chunks = []
+    valid_chunks = []
+    for o in offsets:
+        shifted = coords + o.view(1, 1, 2)  # (B, n_max, 2)
+        in_range = (
+            (shifted[..., 0] >= 0.0)
+            & (shifted[..., 0] <= 1.0)
+            & (shifted[..., 1] >= 0.0)
+            & (shifted[..., 1] <= 1.0)
+        ) & valid
+        x = shifted[..., 0].clamp(0.0, 1.0 - 1e-9)
+        y = shifted[..., 1].clamp(0.0, 1.0 - 1e-9)
+        i = (x * m).long().clamp_max(m - 1)
+        j = (y * m).long().clamp_max(m - 1)
+        flat = i * m + j  # (B, n_max)
+        flat_chunks.append(flat)
+        valid_chunks.append(in_range)
+    flat_all = torch.cat(flat_chunks, dim=1)  # (B, 5*n_max)
+    valid_all = torch.cat(valid_chunks, dim=1).to(torch.float32)
+
+    hist = torch.zeros(B, m * m, device=device, dtype=torch.float32)
+    hist.scatter_add_(1, flat_all, valid_all)
+    hist = hist.view(B, m, m)
+    du = 1.0 / m
+    hist_sum = hist.sum(dim=(-2, -1), keepdim=True).clamp_min(1e-12)
+    hist = hist / (hist_sum * du * du)
+    return hist
+
+
 def scatter_to_hist(pts: np.ndarray, m: int, reflect: bool = True) -> np.ndarray:
     """Create a normalized 2D histogram from points in [0,1]^2."""
     if reflect:
