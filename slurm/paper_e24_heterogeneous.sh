@@ -77,7 +77,7 @@ OUT_TEX="${RUN_DIR}/results/tab_heterogeneous_scaling.tex"
   --pyvine-timeout-s "${E24_PYVINE_TIMEOUT_S:-21600}" \
   --include-realnvp \
   --include-gaussian \
-  --include-pyvine-param \
+  ${E24_INCLUDE_PYVINE_PARAM:-} \
   --edge-batch-size "${E24_EDGE_BATCH:-512}" \
   --out-json "${OUT_JSON}" \
   --out-md "${OUT_MD}" \

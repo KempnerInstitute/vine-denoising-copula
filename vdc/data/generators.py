@@ -655,113 +655,86 @@ def generate_heterogeneous_vine(
     d: int,
     seed: Optional[int] = None,
     rotate_prob: float = 0.5,
+    higher_tree_indep: bool = True,
 ) -> np.ndarray:
     """Generate samples from a D-vine where each tree-1 edge uses a randomly
-    chosen non-Gaussian family with a random per-edge parameter and (with prob
-    `rotate_prob`) a 180-degree rotation. This is the harder counterpart to
-    `generate_clayton_vine` -- it is not in the Gaussian-copula family, not in
-    a single Archimedean family, and pyvine-parametric must select per-edge.
+    chosen non-Gaussian family with random per-edge parameters and (with prob
+    `rotate_prob`) a 180-degree rotation. Higher trees default to independence
+    so the data is a tree-1 D-vine (Markov chain in copula space).
 
-    Families used (mapped to Kendall tau in [0.3, 0.75]):
-      - clayton, gumbel, frank, joe, student-t (df=4)
+    Implementation uses pyvinecopulib.Vinecop.simulate to avoid hand-rolled
+    h-inverse code (rotations and family parameterizations are bug-prone).
     """
+    try:
+        import pyvinecopulib as pv
+    except ImportError as e:
+        raise ImportError(
+            "generate_heterogeneous_vine requires pyvinecopulib"
+        ) from e
+
     rng = np.random.default_rng(seed)
-
-    def clayton_hinv(u, v, theta):
-        if theta < 1e-10:
-            return u
-        t = v ** (-theta) * (u ** (-theta / (1 + theta)) - 1) + 1
-        return np.clip(t ** (-1 / theta), 1e-10, 1 - 1e-10)
-
-    def gumbel_hinv(u, v, theta):
-        # Inverse of h-function for Gumbel; use Newton on h(z|v) = u with h
-        # numerically. Robust fallback: invert via bisection on z in (0,1).
-        z_lo = np.full_like(u, 1e-10)
-        z_hi = np.full_like(u, 1 - 1e-10)
-        for _ in range(40):
-            z = 0.5 * (z_lo + z_hi)
-            # Gumbel h_{U|V}(z|v) =  C(z,v)/v * (1 - log(z)/(log(z)+log(v))) (per Aas et al.)
-            log_z = np.log(np.clip(z, 1e-12, None))
-            log_v = np.log(np.clip(v, 1e-12, None))
-            t = ((-log_z) ** theta + (-log_v) ** theta) ** (1.0 / theta)
-            C = np.exp(-t)
-            h = (C / v) * ((-log_v) ** (theta - 1)) * t ** (1.0 / theta - 1)
-            # h is monotone increasing in z; if h<u we need higher z
-            z_lo = np.where(h < u, z, z_lo)
-            z_hi = np.where(h >= u, z, z_hi)
-        return 0.5 * (z_lo + z_hi)
-
-    def frank_hinv(u, v, theta):
-        if abs(theta) < 1e-8:
-            return u
-        em = np.exp(-theta)
-        emv = np.exp(-theta * v)
-        return -np.log(1.0 + u * (em - 1.0) / (emv + u * (1.0 - emv))) / theta
-
-    def joe_hinv(u, v, theta):
-        # bisection
-        z_lo = np.full_like(u, 1e-10)
-        z_hi = np.full_like(u, 1 - 1e-10)
-        for _ in range(40):
-            z = 0.5 * (z_lo + z_hi)
-            a = (1 - z) ** theta
-            b = (1 - v) ** theta
-            C = 1.0 - (a + b - a * b) ** (1.0 / theta)
-            h = (a + b - a * b) ** (1.0 / theta - 1) * b * (1 - a) / (1 - v)
-            z_lo = np.where(h < u, z, z_lo)
-            z_hi = np.where(h >= u, z, z_hi)
-        return 0.5 * (z_lo + z_hi)
-
-    def student_t_hinv(u, v, rho, df):
-        # Student-t conditional CDF inverse via numerical bisection on the standard
-        # parameterization in (-1,1) correlation rho and df.
-        z_lo = np.full_like(u, 1e-10)
-        z_hi = np.full_like(u, 1 - 1e-10)
-        for _ in range(40):
-            z = 0.5 * (z_lo + z_hi)
-            # h_{U|V}(z|v) = T_{df+1}( (T^{-1}_df(z) - rho T^{-1}_df(v)) / sqrt((df + T^{-1}_df(v)^2)(1-rho^2)/(df+1)) )
-            tu = student_t.ppf(np.clip(z, 1e-6, 1 - 1e-6), df=df)
-            tv = student_t.ppf(np.clip(v, 1e-6, 1 - 1e-6), df=df)
-            num = tu - rho * tv
-            denom = np.sqrt(((df + tv * tv) * (1 - rho * rho)) / (df + 1.0))
-            h = student_t.cdf(num / denom, df=df + 1)
-            z_lo = np.where(h < u, z, z_lo)
-            z_hi = np.where(h >= u, z, z_hi)
-        return 0.5 * (z_lo + z_hi)
-
     families = ["clayton", "gumbel", "frank", "joe", "student"]
-    U = np.zeros((n, d))
-    W = rng.uniform(0, 1, size=(n, d))
-    U[:, 0] = W[:, 0]
-    chosen: list[tuple[str, dict, bool]] = []
-    for j in range(1, d):
-        v = U[:, j - 1]
-        w = W[:, j]
-        fam = families[rng.integers(0, len(families))]
-        rotate = bool(rng.random() < rotate_prob)
-        if fam == "clayton":
+
+    family_map = {
+        "clayton": pv.BicopFamily.clayton,
+        "gumbel": pv.BicopFamily.gumbel,
+        "frank": pv.BicopFamily.frank,
+        "joe": pv.BicopFamily.joe,
+        "student": pv.BicopFamily.student,
+    }
+
+    def make_bicop(fam_name: str) -> "pv.Bicop":
+        fam = family_map[fam_name]
+        if fam_name == "clayton":
             theta = float(rng.uniform(1.5, 4.0))
-            u_j = clayton_hinv(w, v if not rotate else 1 - v, theta)
-            if rotate:
-                u_j = 1 - u_j
-        elif fam == "gumbel":
+            params = np.array([[theta]])
+            rotation = 180 if rng.random() < rotate_prob else 0
+        elif fam_name == "gumbel":
             theta = float(rng.uniform(1.5, 3.5))
-            u_j = gumbel_hinv(w, v if not rotate else 1 - v, theta)
-            if rotate:
-                u_j = 1 - u_j
-        elif fam == "frank":
-            theta = float(rng.uniform(3.0, 9.0)) * (1.0 if rng.random() < 0.5 else -1.0)
-            u_j = frank_hinv(w, v, theta)  # frank is symmetric, no rotation
-        elif fam == "joe":
+            params = np.array([[theta]])
+            rotation = 180 if rng.random() < rotate_prob else 0
+        elif fam_name == "frank":
+            sign = 1.0 if rng.random() < 0.5 else -1.0
+            theta = float(rng.uniform(3.0, 9.0)) * sign
+            params = np.array([[theta]])
+            rotation = 0
+        elif fam_name == "joe":
             theta = float(rng.uniform(1.6, 3.2))
-            u_j = joe_hinv(w, v if not rotate else 1 - v, theta)
-            if rotate:
-                u_j = 1 - u_j
+            params = np.array([[theta]])
+            rotation = 180 if rng.random() < rotate_prob else 0
+        elif fam_name == "student":
+            sign = 1.0 if rng.random() < 0.5 else -1.0
+            rho = float(rng.uniform(0.4, 0.85)) * sign
+            df = 4.0
+            params = np.array([[rho], [df]])
+            rotation = 0
         else:
-            rho = float(rng.uniform(0.4, 0.85)) * (1.0 if rng.random() < 0.5 else -1.0)
-            u_j = student_t_hinv(w, v, rho, df=4)
-        U[:, j] = np.clip(u_j, 1e-10, 1 - 1e-10)
-        chosen.append((fam, {"theta_or_rho": float(theta) if fam != "student" else float(rho)}, rotate))
+            raise ValueError(fam_name)
+        return pv.Bicop(family=fam, parameters=params, rotation=rotation)
+
+    pair_copulas: list[list["pv.Bicop"]] = []
+    for lvl in range(d - 1):
+        edges_at_lvl = []
+        for _e in range(d - 1 - lvl):
+            if lvl == 0:
+                fam_name = families[int(rng.integers(0, len(families)))]
+                bc = make_bicop(fam_name)
+            else:
+                if higher_tree_indep:
+                    bc = pv.Bicop(family=pv.BicopFamily.indep)
+                else:
+                    fam_name = families[int(rng.integers(0, len(families)))]
+                    bc = make_bicop(fam_name)
+            edges_at_lvl.append(bc)
+        pair_copulas.append(edges_at_lvl)
+
+    structure = pv.DVineStructure(order=list(range(1, d + 1)))
+    vine = pv.Vinecop.from_structure(structure=structure, pair_copulas=pair_copulas)
+
+    sim_seed = int(rng.integers(1, 2**31 - 1))
+    seeds = [sim_seed + k for k in range(5)]
+    U = np.asarray(vine.simulate(int(n), seeds=seeds), dtype=np.float64)
+    U = np.clip(U, 1e-10, 1.0 - 1e-10)
     return U
 
 
