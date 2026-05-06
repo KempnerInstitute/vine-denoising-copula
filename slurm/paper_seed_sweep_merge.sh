@@ -60,6 +60,11 @@ echo ""
 echo "[1/4] python drafts/scripts/merge_seed_runs.py"
 "${PYTHON_BIN}" drafts/scripts/merge_seed_runs.py
 
+# ---- 1b. Regenerate seed-dependent tables -------------------------------------
+echo ""
+echo "[1b] python drafts/scripts/regen_seed_tables.py"
+"${PYTHON_BIN}" drafts/scripts/regen_seed_tables.py
+
 # ---- 2. Re-render Figure 4 (density + runtime composite) ---------------------
 echo ""
 echo "[2/4] python drafts/scripts/fig4_density_runtime_composite_v2.py"
