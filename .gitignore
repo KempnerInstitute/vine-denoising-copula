@@ -91,3 +91,9 @@ Thumbs.db
 
 # Misc artifacts
 =*
+
+# Local submission/archive bundles
+*.zip
+*.tar
+*.tar.gz
+*.tgz

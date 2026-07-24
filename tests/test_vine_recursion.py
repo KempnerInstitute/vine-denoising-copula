@@ -21,15 +21,20 @@ from vdc.vine.recursion import VinePairCopula, VineRecursion
 from vdc.vine.vine_types import build_cvine_structure, build_dvine_structure
 
 
-def _build_independence_vine(vine_type: str, d: int, m: int = 64) -> VineRecursion:
+def _build_independence_vine(
+    vine_type: str,
+    d: int,
+    m: int = 64,
+    truncation_level: int | None = None,
+) -> VineRecursion:
     rng = np.random.default_rng(123)
     U_dummy = rng.uniform(0.0, 1.0, size=(128, d))
 
     order = list(range(d))
     if vine_type == "dvine":
-        structure = build_dvine_structure(U_dummy, order=order)
+        structure = build_dvine_structure(U_dummy, order=order, truncation_level=truncation_level)
     elif vine_type == "cvine":
-        structure = build_cvine_structure(U_dummy, order=order)
+        structure = build_cvine_structure(U_dummy, order=order, truncation_level=truncation_level)
     else:
         raise ValueError(vine_type)
 
@@ -160,3 +165,32 @@ def test_independence_simulate_has_uniform_margins(vine_type: str):
     for j in range(d):
         _, p = kstest(U[:, j], "uniform")
         assert p > 1e-3, f"KS p-value too small for dim {j}: {p:.2e}"
+
+
+@pytest.mark.parametrize("vine_type", ["dvine", "cvine"])
+@pytest.mark.parametrize("truncation_level", [1, 2, 3])
+def test_truncated_independence_rosenblatt_and_simulate(vine_type: str, truncation_level: int):
+    d = 6
+    vine = _build_independence_vine(
+        vine_type,
+        d=d,
+        m=32,
+        truncation_level=truncation_level,
+    )
+
+    rng = np.random.default_rng(99)
+    W = rng.uniform(0.0, 1.0, size=(200, d))
+    U = vine.inverse_rosenblatt(W)
+    W2 = vine.rosenblatt(U)
+
+    assert U.shape == W.shape
+    assert W2.shape == W.shape
+    assert np.isfinite(U).all()
+    assert np.isfinite(W2).all()
+    assert np.allclose(U, W, atol=0.04)
+    assert np.allclose(W2, W, atol=0.04)
+
+    S = vine.simulate(n=240, seed=321)
+    assert S.shape == (240, d)
+    assert np.isfinite(S).all()
+    assert (S >= 0.0).all() and (S <= 1.0).all()

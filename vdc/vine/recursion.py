@@ -114,6 +114,22 @@ class VineRecursion:
             raise KeyError(f"Missing pair-copula for ({i},{j}|{sorted(cond)})")
         return cop
 
+    def _get_pair_copula_or_independence(
+        self, i: int, j: int, cond: FrozenSet[int]
+    ) -> Optional[VinePairCopula]:
+        """Return a fitted pair-copula, or None for an omitted truncated edge.
+
+        A truncated vine is equivalent to a full vine where all omitted higher
+        tree pair-copulas are independence copulas. Missing edges within fitted
+        tree levels still indicate an invalid structure and should fail loudly.
+        """
+        cop = self._copula_lookup.get(self._key(i, j, cond))
+        if cop is not None:
+            return cop
+        if len(cond) >= len(self.pair_copulas):
+            return None
+        raise KeyError(f"Missing pair-copula for ({i},{j}|{sorted(cond)})")
+
     @staticmethod
     def _clip01(x: np.ndarray, eps: float = 1e-6) -> np.ndarray:
         return np.clip(x, eps, 1.0 - eps)
@@ -189,13 +205,15 @@ class VineRecursion:
 
     def _hinv_target_given_other(
         self,
-        copula: VinePairCopula,
+        copula: Optional[VinePairCopula],
         target: int,
         other: int,
         q: np.ndarray,
         other_val: np.ndarray,
     ) -> np.ndarray:
         """Invert conditional CDF of target given other under this copula's orientation."""
+        if copula is None:
+            return q
         i, j, _ = copula.edge
         if target == i and other == j:
             return copula.hinv_u_given_v(q, other_val)
@@ -205,13 +223,15 @@ class VineRecursion:
 
     def _h_target_given_other(
         self,
-        copula: VinePairCopula,
+        copula: Optional[VinePairCopula],
         target: int,
         other: int,
         target_val: np.ndarray,
         other_val: np.ndarray,
     ) -> np.ndarray:
         """Compute conditional CDF h(target | other) under this copula's orientation."""
+        if copula is None:
+            return target_val
         i, j, _ = copula.edge
         if target == i and other == j:
             return copula.h_u_given_v(target_val, other_val)
@@ -344,11 +364,17 @@ class VineRecursion:
                 cond_cache[(j, D | frozenset({i}))] = self._clip01(copula.h_v_given_u(u_j_D, u_i_D))
 
         W = np.zeros_like(U)
+        fitted_levels = len(self.pair_copulas)
         for k, var in enumerate(order):
             if k == 0:
                 W[:, var] = cond_cache[(var, frozenset())]
                 continue
-            D = frozenset(order[:k])
+            if fitted_levels == 0:
+                D = frozenset()
+            elif self.vine_type == "cvine":
+                D = frozenset(order[: min(k, fitted_levels)])
+            else:
+                D = frozenset(order[max(0, k - fitted_levels) : k])
             key = (var, D)
             if key not in cond_cache:
                 raise RuntimeError(
@@ -405,7 +431,7 @@ class VineRecursion:
                 D_prev = frozenset(order[:k_pos])  # roots before `root`
                 root_val = self._clip01(W[:, root]) if k_pos > 0 else self._clip01(U[:, root])
 
-                cop = self.get_pair_copula(root, var, D_prev)
+                cop = self._get_pair_copula_or_independence(root, var, D_prev)
                 q = self._clip01(self._hinv_target_given_other(cop, target=var, other=root, q=q, other_val=root_val))
 
             U[:, var] = q
@@ -462,7 +488,7 @@ class VineRecursion:
                         f"Missing D-vine cache C[{i}][{k-1}] when sampling position k={k}."
                     )
 
-                cop = self.get_pair_copula(root, var, D_between)
+                cop = self._get_pair_copula_or_independence(root, var, D_between)
                 q = self._clip01(
                     self._hinv_target_given_other(cop, target=var, other=root, q=q, other_val=root_val)
                 )
@@ -488,7 +514,7 @@ class VineRecursion:
                 if u_var_D is None:
                     raise RuntimeError(f"Missing q_after[{i}] while updating C[*][{k}].")
 
-                cop = self.get_pair_copula(root, var, D_between)
+                cop = self._get_pair_copula_or_independence(root, var, D_between)
                 C[i][k] = self._clip01(
                     self._h_target_given_other(cop, target=root, other=var, target_val=u_root_D, other_val=u_var_D)
                 )
