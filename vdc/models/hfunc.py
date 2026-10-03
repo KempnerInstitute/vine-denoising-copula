@@ -259,7 +259,7 @@ class HFuncLookup:
             # Get h values along u for this v
             if v_idx == 0:
                 h_curve = self.h_u_given_v_grid[:, 0]
-            elif v_idx >= self.m_v - 1:
+            elif v_i >= self.v_grid[-1]:
                 h_curve = self.h_u_given_v_grid[:, -1]
             else:
                 # Linear interpolation between v grid points
@@ -314,7 +314,7 @@ class HFuncLookup:
             
             if u_idx == 0:
                 h_curve = self.h_v_given_u_grid[0, :]
-            elif u_idx >= self.m_u - 1:
+            elif u_i >= self.u_grid[-1]:
                 h_curve = self.h_v_given_u_grid[-1, :]
             else:
                 u_frac = (u_i - self.u_grid[u_idx - 1]) / (self.u_grid[u_idx] - self.u_grid[u_idx - 1])
