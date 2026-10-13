@@ -117,6 +117,11 @@ class VineCopulaModel:
         if self.vine_type not in ['rvine', 'dvine', 'cvine']:
             raise ValueError(f"vine_type must be 'rvine', 'dvine', or 'cvine', got {vine_type}")
     
+    def _make_hfunc(self, density_grid):
+        """Construct the legacy lookup with the selected inverse execution path."""
+        return HFuncLookup(density_grid, use_spline=self.hfunc_use_spline,
+                           vectorized_inverse=self.hfunc_vectorized_inverse)
+
     def fit(
         self,
         U: np.ndarray,
@@ -232,8 +237,7 @@ class VineCopulaModel:
                 )
 
                 for edge, density_grid in zip(edges, densities):
-                    hfunc = HFuncLookup(density_grid, use_spline=self.hfunc_use_spline,
-                                        vectorized_inverse=self.hfunc_vectorized_inverse)
+                    hfunc = self._make_hfunc(density_grid)
                     copula = VinePairCopula(edge=edge, density_grid=density_grid, hfunc=hfunc, level=tree_level)
                     tree_copulas.append(copula)
                     self.vine.add_pair_copula(copula)
@@ -270,8 +274,7 @@ class VineCopulaModel:
                         pair_data=pair_data,
                         use_histogram_conditioning=use_histogram_conditioning,
                     )
-                    hfunc = HFuncLookup(density_grid, use_spline=self.hfunc_use_spline,
-                                        vectorized_inverse=self.hfunc_vectorized_inverse)
+                    hfunc = self._make_hfunc(density_grid)
                     
                     copula = VinePairCopula(
                         edge=edge,
@@ -500,8 +503,7 @@ class VineCopulaModel:
                 pair_data=pair_data,
                 use_histogram_conditioning=use_histogram_conditioning,
             )
-            hfunc = HFuncLookup(density_grid, use_spline=self.hfunc_use_spline,
-                                        vectorized_inverse=self.hfunc_vectorized_inverse)
+            hfunc = self._make_hfunc(density_grid)
 
             self.vine.add_pair_copula(
                 VinePairCopula(edge=edge, density_grid=density_grid, hfunc=hfunc, level=0)
@@ -611,8 +613,7 @@ class VineCopulaModel:
                     pair_data=pair_data,
                     use_histogram_conditioning=use_histogram_conditioning,
                 )
-                hfunc = HFuncLookup(density_grid, use_spline=self.hfunc_use_spline,
-                                        vectorized_inverse=self.hfunc_vectorized_inverse)
+                hfunc = self._make_hfunc(density_grid)
 
                 self.vine.add_pair_copula(
                     VinePairCopula(edge=edge, density_grid=density_grid, hfunc=hfunc, level=tree_level)
@@ -820,8 +821,7 @@ class VineCopulaModel:
         
         # Create h-function lookup
         density_np = D_copula[0, 0].detach().cpu().numpy()
-        hfunc = HFuncLookup(density_np, use_spline=self.hfunc_use_spline,
-                            vectorized_inverse=self.hfunc_vectorized_inverse)
+        hfunc = self._make_hfunc(density_np)
         
         return density_np, hfunc
     
