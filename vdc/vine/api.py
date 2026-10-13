@@ -70,6 +70,7 @@ class VineCopulaModel:
         batch_edges: bool = False,
         edge_batch_size: int = 256,
         gpu_histogram: bool = True,
+        hfunc_vectorized_inverse: bool = False,
     ):
         """
         Initialize vine copula model.
@@ -91,6 +92,8 @@ class VineCopulaModel:
             batch_edges: If True, estimate pair-copula densities in mini-batches per tree level (single-pass
                 estimators only). This substantially reduces Python overhead and improves GPU utilization.
             edge_batch_size: Max number of pair-copulas to process in one batch (single-pass path).
+            hfunc_vectorized_inverse: Use the vectorized corrected inverse-h lookup.
+                This changes sampling execution only; fitted densities and forward h-functions are unchanged.
         """
         self.vine_type = vine_type.lower()
         self.order = order
@@ -105,6 +108,7 @@ class VineCopulaModel:
         self.batch_edges = bool(batch_edges)
         self.edge_batch_size = int(edge_batch_size)
         self.gpu_histogram = bool(gpu_histogram)
+        self.hfunc_vectorized_inverse = bool(hfunc_vectorized_inverse)
         
         self.structure: Optional[VineStructure] = None
         self.vine: Optional[VineRecursion] = None
@@ -228,7 +232,8 @@ class VineCopulaModel:
                 )
 
                 for edge, density_grid in zip(edges, densities):
-                    hfunc = HFuncLookup(density_grid, use_spline=self.hfunc_use_spline)
+                    hfunc = HFuncLookup(density_grid, use_spline=self.hfunc_use_spline,
+                                        vectorized_inverse=self.hfunc_vectorized_inverse)
                     copula = VinePairCopula(edge=edge, density_grid=density_grid, hfunc=hfunc, level=tree_level)
                     tree_copulas.append(copula)
                     self.vine.add_pair_copula(copula)
@@ -265,7 +270,8 @@ class VineCopulaModel:
                         pair_data=pair_data,
                         use_histogram_conditioning=use_histogram_conditioning,
                     )
-                    hfunc = HFuncLookup(density_grid, use_spline=self.hfunc_use_spline)
+                    hfunc = HFuncLookup(density_grid, use_spline=self.hfunc_use_spline,
+                                        vectorized_inverse=self.hfunc_vectorized_inverse)
                     
                     copula = VinePairCopula(
                         edge=edge,
@@ -494,7 +500,8 @@ class VineCopulaModel:
                 pair_data=pair_data,
                 use_histogram_conditioning=use_histogram_conditioning,
             )
-            hfunc = HFuncLookup(density_grid, use_spline=self.hfunc_use_spline)
+            hfunc = HFuncLookup(density_grid, use_spline=self.hfunc_use_spline,
+                                        vectorized_inverse=self.hfunc_vectorized_inverse)
 
             self.vine.add_pair_copula(
                 VinePairCopula(edge=edge, density_grid=density_grid, hfunc=hfunc, level=0)
@@ -604,7 +611,8 @@ class VineCopulaModel:
                     pair_data=pair_data,
                     use_histogram_conditioning=use_histogram_conditioning,
                 )
-                hfunc = HFuncLookup(density_grid, use_spline=self.hfunc_use_spline)
+                hfunc = HFuncLookup(density_grid, use_spline=self.hfunc_use_spline,
+                                        vectorized_inverse=self.hfunc_vectorized_inverse)
 
                 self.vine.add_pair_copula(
                     VinePairCopula(edge=edge, density_grid=density_grid, hfunc=hfunc, level=tree_level)
@@ -812,7 +820,8 @@ class VineCopulaModel:
         
         # Create h-function lookup
         density_np = D_copula[0, 0].detach().cpu().numpy()
-        hfunc = HFuncLookup(density_np, use_spline=self.hfunc_use_spline)
+        hfunc = HFuncLookup(density_np, use_spline=self.hfunc_use_spline,
+                            vectorized_inverse=self.hfunc_vectorized_inverse)
         
         return density_np, hfunc
     
@@ -923,6 +932,7 @@ class VineCopulaModel:
             'truncation_level': self.truncation_level,
             'm': self.m,
             'device': self.device,
+            'hfunc_vectorized_inverse': self.hfunc_vectorized_inverse,
             'structure': self.structure,
             'vine': self.vine,
             'fitted': self.fitted,
@@ -959,6 +969,7 @@ class VineCopulaModel:
             truncation_level=state['truncation_level'],
             m=state['m'],
             device=state['device'],
+            hfunc_vectorized_inverse=state.get('hfunc_vectorized_inverse', False),
         )
         
         model.structure = state['structure']

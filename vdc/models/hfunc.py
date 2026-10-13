@@ -40,6 +40,7 @@ class HFuncLookup:
         v_grid: Optional[np.ndarray] = None,
         interp_method: str = 'linear',
         use_spline: bool = True,
+        vectorized_inverse: bool = False,
     ):
         assert density_grid.ndim == 2, "Expected 2D density grid"
         m_u, m_v = density_grid.shape
@@ -47,6 +48,7 @@ class HFuncLookup:
         self.m_u = m_u
         self.m_v = m_v
         self.density_grid = density_grid
+        self.vectorized_inverse = bool(vectorized_inverse)
         
         # Default uniform grids - use cell CENTERS (0.5/m, 1.5/m, ..., (m-0.5)/m)
         # This is important: copula densities are evaluated at cell centers, not edges
@@ -242,6 +244,8 @@ class HFuncLookup:
         Returns:
             u values in [0,1]
         """
+        if getattr(self, 'vectorized_inverse', False):
+            return self._hinv_vectorized(q, v, self.u_grid, self.v_grid, self.h_u_given_v_grid)
         q = np.asarray(q, dtype=np.float64)
         v = np.asarray(v, dtype=np.float64)
         original_shape = q.shape
@@ -300,6 +304,8 @@ class HFuncLookup:
         Returns:
             v values in [0,1]
         """
+        if getattr(self, 'vectorized_inverse', False):
+            return self._hinv_vectorized(q, u, self.v_grid, self.u_grid, self.h_v_given_u_grid.T)
         q = np.asarray(q, dtype=np.float64)
         u = np.asarray(u, dtype=np.float64)
         original_shape = q.shape
@@ -342,6 +348,56 @@ class HFuncLookup:
         
         return np.clip(v_flat.reshape(original_shape), 0, 1)
     
+    @staticmethod
+    def _hinv_vectorized(q, conditioning, axis_nodes, conditioning_nodes, table):
+        """Batched binary search of the same monotone linear inverse lookup.
+
+        Only the two table entries at each search position are gathered; no
+        samples-by-grid array is constructed. The constructor guarantees that
+        each column is monotone. Convex interpolation and clipping preserve
+        this property, including plateaus and the explicit (0,0)/(1,1) ends.
+        This preserves the corrected scalar lookup, not a different density.
+        """
+        q, conditioning = np.broadcast_arrays(np.asarray(q, dtype=np.float64),
+                                               np.asarray(conditioning, dtype=np.float64))
+        if not np.isfinite(q).all() or not np.isfinite(conditioning).all():
+            raise ValueError('Inverse h-function inputs must be finite')
+        shape = q.shape
+        q = np.clip(q.ravel(), 0., 1.)
+        conditioning = conditioning.ravel()
+        axis_nodes = np.asarray(axis_nodes, dtype=np.float64)
+        conditioning_nodes = np.asarray(conditioning_nodes, dtype=np.float64)
+        count = len(axis_nodes)
+        nodes = np.r_[0., axis_nodes, 1.]
+        if len(conditioning_nodes) == 1:
+            left = right = np.zeros(len(q), dtype=np.intp)
+            fraction = np.zeros(len(q))
+        else:
+            right = np.clip(np.searchsorted(conditioning_nodes, conditioning), 1, len(conditioning_nodes)-1)
+            left = right-1
+            fraction = np.clip((conditioning-conditioning_nodes[left]) /
+                               (conditioning_nodes[right]-conditioning_nodes[left]), 0., 1.)
+
+        def value(index):
+            interior = np.clip(index-1, 0, count-1)
+            result = (1-fraction)*table[interior,left]+fraction*table[interior,right]
+            return np.where(index == 0, 0., np.where(index >= count+1, 1., np.clip(result, 0., 1.)))
+
+        low = np.zeros(len(q), dtype=np.intp)
+        high = np.full(len(q), count+2, dtype=np.intp)
+        while np.any(low < high):
+            middle = (low+high)//2
+            before = value(middle) < q
+            active = low < high
+            low = np.where(active & before, middle+1, low)
+            high = np.where(active & ~before, middle, high)
+        upper = np.clip(low, 1, count+1)
+        h0, h1 = value(upper-1), value(upper)
+        width = h1-h0
+        fraction_q = np.divide(q-h0, width, out=np.zeros_like(q), where=np.abs(width)>=1e-12)
+        answer = nodes[upper-1]+fraction_q*(nodes[upper]-nodes[upper-1])
+        return np.clip(np.where(low == 0, 0., answer).reshape(shape), 0., 1.)
+
     def _bilinear_interp(
         self,
         u: np.ndarray,
