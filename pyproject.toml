@@ -89,10 +89,14 @@ packages = [
     "vdc.resources.pretrained",
     "vdc.train",
     "vdc.utils",
+    "vdc.vine",
+    "vdc.inference",
+    "vdc.eval",
 ]
 
 [tool.setuptools.package-data]
 vdc = ["resources/pretrained/*.json"]
+"vdc.vine" = ["compiled_sampler.cpp"]
 
 [tool.black]
 line-length = 100

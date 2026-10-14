@@ -871,6 +871,24 @@ class VineCopulaModel:
         
         return self.vine.simulate(n, seed=seed)
     
+    def prepare_sampler(self, *, backend='auto', kernel=None, cache_dir=None,
+                        compiler='g++', num_threads=1, block_size=64,
+                        max_table_bytes=512*1024**2):
+        """Prepare a reusable sampler; automatic mode falls back to NumPy.
+
+        Compilation and table packing occur here, outside repeated sampling.
+        Requires a C++17/OpenMP compiler for acceleration. The default memory
+        cap is 512 MiB of extra packed tables. Inspect the returned ``backend``
+        and ``fallback_reason``. Reprepare after any fit or manual table edit.
+        Existing ``simulate`` and ``inverse_rosenblatt`` calls are unchanged.
+        """
+        if not self.fitted:
+            raise RuntimeError('Model not fitted. Call fit() first.')
+        from .compiled_sampler import PreparedVineSampler
+        return PreparedVineSampler(self.vine,backend=backend,kernel=kernel,
+            cache_dir=cache_dir,compiler=compiler,num_threads=num_threads,
+            block_size=block_size,max_table_bytes=max_table_bytes)
+
     def rosenblatt(self, U: np.ndarray) -> np.ndarray:
         """
         Forward Rosenblatt transform: copula data → independent uniforms.
