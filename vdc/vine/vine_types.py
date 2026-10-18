@@ -19,6 +19,7 @@ def build_dvine_structure(
     U: np.ndarray,
     order: Optional[List[int]] = None,
     truncation_level: Optional[int] = None,
+    reuse_tau: bool = False,
 ) -> VineStructure:
     """
     Build D-vine (Drawable vine) structure.
@@ -48,9 +49,12 @@ def build_dvine_structure(
         truncation_level = min(truncation_level, d - 1)
     
     # Determine ordering
+    tau_matrix = None
     if order is None:
         # Use greedy heuristic: arrange variables to maximize adjacent dependencies
-        order = _optimize_dvine_order(U)
+        if reuse_tau:
+            tau_matrix = kendall_tau_matrix(U)
+        order = _optimize_dvine_order(U, tau_matrix=tau_matrix)
     else:
         if len(order) != d or set(order) != set(range(d)):
             raise ValueError(f"Order must be a permutation of 0..{d-1}")
@@ -79,7 +83,12 @@ def build_dvine_structure(
             
             # Compute tau (simplified: use original data)
             # In practice, would use h-transformed data for level > 0
-            tau = kendall_tau(U[:, var_i], U[:, var_j])
+            # SciPy's tie correction can round differently when the argument
+            # order is reversed. Reuse only entries computed in this exact
+            # orientation, preserving even the stored edge weights bitwise.
+            tau = (float(tau_matrix[var_i, var_j])
+                   if tau_matrix is not None and var_i < var_j
+                   else kendall_tau(U[:, var_i], U[:, var_j]))
             
             edges.append((var_i, var_j, cond_set))
             tau_values.append(tau)
@@ -90,7 +99,7 @@ def build_dvine_structure(
     return VineStructure(d=d, trees=trees, order=order)
 
 
-def _optimize_dvine_order(U: np.ndarray) -> List[int]:
+def _optimize_dvine_order(U: np.ndarray, tau_matrix: Optional[np.ndarray] = None) -> List[int]:
     """
     Find optimal D-vine ordering via greedy maximum spanning tree.
     
@@ -105,7 +114,7 @@ def _optimize_dvine_order(U: np.ndarray) -> List[int]:
     n, d = U.shape
     
     # Compute pairwise Kendall's tau
-    tau_mat = kendall_tau_matrix(U)
+    tau_mat = kendall_tau_matrix(U) if tau_matrix is None else tau_matrix
     abs_tau = np.abs(tau_mat)
     
     # Greedy path construction

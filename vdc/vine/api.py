@@ -71,6 +71,7 @@ class VineCopulaModel:
         edge_batch_size: int = 256,
         gpu_histogram: bool = True,
         hfunc_vectorized_inverse: bool = False,
+        fast_fit: bool = False,
     ):
         """
         Initialize vine copula model.
@@ -94,6 +95,9 @@ class VineCopulaModel:
             edge_batch_size: Max number of pair-copulas to process in one batch (single-pass path).
             hfunc_vectorized_inverse: Use the vectorized corrected inverse-h lookup.
                 This changes sampling execution only; fitted densities and forward h-functions are unchanged.
+            fast_fit: Reuse D-vine structure correlations, vectorize monotone table
+                construction, and transfer predicted grids in bulk. Opt-in; network
+                precision, batch sizes, and density calculations are unchanged.
         """
         self.vine_type = vine_type.lower()
         self.order = order
@@ -109,6 +113,7 @@ class VineCopulaModel:
         self.edge_batch_size = int(edge_batch_size)
         self.gpu_histogram = bool(gpu_histogram)
         self.hfunc_vectorized_inverse = bool(hfunc_vectorized_inverse)
+        self.fast_fit = bool(fast_fit)
         
         self.structure: Optional[VineStructure] = None
         self.vine: Optional[VineRecursion] = None
@@ -120,7 +125,8 @@ class VineCopulaModel:
     def _make_hfunc(self, density_grid):
         """Construct the legacy lookup with the selected inverse execution path."""
         return HFuncLookup(density_grid, use_spline=self.hfunc_use_spline,
-                           vectorized_inverse=self.hfunc_vectorized_inverse)
+                           vectorized_inverse=self.hfunc_vectorized_inverse,
+                           vectorized_tables=self.fast_fit)
 
     def fit(
         self,
@@ -161,7 +167,8 @@ class VineCopulaModel:
             self.structure = build_dvine_structure(
                 U,
                 order=self.order,
-                truncation_level=self.truncation_level
+                truncation_level=self.truncation_level,
+                reuse_tau=self.fast_fit,
             )
         
         elif self.vine_type == 'cvine':
@@ -409,7 +416,10 @@ class VineCopulaModel:
             d = copula_project(d, iters=int(self.projection_iters))
             d = d / ((d * du * du).sum(dim=(-2, -1), keepdim=True).clamp_min(1e-12))
 
-            out.extend([d[i, 0].detach().cpu().numpy() for i in range(d.shape[0])])
+            if self.fast_fit:
+                out.extend(d[:, 0].detach().cpu().numpy())
+            else:
+                out.extend([d[i, 0].detach().cpu().numpy() for i in range(d.shape[0])])
 
         return out
 
@@ -951,6 +961,7 @@ class VineCopulaModel:
             'm': self.m,
             'device': self.device,
             'hfunc_vectorized_inverse': self.hfunc_vectorized_inverse,
+            'fast_fit': self.fast_fit,
             'structure': self.structure,
             'vine': self.vine,
             'fitted': self.fitted,
@@ -988,6 +999,7 @@ class VineCopulaModel:
             m=state['m'],
             device=state['device'],
             hfunc_vectorized_inverse=state.get('hfunc_vectorized_inverse', False),
+            fast_fit=state.get('fast_fit', False),
         )
         
         model.structure = state['structure']

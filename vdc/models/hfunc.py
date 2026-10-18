@@ -41,6 +41,7 @@ class HFuncLookup:
         interp_method: str = 'linear',
         use_spline: bool = True,
         vectorized_inverse: bool = False,
+        vectorized_tables: bool = False,
     ):
         assert density_grid.ndim == 2, "Expected 2D density grid"
         m_u, m_v = density_grid.shape
@@ -49,6 +50,7 @@ class HFuncLookup:
         self.m_v = m_v
         self.density_grid = density_grid
         self.vectorized_inverse = bool(vectorized_inverse)
+        self.vectorized_tables = bool(vectorized_tables)
         
         # Default uniform grids - use cell CENTERS (0.5/m, 1.5/m, ..., (m-0.5)/m)
         # This is important: copula densities are evaluated at cell centers, not edges
@@ -104,6 +106,10 @@ class HFuncLookup:
         
     def _enforce_monotonicity(self):
         """Ensure h-functions are monotonically increasing."""
+        if self.vectorized_tables:
+            np.maximum.accumulate(self.h_u_given_v_grid, axis=0, out=self.h_u_given_v_grid)
+            np.maximum.accumulate(self.h_v_given_u_grid, axis=1, out=self.h_v_given_u_grid)
+            return
         # For h_u_given_v: should increase along axis 0 for each v
         for j in range(self.m_v):
             self.h_u_given_v_grid[:, j] = np.maximum.accumulate(

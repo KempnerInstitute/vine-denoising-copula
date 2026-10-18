@@ -198,3 +198,19 @@ MIT; see [LICENSE](LICENSE).
 - Vine fitting uses the simplifying assumption (constant conditional copulas).
 - The released checkpoint is frozen and versioned.
 - Current grid resolution is m=64. Extensions to larger grids and the probit transform are documented in the configuration guide.
+
+### Optional faster fitting
+
+`VineCopulaModel(..., fast_fit=True)` reuses D-vine ordering correlations,
+constructs monotone h-function tables in vectorized NumPy operations, and copies
+predicted density grids from GPU to CPU in bulk. It preserves the checkpoint,
+grid, projection, network precision and `edge_batch_size`; the default remains
+`False`. Correlation reuse applies when the D-vine order is selected automatically
+(`order=None`). This option does not combine different trees into one network pass.
+
+The option is saved with fitted models; older saved models load with it disabled.
+It works with `prepare_sampler()`, including the compiled sampler and its automatic
+NumPy fallback. Run `tests/test_fast_fit_identity.py` together with the compiled
+and prepared sampler tests to check this combination on your platform. Qualify
+numerical identity on the intended device and software versions before replacing
+an existing experiment's execution configuration.
