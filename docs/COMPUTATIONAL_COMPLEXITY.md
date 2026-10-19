@@ -1,5 +1,7 @@
 # Computational Complexity Analysis
 
+> **Note.** These are early design notes for the iterative diffusion variant (T sampling steps, m=128). The released model `vdc-denoiser-m64-v1` is a one-pass denoiser on a 64x64 grid; its measured training time (9.6 h on one H100), per-edge cost and vine-fitting timings are reported in the NeurIPS 2026 paper and reproduced by the scripts in [paper/neurips2026](../paper/neurips2026/README.md).
+
 ## Time Complexity Comparison
 
 ### Setup
