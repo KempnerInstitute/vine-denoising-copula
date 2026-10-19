@@ -1,0 +1,23 @@
+\begin{tabular}{llccc}
+\toprule
+Estimator & Conditions on $U_1$? & Test NLL $\downarrow$ & Excess NLL & Note \\
+\midrule
+\multicolumn{5}{l}{\emph{Gaussian sign flip}}\\
+Oracle & yes & -0.418 & 0.000 & true conditional \\
+Regime Gaussian & yes & -0.416 & 0.002 & -0.75/0.77 rho \\
+VDC & no & -0.139 & 0.279 & pooled grid \\
+pyvine-param. & no & -0.128 & 0.291 & student \\
+pyvine-TLL & no & -0.121 & 0.297 & tll \\
+Gaussian & no & 0.000 & 0.418 & -0.00 rho \\
+Histogram & no & 0.007 & 0.425 & pooled grid \\
+\addlinespace[0.25em]
+\multicolumn{5}{l}{\emph{Clayton/Gumbel tail switch}}\\
+Oracle & yes & -0.596 & 0.000 & true conditional \\
+Regime Gaussian & yes & -0.478 & 0.117 & 0.79/0.81 rho \\
+VDC & no & -0.520 & 0.076 & pooled grid \\
+pyvine-param. & no & -0.507 & 0.088 & bb1 \\
+pyvine-TLL & no & -0.506 & 0.090 & tll \\
+Gaussian & no & -0.478 & 0.118 & 0.80 rho \\
+Histogram & no & -0.274 & 0.322 & pooled grid \\
+\bottomrule
+\end{tabular}

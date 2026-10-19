@@ -1,0 +1,275 @@
+{
+  "records": [
+    {
+      "method": "VDC",
+      "fit_s": 10.576519817113876,
+      "eval_s": 1.5276771509088576,
+      "nll_bits_per_dim": -0.41848794320420774,
+      "status": "ok",
+      "ci_self": {
+        "mean": -0.4197746650539696,
+        "lo": -0.4731871555071414,
+        "hi": -0.370866989261527
+      }
+    },
+    {
+      "method": "pyvine_tll",
+      "fit_s": 8.727126139914617,
+      "eval_s": 0.07082699006423354,
+      "nll_bits_per_dim": -0.292759674956995,
+      "status": "ok",
+      "ci_self": {
+        "mean": -0.29249274913584605,
+        "lo": -0.3435722641007157,
+        "hi": -0.24892608307651123
+      }
+    },
+    {
+      "method": "gaussian_copula",
+      "fit_s": 0.02046319399960339,
+      "nll_bits_per_dim": -0.3366123416304147,
+      "status": "ok",
+      "ci_self": {
+        "mean": -0.33501958580653024,
+        "lo": -0.3908619396014359,
+        "hi": -0.2884383826870209
+      }
+    },
+    {
+      "method": "flow_realnvp",
+      "fit_s": 6.805535962805152,
+      "nll_bits_per_dim": -0.04713804849253027,
+      "status": "ok",
+      "ci_self": {
+        "mean": -0.047585898914676496,
+        "lo": -0.09842125937967898,
+        "hi": -0.0017594899978441807
+      }
+    }
+  ],
+  "paired": [
+    {
+      "ref": "VDC",
+      "other": "pyvine_tll",
+      "delta": 0.1257282682472127,
+      "lo": 0.11225224322108147,
+      "hi": 0.14076287510531238,
+      "p": 0.0
+    },
+    {
+      "ref": "VDC",
+      "other": "gaussian_copula",
+      "delta": 0.08187560157379298,
+      "lo": 0.06662644644133048,
+      "hi": 0.0972750814437253,
+      "p": 0.0
+    },
+    {
+      "ref": "VDC",
+      "other": "flow_realnvp",
+      "delta": 0.37134989471167745,
+      "lo": 0.3334832841537459,
+      "hi": 0.41448301445216285,
+      "p": 0.0
+    },
+    {
+      "ref": "pyvine_tll",
+      "other": "VDC",
+      "delta": -0.1257282682472127,
+      "lo": -0.14076287510531238,
+      "hi": -0.11225224322108149,
+      "p": 0.0
+    },
+    {
+      "ref": "pyvine_tll",
+      "other": "gaussian_copula",
+      "delta": -0.04385266667341973,
+      "lo": -0.05841764144938603,
+      "hi": -0.029280172623981054,
+      "p": 0.0
+    },
+    {
+      "ref": "pyvine_tll",
+      "other": "flow_realnvp",
+      "delta": 0.24562162646446475,
+      "lo": 0.21077323588774236,
+      "hi": 0.28460538913774847,
+      "p": 0.0
+    }
+  ],
+  "rolling": [
+    {
+      "method": "VDC",
+      "fit_s": 7.94731794600375,
+      "eval_s": 1.1044565208721906,
+      "nll_bits_per_dim": -0.3921078718806851,
+      "status": "ok",
+      "origin": 0,
+      "t0": 1356,
+      "t1": 1440
+    },
+    {
+      "method": "pyvine_tll",
+      "fit_s": 8.651723701972514,
+      "eval_s": 0.025833107996731997,
+      "nll_bits_per_dim": -0.26609705964008756,
+      "status": "ok",
+      "origin": 0,
+      "t0": 1356,
+      "t1": 1440
+    },
+    {
+      "method": "gaussian_copula",
+      "fit_s": 0.006922594038769603,
+      "nll_bits_per_dim": -0.31273115719240546,
+      "status": "ok",
+      "origin": 0,
+      "t0": 1356,
+      "t1": 1440
+    },
+    {
+      "method": "flow_realnvp",
+      "fit_s": 0.46423034905456007,
+      "nll_bits_per_dim": -0.04937774037210399,
+      "status": "ok",
+      "origin": 0,
+      "t0": 1356,
+      "t1": 1440
+    },
+    {
+      "method": "VDC",
+      "fit_s": 7.935964741045609,
+      "eval_s": 1.1726103080436587,
+      "nll_bits_per_dim": -0.6838229941472317,
+      "status": "ok",
+      "origin": 1,
+      "t0": 1440,
+      "t1": 1524
+    },
+    {
+      "method": "pyvine_tll",
+      "fit_s": 8.80993883102201,
+      "eval_s": 0.02554692095145583,
+      "nll_bits_per_dim": -0.5126769494096073,
+      "status": "ok",
+      "origin": 1,
+      "t0": 1440,
+      "t1": 1524
+    },
+    {
+      "method": "gaussian_copula",
+      "fit_s": 0.007649668958038092,
+      "nll_bits_per_dim": -0.6156166699843908,
+      "status": "ok",
+      "origin": 1,
+      "t0": 1440,
+      "t1": 1524
+    },
+    {
+      "method": "flow_realnvp",
+      "fit_s": 0.3629035020712763,
+      "nll_bits_per_dim": -0.2980200271338934,
+      "status": "ok",
+      "origin": 1,
+      "t0": 1440,
+      "t1": 1524
+    },
+    {
+      "method": "VDC",
+      "fit_s": 8.075531535083428,
+      "eval_s": 1.0441983100026846,
+      "nll_bits_per_dim": -0.33807281005545115,
+      "status": "ok",
+      "origin": 2,
+      "t0": 1524,
+      "t1": 1608
+    },
+    {
+      "method": "pyvine_tll",
+      "fit_s": 13.182377652963623,
+      "eval_s": 0.02530255215242505,
+      "nll_bits_per_dim": -0.2444062222278702,
+      "status": "ok",
+      "origin": 2,
+      "t0": 1524,
+      "t1": 1608
+    },
+    {
+      "method": "gaussian_copula",
+      "fit_s": 0.008081906009465456,
+      "nll_bits_per_dim": -0.31726862781531456,
+      "status": "ok",
+      "origin": 2,
+      "t0": 1524,
+      "t1": 1608
+    },
+    {
+      "method": "flow_realnvp",
+      "fit_s": 0.4783942848443985,
+      "nll_bits_per_dim": -0.06348744732459406,
+      "status": "ok",
+      "origin": 2,
+      "t0": 1524,
+      "t1": 1608
+    },
+    {
+      "method": "VDC",
+      "fit_s": 8.228688429109752,
+      "eval_s": 1.0248586479574442,
+      "nll_bits_per_dim": -0.33321326849465494,
+      "status": "ok",
+      "origin": 3,
+      "t0": 1608,
+      "t1": 1692
+    },
+    {
+      "method": "pyvine_tll",
+      "fit_s": 12.940637907013297,
+      "eval_s": 0.025344440946355462,
+      "nll_bits_per_dim": -0.1937672835024019,
+      "status": "ok",
+      "origin": 3,
+      "t0": 1608,
+      "t1": 1692
+    },
+    {
+      "method": "gaussian_copula",
+      "fit_s": 0.008509763982146978,
+      "nll_bits_per_dim": -0.24513824119149435,
+      "status": "ok",
+      "origin": 3,
+      "t0": 1608,
+      "t1": 1692
+    },
+    {
+      "method": "flow_realnvp",
+      "fit_s": 0.5149339931085706,
+      "nll_bits_per_dim": 0.010232329588805912,
+      "status": "ok",
+      "origin": 3,
+      "t0": 1608,
+      "t1": 1692
+    }
+  ],
+  "settings": {
+    "data": "sp100_returns.npy",
+    "train_frac": 0.8,
+    "rolling_origins": 4,
+    "seed": 42,
+    "device": "cuda",
+    "checkpoint": "model_step_190000.pt",
+    "output_base": [
+      "vine_diffusion_copula"
+    ],
+    "m_grid": 64,
+    "num_threads": 8,
+    "pyvine_timeout_s": 3600,
+    "n_boot": 2000,
+    "out_json": "e28_sp100_chrono.json",
+    "out_tex": "drafts/tables/tab_sp100_chrono.tex",
+    "split": "chronological",
+    "n_train": 1356,
+    "n_test": 339,
+    "d": 100
+  }
+}
