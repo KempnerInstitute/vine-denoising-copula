@@ -10,7 +10,8 @@ tail error. Table 1 reports means over the 45 fits; the dispersion table reports
 standard deviation over the nine per-case means.
 
 The time column is not measured in this benchmark: it holds the per-fit times of the same five
-procedures from the original timing run at n=2000 (VDC on one H100 GPU, baselines on one CPU thread).
+procedures from the original timing run at n=2000 (VDC on one H100 GPU, pyvine fits on one CPU thread,
+histogram and KDE in a job allowing up to 16 OpenMP/MKL threads).
 """
 from __future__ import annotations
 

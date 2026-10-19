@@ -9,7 +9,7 @@ set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 out="${1:?usage: make_tables.sh OUT_DIR [REFERENCE_DIR]}"
 py="${PYTHON:-python3}"
-for s in table1 uci ood mi scaling sampling self_consistency ipfp_iterations raw_composition threads; do
+for s in table1 uci ood mi scaling sampling self_consistency ipfp_iterations raw_composition threads replicates neural_copula; do
     "$py" "$here/scripts/$s.py" --inputs "$here/inputs" --out "$out"
 done
 if [[ $# -ge 2 ]]; then

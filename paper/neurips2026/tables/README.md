@@ -10,7 +10,7 @@ bash make_tables.sh /tmp/vdc_tables path/to/tables     # ... and compare them wi
 ```
 
 The comparison ignores full-line LaTeX comments (each generated table starts with one naming its
-generator) and is otherwise byte for byte. All 21 generated tables are identical to the paper's tables.
+generator) and is otherwise byte for byte. All 23 generated tables are identical to the paper's tables.
 
 ## Inputs
 
@@ -46,14 +46,24 @@ checkpoint, `model_step_190000.pt`, sha256 `8a1b71ad6d2012ed344b22a743a96e667d32
 | `ipfp_iterations.py` | `tab_ipfp_iter_ablation` | `ipfp/ipfp_iter_ablation.json` |
 | `raw_composition.py` | `tab_raw_composition` | `sp100/e37_raw_composition.json` |
 | `threads.py` | `tab_pyvine_threads` | `threads/*.json`, `scaling/e22_highdim_scaling_seed_merged.json` |
+| `replicates.py` | `tab_bivariate_replicates` | `bivariate/e31_bivariate_replicates.json` |
+| `neural_copula.py` | `tab_neural_copula` | `bivariate/e8_neural_copula_results_seed{0,1,2}.json` |
 
 Notes:
 - The time column of Table 1 is not measured by the benchmark the table summarizes. It holds the
   per-fit times of the same five procedures from the original timing run at n = 2000 (VDC on one
-  H100 GPU, baselines on one CPU thread); `table1.py` states these constants.
+  H100 GPU, pyvine fits on one CPU thread, histogram and KDE in a job allowing up to 16 OpenMP/MKL
+  threads); `table1.py` states these constants.
 - `tab_mi` drops the Joe case of the saved suite, whose samples came from a defective sampler.
 - `tab_dpi_tolerance` recounts the DPI violations of the scaled protocol at each tolerance; its
   Fisher tests are two-sided and pool the 480 trials of each estimator.
+- `tab_bivariate_replicates` and `tab_neural_copula`: the saved ISE values carry an extra 1/m^2 factor
+  (m = 64); the generators multiply by 4096 before rounding. Earlier versions of these two tables were
+  rescaled after rounding, which changed the last digit of ten replicate cells and three ACNet cells
+  (including the mean h-MAE of VDC, 0.002 rather than 0.001); the paper's tables were corrected to the
+  generated values. `tab_neural_copula` leaves out the Joe case, whose samples came from a defective
+  sampler, and averages the remaining cases before rounding. The ACNet runs themselves need the authors'
+  ACNet code, which is not included.
 - `tab_pyvine_threads`: the paper's table was checked against these saved outputs and corrected in
   two places. At d = 100 with 8 threads the three saved fits (202.87, 203.05 and 204.12 s) give a
   population standard deviation of 0.55 s, printed as 0.6 (earlier versions printed 0.5). The
@@ -65,7 +75,7 @@ Notes:
 
 ## Every table in the paper
 
-Released here (generator and inputs in this folder): the 21 tables listed above.
+Released here (generator and inputs in this folder): the 23 tables listed above.
 
 Written at the end of a full experiment run by a runner from the paper workspace; the runner and
 its raw outputs are not in this folder:
@@ -76,9 +86,7 @@ its raw outputs are not in this folder:
 | `tab_noipfp_ablation` | no-projection ablation on the MAF splits | method labels edited by hand |
 | `tab_flow_sensitivity` | RealNVP capacity sweep | rows from withdrawn UCI files removed by hand; Clayton rows unchanged |
 | `tab_nonsimplified_stress` | non-simplified conditional stress test | |
-| `tab_bivariate_replicates` | paired bivariate replicates | ISE column rescaled in place (an extra 1/m^2 factor removed) |
 | `tab_bivariate_complex` | complex-pattern bivariate suite | ISE rescaled in place |
-| `tab_neural_copula` | neural-copula comparison (ACNet) | needs the authors' ACNet code; ISE rescaled in place |
 | `tab_theory_mi_methods` | synthetic MI comparison | |
 | `tab_probit_comparison` | probit-grid ablation | separately trained ablation models, not the released model; ISE rescaled in place |
 | `tab_cpu_timing` | matched-hardware CPU timing | |
@@ -91,9 +99,8 @@ Depend on experimental checkpoints that are not released: `tab_retrained_bivaria
 `tab_retrained_uci` (the exploratory VDC-64 and VDC-128 estimators).
 
 Not reproducible from saved outputs:
-- `tab_ipfp_validity` has neither a generator nor a saved input. Its values were entered before
-  the deployed checkpoint was trained, and one value was later edited by hand, so it does not
-  describe the released model.
+- `tab_ipfp_validity` had neither a generator nor a saved input; its values were entered before the
+  deployed checkpoint was trained. It has been removed from the paper.
 - `tab_vine_nll` is a fallback used only when `tab_vine_nll_ci.tex` is missing. It still holds
   withdrawn rows and is not printed in the paper.
 
@@ -101,5 +108,7 @@ Tables written directly in the manuscript source:
 - `tab:claims_evidence` maps claims to the figures and tables that support them; it holds no data.
 - `tab:benchmark_spec` gives the training-zoo and evaluation-suite specification, written by hand
   from the benchmark code defaults.
-- `tab:grid_floor` gives the representation floor of the copula grid. Its values were typed in
-  from the output of the grid-floor analysis, which is not in this folder.
+- `tab:grid_floor` gives the representation floor of the copula grid. Its values are those of
+  `inputs/grid_floor/grid_floor_table.json` (exact cell-averaged true copulas, computed with fixed
+  seeds by the paper workspace's grid-floor script: 50,000 samples per case for the case-group
+  means and 2,000,000 per Gaussian copula, with Monte Carlo standard errors recorded).

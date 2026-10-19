@@ -1,5 +1,40 @@
 {
   "files": {
+    "bivariate/e31_bivariate_replicates.json": {
+      "dropped_keys": 0,
+      "hosts": 0,
+      "paths": 1,
+      "sha256": "8bebc2c03bf34b81da78f3c9a4288943f06a390e92136106ca28858e8a32d62b",
+      "source_sha256": "62a13bacdd743ddb63281e1f322c44154072d946898eaf57632bcfe80b679504"
+    },
+    "bivariate/e8_neural_copula_results_seed0.json": {
+      "dropped_keys": 0,
+      "hosts": 0,
+      "paths": 3,
+      "sha256": "fca378dad5fe0a936a431f6eb1f6b4ed2d67c8e498f65c7802cede36e318d41d",
+      "source_sha256": "14ea79df3b94583cd6878adcc3b02613649dc4449a2e72a1898d3f97ada43acf"
+    },
+    "bivariate/e8_neural_copula_results_seed1.json": {
+      "dropped_keys": 0,
+      "hosts": 0,
+      "paths": 3,
+      "sha256": "263dcb91500a85aacf0d0f876559bd1ba5ca21146f22aa08ae9cffa620a87c46",
+      "source_sha256": "0a1cfd9695aaa9746d477066e2238c84e25528f4a05df09aa041a07f4a71a3f7"
+    },
+    "bivariate/e8_neural_copula_results_seed2.json": {
+      "dropped_keys": 0,
+      "hosts": 0,
+      "paths": 3,
+      "sha256": "ac5ba09ae2f2a2f37eb5860e830c6f49bd2381cd9f7480ad75635e109ae7d6c0",
+      "source_sha256": "9511eb9d2cede20ae40538e9ed0b67e50be33fc61782f42ea37910d68e99de15"
+    },
+    "grid_floor/grid_floor_table.json": {
+      "dropped_keys": 0,
+      "hosts": 0,
+      "paths": 0,
+      "sha256": "026b3d8031a5357f7cd23440cb338b8f70cb9234ea8264feb04c717560bf8088",
+      "source_sha256": "026b3d8031a5357f7cd23440cb338b8f70cb9234ea8264feb04c717560bf8088"
+    },
     "ipfp/ipfp_iter_ablation.json": {
       "dropped_keys": 0,
       "hosts": 0,
