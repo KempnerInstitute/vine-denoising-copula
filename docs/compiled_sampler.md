@@ -76,9 +76,9 @@ falls back before compiling or packing. Set a larger limit explicitly only
 when the allocation permits it; `None` disables the cap. Validation can use
 additional temporary memory, so the cap is on packed storage, not total RSS.
 
-The camera-ready sampling comparison uses 5,000 S&P100 draws at `d=100`:
+The paper's sampling comparison uses 5,000 S&P100 draws at `d=100`:
 0.72 s including packing versus 0.92 s for TLL, both with eight CPU threads.
 Kernel compilation was a separate one-time 0.37 s. VDC fits a D-vine and TLL
 fits a regular vine. This does not establish speed at `d=200/500` or for the
-retrained exact-density models. Paper scripts and qualification receipts live
-in `drafts/scripts/` and `drafts/rebuttal/`.
+retrained exact-density models. The paper's scripts and saved outputs are in
+[paper/neurips2026](../paper/neurips2026/README.md).
