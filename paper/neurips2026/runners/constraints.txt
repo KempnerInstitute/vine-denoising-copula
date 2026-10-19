@@ -1,0 +1,12 @@
+torch==2.9.1
+numpy==2.2.6
+scipy==1.15.3
+pyvinecopulib==0.7.5
+networkx==3.4.2
+matplotlib==3.10.6
+hydra-core==1.3.2
+tqdm==4.67.3
+h5py==3.13.0
+PyYAML==6.0.2
+scikit-learn==1.7.2
+pytest==8.3.5
