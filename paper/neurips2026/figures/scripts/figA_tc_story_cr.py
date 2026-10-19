@@ -112,7 +112,7 @@ def main():
     tc_vdc = np.asarray(tc["tc_dcd_mean"], float)
     tc_ksg = np.asarray(tc["tc_ksg_mean"], float)
     ax_b.plot(dims, tc_true, color="0.75", linewidth=3.4, solid_capstyle="round", label="True TC", zorder=1)
-    ax_b.plot(dims, tc_vdc, **fs.line_kw("vdc", zorder=3))
+    ax_b.plot(dims, tc_vdc, **fs.line_kw("vdc", zorder=3, label="VDC (tree 1)"))
     ax_b.plot(dims, tc_ksg, **fs.line_kw("ksg", zorder=2))
     plain_log_ticks(ax_b, "x", [2, 5, 10, 20, 50])
     plain_log_ticks(ax_b, "y", [0.3, 1, 3, 10])
@@ -202,22 +202,20 @@ def main():
     from scipy.stats import fisher_exact
     nb = viol["vdc"][1] // 3
     p_base = float(fisher_exact([[viol["vdc"][2], nb - viol["vdc"][2]], [viol["ksg"][2], nb - viol["ksg"][2]]])[1])
-    xb = 7.6
-    ax_e1.plot([xb - 0.25, xb, xb, xb - 0.25], [1.0, 1.0, 0.0, 0.0], color="0.25", linewidth=0.6,
-               solid_joinstyle="miter")
-    ax_e1.text(xb + 0.3, 0.5, f"$p={p_base:.3f}$", ha="left", va="center", fontsize=fs.FS_ANNOT)
+    ax_e1.text(0.99, 0.98, f"Fisher exact $p={p_base:.3f}$", transform=ax_e1.transAxes, ha="right", va="top",
+               fontsize=fs.FS_ANNOT, color="0.15")
     for ax in (ax_e1, ax_e2):
         ax.set_yticks(ypos)
         ax.set_yticklabels([fs.STYLE[k].label for k in methods])
         ax.tick_params(axis="y", length=0)
         ax.set_ylim(-0.6, 1.6)
-    ax_e1.set_xlim(0, 10.5)
-    ax_e1.set_xticks([0, 2, 4, 6, 8, 10])
+    ax_e1.set_xlim(0, 7.2)
+    ax_e1.set_xticks([0, 2, 4, 6])
     ax_e1.set_xlabel(f"DPI violations (% of {viol['vdc'][1]} trials)")
     ax_e1.set_title("DPI violations")
-    ax_e2.set_xlim(0, 0.06)
-    ax_e2.set_xticks([0, 0.02, 0.04, 0.06])
-    ax_e2.set_xticklabels(["0", "0.02", "0.04", "0.06"])
+    ax_e2.set_xlim(0, 0.058)
+    ax_e2.set_xticks([0, 0.02, 0.04])
+    ax_e2.set_xticklabels(["0", "0.02", "0.04"])
     ax_e2.set_xlabel("Mean absolute error (nats)")
     ax_e2.set_title("Additivity error")
 

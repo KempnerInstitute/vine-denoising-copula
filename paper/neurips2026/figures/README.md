@@ -8,7 +8,7 @@ bash make_figures.sh [OUTPUT_DIR]        # default ./output; PYTHON=/path/to/pyt
 ```
 
 Each figure is written as a vector PDF (embedded TrueType fonts) and a 400-dpi PNG at its printed size
-(5.5 in, the NeurIPS text width; 3.9 in for Figure A5).
+(5.5 in, the NeurIPS text width; 4.4 in for Figure A5).
 
 | Figure | Script (in `scripts/`) | Inputs (in `inputs/`) |
 |---|---|---|

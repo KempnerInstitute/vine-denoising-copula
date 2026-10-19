@@ -23,13 +23,15 @@ from scipy.stats import binom
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import vdc_figstyle as fs  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
+from matplotlib.lines import Line2D  # noqa: E402
+from matplotlib.patches import Patch  # noqa: E402
 
 
 # (results-file method name, style); historical simulation appears only here, so it gets its own shape.
 METHODS = [("VDC (Ours)", fs.STYLE["vdc"]),
            ("Gaussian", fs.STYLE["gauss"]),
            ("Historical", fs.MethodStyle("Historical simulation", "#333333", "*", "-", ""))]
-TICKS = {"VDC (Ours)": "VDC", "Gaussian": "Gaussian\ncopula", "Historical": "Historical\nsimulation"}
+TICKS = {"VDC (Ours)": "VDC", "Gaussian": "Gaussian copula", "Historical": "Historical simulation"}
 
 
 def wilson(k: int, n: int, z: float = 1.959963984540054):
@@ -50,38 +52,31 @@ def check_against_paper(rows):
     assert round(vdc5["kupiec_p"], 2) == 0.48 and round(vdc5["christoffersen_p"], 3) == 0.003
 
 
-def panel(ax, rows, alpha):
+def panel(ax, rows, alpha, labels: bool):
+    """One forest plot: a row per method with the observed rate, its 95% Wilson interval and the count."""
     n = 1442
     lo_k, hi_k = binom.ppf(0.025, n, alpha), binom.ppf(0.975, n, alpha)
-    x = np.arange(len(METHODS))
-    ax.axhspan(100 * lo_k / n, 100 * hi_k / n, color="0.88", linewidth=0, zorder=0)
-    ax.axhline(100 * alpha, color="0.1", linestyle="--", linewidth=0.8, zorder=1)
-    for xi, (name, st) in zip(x, METHODS):
+    ys = np.arange(len(METHODS))[::-1]  # first method on top
+    ax.axvspan(100 * lo_k / n, 100 * hi_k / n, color="0.88", linewidth=0, zorder=0)
+    ax.axvline(100 * alpha, color="0.1", linestyle="--", linewidth=0.8, zorder=1)
+    for yi, (name, st) in zip(ys, METHODS):
         r = rows[name, alpha]
         k = r["violations"]
         rate = 100 * k / n
         lo, hi = (100 * v for v in wilson(k, n))
         # inside the shaded range <=> not rejected at 5% by the Kupiec test, for all six points here
         assert (lo_k <= k <= hi_k) == (r["kupiec_p"] >= 0.05), (name, alpha)
-        ax.errorbar(xi, rate, yerr=[[rate - lo], [hi - rate]], fmt="none", ecolor=st.color, elinewidth=0.9,
+        ax.errorbar(rate, yi, xerr=[[rate - lo], [hi - rate]], fmt="none", ecolor=st.color, elinewidth=0.9,
                     capsize=2.0, capthick=0.9, zorder=3)
-        ax.plot(xi, rate, linestyle="none", marker=st.marker, color=st.color, markeredgecolor="white",
-                markeredgewidth=0.4, markersize=6.0 if st.marker == "*" else 4.6, zorder=4)
-        ax.text(xi + 0.13, rate, f"{k}", ha="left", va="center", fontsize=fs.FS_ANNOT, color="0.15")
-    ax.set_xticks(x)
-    ax.set_xticklabels([TICKS[name] for name, _ in METHODS])
-    ax.tick_params(axis="x", length=0)
-    ax.set_xlim(-0.55, len(METHODS) - 0.35)
+        ax.plot(rate, yi, linestyle="none", marker=st.marker, color=st.color, markeredgecolor="white",
+                markeredgewidth=0.4, markersize=6.4 if st.marker == "*" else 4.8, zorder=4)
+        ax.text(rate, yi + 0.2, f"{k}", ha="center", va="bottom", fontsize=fs.FS_ANNOT, color="0.15")
+    ax.set_yticks(ys)
+    ax.set_yticklabels([TICKS[name] for name, _ in METHODS] if labels else [])
+    ax.tick_params(axis="y", length=0)
+    ax.set_ylim(-0.55, len(METHODS) - 0.25)
+    ax.set_xlabel("Violation rate (%)")
     ax.set_title(f"{100 * alpha:.0f}% VaR")
-    return 100 * lo_k / n
-
-
-def label_encodings(ax, alpha, band_lo):
-    """Name the dashed line and the shaded band once, in the free lower-left corner of panel (a)."""
-    ax.text(-0.5, 100 * alpha, f"nominal {100 * alpha:.0f}%", ha="left", va="bottom", fontsize=fs.FS_ANNOT,
-            color="0.1")
-    ax.text(-0.5, band_lo + 0.03, "95% range if calibrated", ha="left", va="bottom", fontsize=fs.FS_ANNOT,
-            color="0.3")
 
 
 def main():
@@ -95,14 +90,19 @@ def main():
     check_against_paper(rows)
 
     fs.apply()
-    fig = plt.figure(figsize=(3.9, 1.85))
-    gs = fig.add_gridspec(1, 2, wspace=0.34, left=0.09, right=0.985, top=0.86, bottom=0.125)
+    fig = plt.figure(figsize=(4.4, 1.55))
+    gs = fig.add_gridspec(1, 2, wspace=0.12, left=0.235, right=0.975, top=0.85, bottom=0.355)
     ax1, ax2 = fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[0, 1])
-    label_encodings(ax1, 0.01, panel(ax1, rows, 0.01))
-    panel(ax2, rows, 0.05)
-    ax1.set_ylabel("Violation rate (%)")
-    ax1.set_ylim(0.4, 2.9)
-    ax2.set_ylim(3.2, 7.0)
+    panel(ax1, rows, 0.01, labels=True)
+    panel(ax2, rows, 0.05, labels=False)
+    ax1.set_xlim(0.4, 3.0)
+    ax1.set_xticks([0.5, 1.0, 1.5, 2.0, 2.5])
+    ax2.set_xlim(3.2, 7.0)
+    ax2.set_xticks([4, 5, 6, 7])
+    handles = [Patch(facecolor="0.88", edgecolor="none", label="95% range if calibrated"),
+               Line2D([], [], color="0.1", linestyle="--", linewidth=0.8, label="nominal rate")]
+    fig.legend(handles=handles, loc="lower center", bbox_to_anchor=(0.605, 0.0), ncol=2, handlelength=1.8,
+               columnspacing=1.6)
     fs.panel_labels(fig, [ax1, ax2], "ab", y=0.995)
     fs.save(fig, a.name, a.figures_dir)
 

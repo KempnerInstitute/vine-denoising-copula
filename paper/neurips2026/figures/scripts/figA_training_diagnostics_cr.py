@@ -32,44 +32,48 @@ def main():
     a = ap.parse_args()
     fs.apply()
     D = np.load(fs.input_file(a.inputs, "fig1_overview/fig1_overview_data.npz", a.data))
-    fig = plt.figure(figsize=(fs.TEXTWIDTH, 1.75))
-    gs = fig.add_gridspec(1, 2, wspace=0.42, left=0.085, right=0.92, top=0.86, bottom=0.22)
-    ax1, ax3 = fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[0, 1])
+    fig = plt.figure(figsize=(fs.TEXTWIDTH, 1.72))
+    gs = fig.add_gridspec(1, 3, wspace=0.5, left=0.075, right=0.985, top=0.83, bottom=0.225,
+                          width_ratios=[1.0, 1.0, 1.08])
+    ax_l, ax_r, ax_p = (fig.add_subplot(gs[0, i]) for i in range(3))
 
+    # (a), (b): one quantity per axis (no shared second y-scale), same training-step axis
     step = D["loss_step"] / 1000.0
     excess = smooth(D["loss_value"] - D["loss_min"][0]) + 1e-3
     rms = smooth(D["loss_row_marg_rms"])
-    ax1.plot(step, excess, color="#D55E00", linestyle="-", linewidth=0.9, label="training loss minus its minimum")
-    ax1.set_yscale("log")
-    ax1.set_xlabel("Training step (thousands)")
-    ax1.set_ylabel("Loss minus minimum")
-    ax1.axvline(190, color="0.4", linewidth=0.6, linestyle=":")
-    ax1.text(186, 0.97, "deployed\n(step 190k)", transform=ax1.get_xaxis_transform(), ha="right", va="top",
-             fontsize=fs.FS_ANNOT, color="0.25")
-    ax1.set_yticks([0.3, 1, 3])
-    ax1.set_yticklabels(["0.3", "1", "3"])
-    ax1.minorticks_off()
-    ax2 = ax1.twinx()
-    ax2.spines["right"].set_visible(True)
-    ax2.plot(step, rms, color="#0072B2", linestyle="--", linewidth=0.9, label="row-marginal RMS before projection")
-    ax2.set_yscale("log")
-    ax2.set_ylabel("Pre-projection marginal RMS")
-    h1, l1 = ax1.get_legend_handles_labels()
-    h2, l2 = ax2.get_legend_handles_labels()
-    ax1.legend(h1 + h2, l1 + l2, loc="center right", bbox_to_anchor=(0.99, 0.55))
-    ax1.set_title("Training of the deployed estimator")
+    for ax, y, color, title, ylabel, yt in [
+            (ax_l, excess, "#D55E00", "Training loss", "Loss minus its minimum", [0.3, 1, 3]),
+            (ax_r, rms, "#0072B2", "Pre-projection marginals", "RMS deviation from uniform", [0.006, 0.01, 0.02, 0.03])]:
+        ax.plot(step, y, color=color, linestyle="-", linewidth=0.9)
+        ax.set_yscale("log")
+        ax.set_yticks(yt)
+        ax.set_yticklabels([f"{t:g}" for t in yt])
+        ax.minorticks_off()
+        ax.set_xlim(-5, 245)
+        ax.set_xticks([0, 100, 200])
+        ax.set_xlabel("Training step (thousands)")
+        ax.set_ylabel(ylabel)
+        ax.set_title(title)
+        ax.axvline(190, color="0.35", linewidth=0.6, linestyle=":")
+    ax_l.text(186, 0.97, "deployed\n(190k)", transform=ax_l.get_xaxis_transform(), ha="right", va="top",
+              fontsize=fs.FS_ANNOT, color="0.25")
 
+    # (c): row-marginal profile of one raw output before and after the deployed projection
     m = D["pre_raw"].shape[0]
     u = (np.arange(m) + 0.5) / m
-    ax3.plot(u, D["pre_raw"].mean(axis=1), color="0.35", linestyle="-", linewidth=1.0, label="raw network output")
-    ax3.plot(u, D["pre_proj"].mean(axis=1), color="#D55E00", linestyle="--", linewidth=1.1, label="after IPFP ($K{=}30$)")
-    ax3.axhline(1.0, color="0.1", linestyle=":", linewidth=0.8, label="uniform target")
-    ax3.set_yscale("log")
-    ax3.set_xlabel("$u$ (row of the grid)")
-    ax3.set_ylabel("Row marginal")
-    ax3.set_title("Projection onto uniform marginals")
-    ax3.legend(loc="upper center")
-    fs.panel_labels(fig, [ax1, ax3], "ab", y=0.995)
+    ax_p.plot(u, D["pre_raw"].mean(axis=1), color="0.35", linestyle="-", linewidth=1.0, label="raw network output")
+    ax_p.plot(u, D["pre_proj"].mean(axis=1), color="#D55E00", linestyle="--", linewidth=1.1,
+              label="after IPFP ($K{=}30$)")
+    ax_p.axhline(1.0, color="0.1", linestyle=":", linewidth=0.8, label="uniform target")
+    ax_p.set_yscale("log")
+    ax_p.set_yticks([0.5, 1, 2, 5, 10])
+    ax_p.set_yticklabels(["0.5", "1", "2", "5", "10"])
+    ax_p.minorticks_off()
+    ax_p.set_xlabel("$u$ (grid row)")
+    ax_p.set_ylabel("Row marginal")
+    ax_p.set_title("Marginals of one output")
+    ax_p.legend(loc="upper right", handlelength=1.8)
+    fs.panel_labels(fig, [ax_l, ax_r, ax_p], "abc", y=0.995)
     fs.save(fig, a.name, a.figures_dir)
 
 

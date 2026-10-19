@@ -20,6 +20,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import vdc_figstyle as fs  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
+from matplotlib.lines import Line2D  # noqa: E402
 
 MI_KEYS = {"VDC (Ours)": "vdc", "MINE": "mine", "NWJ": "nwj", "KSG": "ksg", "InfoNCE": "infonce",
            "Gaussian": "gauss", "MINDE": "minde"}
@@ -54,7 +55,7 @@ def panel_mi_bars(ax, rows):
                         for r in rows])
     ax.tick_params(axis="y", length=0)
     ax.set_xscale("log")
-    ax.set_xlim(5e-3, 1.2)
+    ax.set_xlim(5e-3, 2.5)
     ax.set_xlabel("MI mean absolute error (nats)")
     ax.set_title("Bivariate MI error")
 
@@ -63,6 +64,7 @@ def panel_mi_dim(ax, e6):
     rows = [r for r in e6["mi_summary_records"] if r.get("scenario") == "gaussian_ar1"]
     keys = [("dcd", "vdc"), ("ksg", "ksg"), ("gaussian", "gauss"), ("infonce", "infonce"), ("mine", "mine")]
     dodge = np.linspace(-0.13, 0.13, len(keys))
+    handles = []
     for (m, k), off in zip(keys, dodge):
         pts = sorted((int(r["d"]), float(r["mi_abs_err_mean"]), float(r["mi_abs_err_std"]))
                      for r in rows if r.get("method") == m and int(r.get("n_success", 0)) > 0
@@ -75,20 +77,23 @@ def panel_mi_dim(ax, e6):
         lo = np.minimum(sd, mu * 0.75)  # keep whiskers positive on the log axis (truncated, see caption)
         x = d * np.exp(off)
         lab = "VDC" if k == "vdc" else fs.STYLE[k].label.replace(" copula", "")
-        eb = ax.errorbar(x, mu, yerr=[lo, sd], elinewidth=0.55, capsize=1.2,
-                         **fs.line_kw(k, label=lab, linewidth=1.3 if k == "vdc" else 0.9))
+        kw = fs.line_kw(k, label=lab, linewidth=1.3 if k == "vdc" else 0.9)
+        eb = ax.errorbar(x, mu, yerr=[lo, sd], elinewidth=0.55, capsize=1.2, **kw)
         for art in eb[2]:
             art.set_alpha(0.55)
+        handles.append(Line2D([], [], **kw))  # legend entry without the error-bar glyph
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xticks([5, 10, 20, 50])
     ax.set_xticklabels(["5", "10", "20", "50"])
     ax.minorticks_off()
-    ax.set_ylim(5e-4, 0.9)
+    ax.set_ylim(7e-5, 0.12)  # the band below 6e-4 holds the legend, under every (truncated) whisker
+    ax.set_xlim(4.0, 62.0)
     ax.set_xlabel("Dimension $d$")
     ax.set_ylabel("MI absolute error (nats)")
     ax.set_title("MI error vs. dimension")
-    ax.legend(loc="upper center", ncol=3, columnspacing=0.5, handlelength=1.6)
+    ax.legend(handles=handles, loc="lower center", ncol=3, columnspacing=0.6, handlelength=1.5,
+              handletextpad=0.3, borderaxespad=0.1, labelspacing=0.15)
 
 
 def panel_tc_time(ax, tc):
@@ -104,7 +109,8 @@ def panel_tc_time(ax, tc):
                 xs.append(d)
                 ys.append(float(np.median(vals)))
         if xs:
-            ax.plot(xs, ys, **fs.line_kw(k, label="VDC" if k == "vdc" else fs.STYLE[k].label,
+            # the AR(1) TC timing fits a D-vine truncated after its first tree (d - 1 edges)
+            ax.plot(xs, ys, **fs.line_kw(k, label="VDC (tree 1)" if k == "vdc" else fs.STYLE[k].label,
                                          linewidth=1.3 if k == "vdc" else 0.9))
     ax.set_xscale("log")
     ax.set_yscale("log")
@@ -113,7 +119,7 @@ def panel_tc_time(ax, tc):
     ax.minorticks_off()
     ax.set_xlabel("Dimension $d$")
     ax.set_ylabel("TC runtime (s)")
-    ax.set_title("Total-correlation runtime")
+    ax.set_title("TC runtime")
     ax.legend(loc="upper left", handlelength=1.6)
 
 
@@ -125,9 +131,9 @@ def main():
     rows = parse_mi_table(fs.input_file(a.inputs, "tables/tab_mi.tex"))
     e6 = json.loads(fs.input_file(a.inputs, "paper_outputs/e6_theory_synthetic_results.json").read_text())
     tc = json.loads(fs.input_file(a.inputs, "paper_outputs/tc_benchmark_neural_full.json").read_text())
-    fig = plt.figure(figsize=(fs.TEXTWIDTH, 1.60))
-    gs = fig.add_gridspec(1, 3, width_ratios=[1.0, 1.05, 1.0], wspace=0.5, left=0.105, right=0.995,
-                          top=0.85, bottom=0.21)
+    fig = plt.figure(figsize=(fs.TEXTWIDTH, 1.95))
+    gs = fig.add_gridspec(1, 3, width_ratios=[0.9, 1.22, 0.95], wspace=0.45, left=0.105, right=0.995,
+                          top=0.87, bottom=0.185)
     axes = [fig.add_subplot(gs[0, i]) for i in range(3)]
     panel_mi_bars(axes[0], rows)
     panel_mi_dim(axes[1], e6)

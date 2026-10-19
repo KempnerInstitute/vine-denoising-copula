@@ -33,13 +33,13 @@ IS_RELEASE = (_RELEASE_INPUTS / "MANIFEST.json").exists()
 INPUTS_DIR = _RELEASE_INPUTS if IS_RELEASE else _HERE.parent / "analysis" / "figure_inputs"
 FIGURES_DIR = _HERE.parent / ("output" if IS_RELEASE else "figures")
 
-# Font sizes (pt) at printed size; captions in the paper are 9 pt.
-FS_TICK = 6.5
-FS_LABEL = 7.0
-FS_TITLE = 7.5
-FS_LEGEND = 6.3
-FS_ANNOT = 6.3
-FS_PANEL = 8.5
+# Font sizes (pt) at printed size; captions in the paper are 9 pt. Nothing prints below 7 pt.
+FS_TICK = 7.0
+FS_LABEL = 7.5
+FS_TITLE = 8.0
+FS_LEGEND = 7.0
+FS_ANNOT = 7.0
+FS_PANEL = 9.0
 
 
 @dataclass(frozen=True)
