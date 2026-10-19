@@ -196,6 +196,16 @@ The paper's runs fit the VDC vine truncated after its first tree (`--truncation-
 first-order autoregressive process the true TC lies entirely in the first tree of the D-vine that
 follows the chain order.
 
+Structural control (paper appendix, "Structural control for the TC benchmark"): KSG summed over the same
+adjacent pairs, on the samples of the Figure 3(c) run, with every trial and its provenance recorded:
+
+    python paper/neurips2026/runners/tc_tree1_control.py . \
+      paper/neurips2026/figures/inputs/paper_outputs/tc_benchmark_neural_full.json /path/to/new-control.json
+
+The saved output of the paper's run is `saved_outputs/tc_tree1_control_results.json` (host and job id
+removed). Its per-trial estimates should be reproduced exactly; its runtimes are not compared with VDC's
+in the paper, because the host of the reference run was not recorded.
+
 MI self-consistency (data-processing inequality, additivity and monotone invariance), original
 60-trial protocol and the 480-trial scale-up (160 base datasets at three noise levels):
 
