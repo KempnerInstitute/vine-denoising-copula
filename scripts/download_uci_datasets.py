@@ -36,6 +36,7 @@ import shutil
 import sys
 import tarfile
 import tempfile
+import time
 import urllib.request
 import zipfile
 from collections import Counter
@@ -359,6 +360,27 @@ def check_arrays(name: str, got: dict, expected: dict, allow_mismatch: bool) -> 
     return ok
 
 
+def remove_tree(path: Path, attempts: int = 6, delay: float = 0.5) -> bool:
+    """Remove a temporary extraction directory, retrying before reporting failure.
+
+    On shared file systems (NFS) a file that was just closed can briefly keep its directory non-empty,
+    so removal is retried with growing pauses. If the directory still cannot be removed, a warning
+    names it, so the residue is reported rather than silently left behind.
+    """
+    last = None
+    for i in range(attempts):
+        try:
+            shutil.rmtree(path)
+            return True
+        except FileNotFoundError:
+            return True
+        except OSError as exc:
+            last = exc
+            time.sleep(delay * (i + 1))
+    print(f"  WARNING: could not remove the temporary extraction {path} ({last}); delete it by hand", file=sys.stderr)
+    return False
+
+
 def prepare_maf(datasets, out: Path, archive: Path | None, cache_dir: Path, *, keep_extracted: bool = False,
                 force: bool = False, allow_mismatch: bool = False) -> dict:
     """Write out/uci/<name>.npz for the requested datasets and return the manifest."""
@@ -417,7 +439,7 @@ def prepare_maf(datasets, out: Path, archive: Path | None, cache_dir: Path, *, k
             print(f"  wrote {path} ({split[0]}/{split[1]}/{split[2]} rows, d={split[3]})", flush=True)
     finally:
         if not keep_extracted:
-            shutil.rmtree(extract_root, ignore_errors=True)
+            remove_tree(extract_root)
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
     return manifest
 

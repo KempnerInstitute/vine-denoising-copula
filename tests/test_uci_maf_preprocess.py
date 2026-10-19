@@ -248,3 +248,28 @@ def test_ccpp_split_matches_the_legacy_global_seed(dl):
     train, test = dl.split_ccpp(data)
     np.testing.assert_array_equal(train, data[idx[:40]])
     np.testing.assert_array_equal(test, data[idx[40:]])
+
+
+def test_remove_tree_retries_and_reports_residue(dl, tmp_path, monkeypatch, capsys):
+    target = tmp_path / "extract_x"
+    (target / "data").mkdir(parents=True)
+    calls = []
+    real_rmtree = dl.shutil.rmtree
+
+    def flaky(path):  # the first attempt fails as it can on NFS, the second succeeds
+        calls.append(path)
+        if len(calls) == 1:
+            raise OSError(39, "Directory not empty")
+        real_rmtree(path)
+
+    def always_fails(path):
+        raise OSError(39, "Directory not empty")
+
+    monkeypatch.setattr(dl.time, "sleep", lambda s: None)
+    monkeypatch.setattr(dl.shutil, "rmtree", flaky)
+    assert dl.remove_tree(target) and not target.exists() and len(calls) == 2
+
+    target.mkdir()
+    monkeypatch.setattr(dl.shutil, "rmtree", always_fails)
+    assert dl.remove_tree(target, attempts=3) is False
+    assert "could not remove the temporary extraction" in capsys.readouterr().err
