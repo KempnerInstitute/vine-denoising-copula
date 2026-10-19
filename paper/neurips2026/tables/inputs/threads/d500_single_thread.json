@@ -1,0 +1,8 @@
+{
+  "description": "Single-thread pyvine-TLL fit at d=500 (data seed 7) in the thread sweep. The sweep saved its last d=200 result and printed the d=500 header at fit_started (both files were last written in that second); the fit had not returned when the sweep job reached its 16-hour time limit and the scheduler ended the job (state TIMEOUT) at job_ended. Times are local (US Eastern).",
+  "fit_started": "2026-07-09T21:20:53-04:00",
+  "job_ended": "2026-07-10T05:55:42-04:00",
+  "job_time_limit": "16:00:00",
+  "job_state": "TIMEOUT",
+  "evidence": "modification times of the sweep's result JSON and run log, and the scheduler accounting record of the sweep job"
+}

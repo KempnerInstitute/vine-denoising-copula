@@ -1,0 +1,225 @@
+{
+  "records": [
+    {
+      "method": "pyvine_tll",
+      "fit_s": 1465.6442825719714,
+      "eval_s": 0.8064516389276832,
+      "nll_bits_per_dim": -0.6138369002874757,
+      "status": "ok",
+      "d": 100,
+      "seed": 7,
+      "num_threads": 1
+    },
+    {
+      "method": "pyvine_tll",
+      "fit_s": 202.87186658987775,
+      "eval_s": 0.7963427898939699,
+      "nll_bits_per_dim": -0.6138369002874757,
+      "status": "ok",
+      "d": 100,
+      "seed": 7,
+      "num_threads": 8
+    },
+    {
+      "method": "pyvine_tll",
+      "fit_s": 119.19684088882059,
+      "eval_s": 0.7971740621142089,
+      "nll_bits_per_dim": -0.6138369002874757,
+      "status": "ok",
+      "d": 100,
+      "seed": 7,
+      "num_threads": 16
+    },
+    {
+      "method": "pyvine_tll",
+      "fit_s": 1465.2796811140142,
+      "eval_s": 0.7972049270756543,
+      "nll_bits_per_dim": -0.5992476793781889,
+      "status": "ok",
+      "d": 100,
+      "seed": 17,
+      "num_threads": 1
+    },
+    {
+      "method": "pyvine_tll",
+      "fit_s": 203.04505477007478,
+      "eval_s": 0.7942444770596921,
+      "nll_bits_per_dim": -0.5992476793781889,
+      "status": "ok",
+      "d": 100,
+      "seed": 17,
+      "num_threads": 8
+    },
+    {
+      "method": "pyvine_tll",
+      "fit_s": 119.71727057499811,
+      "eval_s": 0.7947119921445847,
+      "nll_bits_per_dim": -0.5992476793781889,
+      "status": "ok",
+      "d": 100,
+      "seed": 17,
+      "num_threads": 16
+    },
+    {
+      "method": "pyvine_tll",
+      "fit_s": 1465.5308370958082,
+      "eval_s": 0.7984686819836497,
+      "nll_bits_per_dim": -0.6077756418496871,
+      "status": "ok",
+      "d": 100,
+      "seed": 42,
+      "num_threads": 1
+    },
+    {
+      "method": "pyvine_tll",
+      "fit_s": 204.11812368500978,
+      "eval_s": 0.7992283969651908,
+      "nll_bits_per_dim": -0.6077756418496871,
+      "status": "ok",
+      "d": 100,
+      "seed": 42,
+      "num_threads": 8
+    },
+    {
+      "method": "pyvine_tll",
+      "fit_s": 119.98189503117464,
+      "eval_s": 0.7986265330109745,
+      "nll_bits_per_dim": -0.6077756418496871,
+      "status": "ok",
+      "d": 100,
+      "seed": 42,
+      "num_threads": 16
+    },
+    {
+      "method": "pyvine_tll",
+      "fit_s": 5892.308483600151,
+      "eval_s": 2.477112718857825,
+      "nll_bits_per_dim": -0.6140862290294395,
+      "status": "ok",
+      "d": 200,
+      "seed": 7,
+      "num_threads": 1
+    },
+    {
+      "method": "pyvine_tll",
+      "fit_s": 775.7439119271003,
+      "eval_s": 2.470359945204109,
+      "nll_bits_per_dim": -0.6140862290294395,
+      "status": "ok",
+      "d": 200,
+      "seed": 7,
+      "num_threads": 8
+    },
+    {
+      "method": "pyvine_tll",
+      "fit_s": 426.1459284098819,
+      "eval_s": 2.4722731560468674,
+      "nll_bits_per_dim": -0.6140862290294395,
+      "status": "ok",
+      "d": 200,
+      "seed": 7,
+      "num_threads": 16
+    },
+    {
+      "method": "pyvine_tll",
+      "fit_s": 5901.735574416816,
+      "eval_s": 2.488325161859393,
+      "nll_bits_per_dim": -0.616769372021498,
+      "status": "ok",
+      "d": 200,
+      "seed": 17,
+      "num_threads": 1
+    },
+    {
+      "method": "pyvine_tll",
+      "fit_s": 774.3531256890856,
+      "eval_s": 2.481326460139826,
+      "nll_bits_per_dim": -0.616769372021498,
+      "status": "ok",
+      "d": 200,
+      "seed": 17,
+      "num_threads": 8
+    },
+    {
+      "method": "pyvine_tll",
+      "fit_s": 426.34480731817894,
+      "eval_s": 2.480211677029729,
+      "nll_bits_per_dim": -0.616769372021498,
+      "status": "ok",
+      "d": 200,
+      "seed": 17,
+      "num_threads": 16
+    },
+    {
+      "method": "pyvine_tll",
+      "fit_s": 5898.235400133999,
+      "eval_s": 2.46049132803455,
+      "nll_bits_per_dim": -0.6045600181104036,
+      "status": "ok",
+      "d": 200,
+      "seed": 42,
+      "num_threads": 1
+    },
+    {
+      "method": "pyvine_tll",
+      "fit_s": 776.6380163540598,
+      "eval_s": 2.458074093097821,
+      "nll_bits_per_dim": -0.6045600181104036,
+      "status": "ok",
+      "d": 200,
+      "seed": 42,
+      "num_threads": 8
+    },
+    {
+      "method": "pyvine_tll",
+      "fit_s": 426.48078564787284,
+      "eval_s": 2.4625517069362104,
+      "nll_bits_per_dim": -0.6045600181104036,
+      "status": "ok",
+      "d": 200,
+      "seed": 42,
+      "num_threads": 16
+    }
+  ],
+  "vdc_reference": {
+    "100": {
+      "mean": 44.10242262199366,
+      "std": 0.0,
+      "n": 1
+    },
+    "200": {
+      "mean": 172.80113348766463,
+      "std": 0.0,
+      "n": 1
+    },
+    "500": {
+      "mean": 1081.6190373253387,
+      "std": 0.0,
+      "n": 1
+    }
+  },
+  "settings": {
+    "dims": [
+      100,
+      200,
+      500
+    ],
+    "threads": [
+      1,
+      8,
+      16
+    ],
+    "seeds": [
+      7,
+      17,
+      42
+    ],
+    "n_train": 20000,
+    "n_test": 5000,
+    "theta": 2.0,
+    "pyvine_timeout_s": 7200,
+    "vdc_json": null,
+    "out_json": "e25_pyvine_threads.json",
+    "out_tex": "drafts/tables/tab_pyvine_threads.tex"
+  }
+}
