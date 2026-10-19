@@ -21,16 +21,16 @@ keywords:
   - mutual information
   - total correlation
   - amortized inference
-version: "0.1.0"
-date-released: "2026-04-22"
+version: "0.2.0"
+date-released: "2026-10-19"
 preferred-citation:
-  type: article
-  title: "Amortized Vine Copulas for High-Dimensional Density and Information Estimation"
+  type: conference-paper
+  title: "Amortized Estimation of Simplified Vine Copulas for High-Dimensional Density and Information Analysis"
   authors:
     - family-names: "Safaai"
       given-names: "Houman"
       affiliation: "Kempner Institute for the Study of Natural and Artificial Intelligence at Harvard University"
   year: 2026
-  doi: "10.48550/arXiv.2604.20568"
-  url: "https://arxiv.org/abs/2604.20568"
-  journal: "arXiv preprint arXiv:2604.20568"
+  collection-title: "Advances in Neural Information Processing Systems"
+  conference:
+    name: "NeurIPS 2026"
