@@ -142,6 +142,7 @@ python scripts/model_selection.py --checkpoints checkpoints/*/model_step_*.pt --
 - [API Reference](docs/API.md)
 - [Configuration](docs/CONFIGURATION.md)
 - [Model Releases](docs/MODEL_RELEASES.md)
+- [Datasets](docs/DATASETS.md)
 
 ## Associated Paper
 

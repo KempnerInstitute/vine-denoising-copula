@@ -64,6 +64,11 @@ viz = [
     "seaborn>=0.12.0",
     "pandas>=2.0.0",
 ]
+# scripts/download_uci_datasets.py: GAS ships as a pandas pickle and CCPP as an Excel workbook.
+data = [
+    "pandas>=2.0.0",
+    "openpyxl>=3.1.0",
+]
 
 r-baselines = [
     "rpy2>=3.5.0",
