@@ -206,6 +206,21 @@ The saved output of the paper's run is `saved_outputs/tc_tree1_control_results.j
 removed). Its per-trial estimates should be reproduced exactly; its runtimes are not compared with VDC's
 in the paper, because the host of the reference run was not recorded.
 
+The paper's accuracy intervals and same-node timing come from a paired replication on 50 further datasets
+at d = 50, with the protocol in `tc_replication_PROTOCOL.md` fixed before the run. It first replays the
+three datasets above (KSG must match exactly, VDC within 0.001 nats) and then times both methods
+sequentially on one node (one GPU for VDC, one CPU thread each):
+
+    python paper/neurips2026/runners/tc_replication_paired.py --library . \
+      --checkpoint /path/to/vdc-denoiser-m64-v1.pt \
+      --reference paper/neurips2026/runners/saved_outputs/tc_tree1_control_results.json \
+      --device cuda --output /path/to/new-replication
+
+`saved_outputs/tc_replication_{summary,qualification,manifest}.json` hold the paper's run (one H100 and
+an AMD EPYC 9454; host and job id removed): mean absolute errors 0.187 (VDC) and 0.201 (KSG) nats, paired
+difference -0.013 [-0.070, 0.045], median times 0.76 s and 3.58 s. This copy differs from the authors'
+runner only in taking `--reference` and in checking the library pin only with `--require-pins`.
+
 MI self-consistency (data-processing inequality, additivity and monotone invariance), original
 60-trial protocol and the 480-trial scale-up (160 base datasets at three noise levels):
 
