@@ -11,15 +11,15 @@
       "dropped_keys": 0,
       "hosts": 0,
       "paths": 3,
-      "sha256": "bf7f062a951ee77c5a76ac700970e312539ba4f5f123e258d47a1782de9d3015",
-      "source_sha256": "063c72973dec67452067ca82c2f791ad1a904906e83fbd2f9de80908d2b2fe7c"
+      "sha256": "5bfdca1e56185d66bb367246a0ba3213a717dd6b245afdf79e518e7f7ca14dc4",
+      "source_sha256": "27d8a8328a4649565fb3847c137f03eb78c2a7ac2ff4d6a5385d6a34f08ca25d"
     },
     "fig1_overview/fig1_overview_data.npz": {
       "dropped_keys": 0,
       "hosts": 0,
       "paths": 0,
-      "sha256": "c311ee4fb4858db444aab68244fe27538b5229fd6d6287a1a3f8b5f629225c0d",
-      "source_sha256": "c311ee4fb4858db444aab68244fe27538b5229fd6d6287a1a3f8b5f629225c0d"
+      "sha256": "58647b5f8010fcf36332d742630a49de57eb742f4b30d599a86189f22e0e0932",
+      "source_sha256": "58647b5f8010fcf36332d742630a49de57eb742f4b30d599a86189f22e0e0932"
     },
     "paper_outputs/e12_block_mi_sample_size_clayton_chain_results_with_neural_seed42.json": {
       "dropped_keys": 0,

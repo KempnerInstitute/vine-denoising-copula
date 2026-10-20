@@ -26,7 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import vdc_figstyle as fs  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.colors import LinearSegmentedColormap, LogNorm, PowerNorm  # noqa: E402
-from matplotlib.patches import Arc, FancyArrowPatch, FancyBboxPatch, Polygon  # noqa: E402
+from matplotlib.patches import Arc, FancyArrowPatch, FancyBboxPatch, Polygon, Rectangle  # noqa: E402
 
 W, H_MAX = fs.TEXTWIDTH, 2.75
 M, GAP, PM = 0.03, 0.06, 0.07                 # outer margin, gutter between panels, inner panel margin (in)
@@ -34,14 +34,15 @@ M, GAP, PM = 0.03, 0.06, 0.07                 # outer margin, gutter between pan
 INK, MUTED, ARROW, FRAME = "#262626", "#6E6E6E", "#4A4A4A", "#8A8A8A"
 PANEL_FC, PANEL_EC = "#F6F6F6", "#CCCCCC"
 TRAINED, FROZEN, LOCK = fs.STYLE["vdc"].color, "#9A9A9A", "#6E6E6E"
-TRAINED_EDGE, FROZEN_EDGE = "#A84300", "#6E6E6E"   # slightly darker outlines
+TRAINED_SH = (TRAINED, "#EE9A66", "#A04600", "#7A3500")   # front, top and side faces and edges of the network boxes
+FROZEN_SH = (FROZEN, "#C4C4C4", "#7A7A7A", "#5A5A5A")
 CMAP = LinearSegmentedColormap.from_list(
     "white_navy", ["#FFFFFF", "#DEEBF7", "#9ECAE1", "#4292C6", "#08519C", "#08306B"])
 DOTS = "#3A3A3A"
 LW_FRAME, LW_ARROW = 0.5, 0.8
 S, OFF = 0.39, 0.020                          # card size and deck offset in (a) and (b)
-UW, UH = 0.38, 0.34                           # network glyph footprint
-UA, UWAIST = 0.15, 0.035                      # half-heights of the hourglass at its ends and at the waist
+UW = 0.38                                     # network glyph width
+UA = 0.185                                    # depth of the glyph below its centre line
 BW, BH = 0.23, 0.15                           # IPFP box
 HW = 0.37                                     # cached h-table box
 TITLE_BAND = 0.165                            # panel top to the bottom of its title
@@ -114,18 +115,37 @@ class Canvas:
     def path(self, xs, ys):
         self.ax.plot(xs, ys, color=ARROW, lw=LW_ARROW, zorder=1, solid_capstyle="butt", solid_joinstyle="miter")
 
-    def unet(self, xc, yc, color, edge):
-        """Encoder-decoder hourglass: an encoder trapezoid narrowing to a waist and a mirrored decoder
-        trapezoid widening again, with two skip links bridging the waist across the upper part."""
-        a, w, hx = UA, UWAIST, UW / 2
-        enc = [(xc - hx, yc - a), (xc - hx, yc + a), (xc, yc + w), (xc, yc - w)]
-        dec = [(xc + hx, yc - a), (xc + hx, yc + a), (xc, yc + w), (xc, yc - w)]
-        for pts in (enc, dec):
-            self.ax.add_patch(Polygon(pts, closed=True, fc=color, ec=edge, lw=0.6, joinstyle="round", zorder=2))
-        for dy in (0.115, 0.07):  # the sloped top edges at height yc + dy, then a gap so the arrow stays clear
-            xe = xc - hx + (a - dy) / (a - w) * hx
-            self.ax.add_patch(FancyArrowPatch((xe + 0.012, yc + dy), (2 * xc - xe - 0.012, yc + dy), arrowstyle="-|>",
-                                              mutation_scale=4.5, lw=0.6, color=edge, shrinkA=0, shrinkB=0, zorder=3))
+    def unet(self, xc, yc, shades):
+        """U-Net glyph in the usual feature-map style: boxes whose height (spatial size) shrinks and whose
+        thickness (channels) grows with depth step down from the input level to the bottleneck and back up.
+        A thin trunk joins the levels and dashed skip connections cross the two upper levels; the top
+        level spans the centre line, where the pipeline arrows enter and leave."""
+        front, top, side, edge = shades
+        levels = [(0.185, 0.020), (0.105, 0.030), (0.070, 0.046)]      # (spatial size, thickness), in
+        bottoms = [-0.072, -0.140, -UA]                                  # front-face bottoms below yc
+        boxes = []
+        for dx, lev in zip((-0.190, -0.106, -0.036, 0.043, 0.114), (0, 1, 2, 1, 0)):   # e0 e1 bottleneck d1 d0
+            s, t = levels[lev]
+            boxes.append((xc + dx, yc + bottoms[lev], t, s, 0.28 * s))
+        self.ax.plot([x + t / 2 for x, _, t, _, _ in boxes], [y + s / 2 for _, y, _, s, _ in boxes],
+                     color=edge, lw=0.6, zorder=1.5, solid_joinstyle="round")
+        kw = dict(ec=edge, lw=0.3, joinstyle="round", zorder=2)
+        for x, y, t, s, d in boxes:     # top face, side face (depth up and to the right), front face
+            self.ax.add_patch(Polygon([(x, y + s), (x + d, y + s + d), (x + t + d, y + s + d), (x + t, y + s)], fc=top, **kw))
+            self.ax.add_patch(Polygon([(x + t, y), (x + t + d, y + d), (x + t + d, y + s + d), (x + t, y + s)], fc=side, **kw))
+            self.ax.add_patch(Rectangle((x, y), t, s, fc=front, **kw))
+        for (x0, y0, t0, s0, d0), (x1, *_) in ((boxes[0], boxes[4]), (boxes[1], boxes[3])):
+            yy = y0 + 0.62 * s0         # above the deeper levels; the tail starts behind the side face
+            self.ax.add_patch(FancyArrowPatch((x0 + t0 + 0.62 * d0 + 0.006, yy), (x1 - 0.006, yy), arrowstyle="-|>",
+                                              mutation_scale=3.8, lw=0.6, color=ARROW, linestyle=(0, (2.2, 1.2)),
+                                              shrinkA=0, shrinkB=0, zorder=1.5))
+
+    def tag(self, xc, y0):
+        """Small rounded f_theta tag (the same estimator on every edge), outlined like the frozen network."""
+        tw, th = 0.12, 0.10
+        self.ax.add_patch(FancyBboxPatch((xc - tw / 2, y0), tw, th, boxstyle="round,pad=0,rounding_size=0.02",
+                                         fc="white", ec=FROZEN, lw=0.6, zorder=2))
+        self.text(xc, y0 + th / 2, r"$f_\theta$", va="center", color=ARROW, zorder=3)
 
     def padlock(self, x, y):
         """Small padlock with its body's lower-left corner at (x, y)."""
@@ -219,7 +239,7 @@ def main():
     c.panel(xa0, y1, wa, h1, "a", "Pretrain once", "on simulated copulas")
     xa = place(xa0 + PM, wa - 2 * PM, items_a, plan_a)
     c.deck(xa[0], yi, S, data=D["pre_hist_mixed"], norm=pnorm(D["pre_hist_mixed"]))
-    c.unet(xa[1] + UW / 2, yc, TRAINED, TRAINED_EDGE)
+    c.unet(xa[1] + UW / 2, yc, TRAINED_SH)
     c.box(xa[2] + BW / 2, yc, BW, BH, [(0, "IPFP", {})])
     dn = pnorm(D["pre_proj"], D["pre_true"])
     c.card(xa[3], yi, S, data=D["pre_proj"], norm=dn)
@@ -242,9 +262,9 @@ def main():
     # (b) fit a D-vine, tree by tree, with the frozen network
     c.panel(xb0, y1, wb, h1, "b", "Fit a D-vine, tree by tree")
     xb = place(xb0 + PM, wb - 2 * PM, items_b, plan_b)
-    c.deck(xb[0], yi, S, pts=D["dep0_sample"][:300], dot=0.6)
+    c.deck(xb[0], yi, S, pts=D["dep0_sample"][:200], dot=0.32)
     c.deck(xb[1], yi, S, data=D["dep0_hist"], norm=pnorm(D["dep0_hist"]))
-    c.unet(xb[2] + UW / 2, yc, FROZEN, FROZEN_EDGE)
+    c.unet(xb[2] + UW / 2, yc, FROZEN_SH)
     c.box(xb[3] + BW / 2, yc, BW, BH, [(0, "IPFP", {})])
     c.deck(xb[4], yi, S, data=D["dep0_proj"], norm=pnorm(D["dep0_proj"]))
     c.box(xb[5] + HW / 2, yc, HW, S, [(0.06, r"$h_e,\ h_e^{-1}$", {"size": fs.FS_LABEL}), (-0.075, "cached", {"color": MUTED})])
@@ -279,7 +299,7 @@ def main():
         c.text(xc0p + 0.095, y, lab, size=fs.FS_LABEL, va="center")
         for i in range(n - 1):
             c.path([xn[i] + nw / 2, xn[i + 1] - nw / 2], [y, y])
-            c.text((xn[i] + xn[i + 1]) / 2, y + nh / 2 + 0.010, r"$f_\theta$", va="bottom", color=MUTED)
+            c.tag((xn[i] + xn[i + 1]) / 2, y + nh / 2 + 0.012)   # the same network on every edge
         for x0, t in zip(xn, nodes):
             c.ax.add_patch(FancyBboxPatch((x0 - nw / 2, y - nh / 2), nw, nh, boxstyle="round,pad=0,rounding_size=0.03",
                                           fc="white", ec=FRAME, lw=LW_FRAME, zorder=2))
@@ -306,7 +326,7 @@ def main():
     for i, (t, dd, ise) in enumerate(imgs):
         xi = x0 + (i + 1) * (s3 + g3)
         im = c.card(xi, iy, s3, data=np.clip(dd, 1e-3, None), norm=lnorm)
-        lab = t if ise is None else f"{t}\nISE {ise:.1e}".replace("e-0", "e-").replace("e+0", "e+")
+        lab = t if ise is None else f"{t}\nISE {ise:.2g}"
         c.text(xi + s3 / 2, iy - 0.04, lab)
     # horizontal log colour bar in the header, right-aligned with the images
     cbw, cbh = 0.78, 0.045

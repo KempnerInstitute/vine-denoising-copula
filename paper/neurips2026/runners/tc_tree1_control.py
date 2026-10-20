@@ -3,13 +3,14 @@
 
 VDC estimates the TC of this first-order Markov benchmark on a D-vine truncated after its first tree,
 TC_hat = sum_i I_hat(U_{i-1}; U_i). The control applies the same decomposition to KSG: bivariate KSG on
-each adjacent pair, summed. It regenerates the samples of the Figure 3(c) run exactly (the run's own
-generator and trial seeds, seed 42 + 10000 d + 1000 t) and records every trial, next to the VDC and
-full chain-rule KSG values of that run.
+each adjacent pair, summed. It regenerates the seed-42 samples of the Figure 3(c) sweep exactly (the
+run's own generator and trial seeds, seed 42 + 10000 d + 1000 t) and records every trial, next to the
+VDC and full chain-rule KSG values of the reference run.
 
 Usage: ksg_tree1.py LIBRARY_ROOT REFERENCE_JSON OUTPUT_JSON
   LIBRARY_ROOT    checkout of the vdc library to import (its commit is recorded)
-  REFERENCE_JSON  paper_outputs/tc_benchmark_neural_full.json (the Figure 3(c) run)
+  REFERENCE_JSON  paper_outputs/tc_benchmark_neural_full.json, an earlier seed-42 run whose datasets and
+                  VDC and KSG estimates equal those of seed 42 in the Figure 3(c) sweep
 """
 import hashlib
 import json

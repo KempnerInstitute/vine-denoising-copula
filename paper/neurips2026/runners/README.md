@@ -181,10 +181,9 @@ do not affect the one-pass denoiser). The suite also contains a Joe(theta = 3) c
 come from a defective sampler (see the paper's training-data appendix); the paper's MI table and
 Figure 3(a) exclude it, and the table generator in `../tables` drops it from the saved records.
 
-TC versus dimension, for each seed 7, 17 and 42 (the appendix TC tables and figure report the mean
-over the three seeds; the runtimes of Figure 3(c) come from an earlier run of the same command with
-`--dims 5 10 20 50`, whose saved output does not record its seed but whose KSG estimates equal those
-of the seed-42 run):
+TC versus dimension, for each seed 7, 17 and 42 (Figure 3(c) shows the median runtime over the nine
+trials per dimension, the appendix TC tables and figure the mean over the three seeds; each paper run
+used one H200 GPU and 8 CPU cores):
 
     python scripts/tc_benchmark.py --checkpoint /path/to/vdc-denoiser-m64-v1.pt --device cuda \
       --rho 0.7 --dims 2 5 10 20 50 --n 5000 --n-trials 3 --seed 7 --ksg-k 5 \
@@ -197,7 +196,9 @@ first-order autoregressive process the true TC lies entirely in the first tree o
 follows the chain order.
 
 Structural control (paper appendix, "Structural control for the TC benchmark"): KSG summed over the same
-adjacent pairs, on the samples of the Figure 3(c) run, with every trial and its provenance recorded:
+adjacent pairs, on the seed-42 samples of the Figure 3(c) sweep, with every trial and its provenance
+recorded. It reads an earlier seed-42 run (`tc_benchmark_neural_full.json`, `--dims 5 10 20 50`) whose
+datasets and VDC and KSG estimates equal those of the sweep's seed-42 run:
 
     python paper/neurips2026/runners/tc_tree1_control.py . \
       paper/neurips2026/figures/inputs/paper_outputs/tc_benchmark_neural_full.json /path/to/new-control.json

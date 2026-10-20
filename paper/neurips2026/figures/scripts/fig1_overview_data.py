@@ -13,8 +13,8 @@ Contents
                    IPFP panel): histogram, uniform-mixed histogram (alpha=0.3), raw and projected
                    outputs, true density on the cell centres
   dep<i>_*         three edges of one tree for the deployment strip (samples, histograms, densities)
-  cx_*             Complex-X example of Fig. 1(e) (identical protocol to fig1e_complex_x.py):
-                   true density, sample (seed 123), pyvine-TLL and VDC densities, ISE values
+  cx_*             Complex-X example of Fig. 1(d) (protocol of fig1e_complex_x.py): true density, a fresh
+                   sample (seed CX_SEED), pyvine-TLL and VDC densities, ISE values
   loss_*           training-loss history of the deployed run (downsampled), for the appendix
 
 The training log (--loss-csv) is not distributed; --loss-npz copies the loss_* arrays from an existing
@@ -31,6 +31,9 @@ from pathlib import Path
 import numpy as np
 
 M = 64
+# Seed of the Complex-X example. Checkpoint selection (scripts/model_selection.py) drew its Complex-X
+# sample with default_rng(123), so the figure uses a seed that selection never saw.
+CX_SEED = 20261020
 
 
 def sha256(p: Path) -> str:
@@ -107,7 +110,7 @@ def main():
     d_true = np.asarray(complex_copula_density_grid("x", {"sigma": 0.03, "w2": 1.0}, m=M, device=torch.device("cpu"),
                                                     projection_iters=80), float)
     d_true = d_true / d_true.mean()
-    xc = DiffusionCopulaModel.sample_from_density(density=d_true, n_samples=2000, rng=np.random.default_rng(123))
+    xc = DiffusionCopulaModel.sample_from_density(density=d_true, n_samples=2000, rng=np.random.default_rng(CX_SEED))
     d_vdc = np.asarray(estimate_pair_density_from_samples(bundle, xc, projection_iters=30), float)
     d_vdc = d_vdc / d_vdc.mean()
     tll = pv.Bicop.from_data(np.clip(xc, 1e-10, 1 - 1e-10), controls=pv.FitControlsBicop(family_set=[pv.BicopFamily.tll]))
