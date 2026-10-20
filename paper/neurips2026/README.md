@@ -7,7 +7,7 @@ released model.
 
 | Folder | Contents |
 |---|---|
-| [`figures/`](figures/README.md) | Scripts and saved inputs that regenerate all nine figures (Figures 1-3 and A1-A6); the regenerated images are identical to the paper's. |
+| [`figures/`](figures/README.md) | Scripts and saved inputs that regenerate all ten figures (Figures 1-4 and A1-A6); the regenerated images are identical to the paper's. |
 | [`tables/`](tables/README.md) | Generators that rebuild 23 of the paper's tables from saved outputs, byte for byte, and an inventory of how every other table was produced. |
 | [`runners/`](runners/README.md) | Portable runners for the main experiments (Table 1 likelihoods, UCI benchmarks on the MAF splits, chronological S&P100, vine-fitting timings) and the library commands for the MI, TC and self-consistency benchmarks. |
 | `data/sp100_symbols.json` | Symbols, column order, source and date range of the S&P100 returns matrix (prices are not redistributed). |

@@ -101,8 +101,8 @@ Depend on experimental checkpoints that are not released: `tab_retrained_bivaria
 Not reproducible from saved outputs:
 - `tab_ipfp_validity` had neither a generator nor a saved input; its values were entered before the
   deployed checkpoint was trained. It has been removed from the paper.
-- `tab_vine_nll` is a fallback used only when `tab_vine_nll_ci.tex` is missing. It still holds
-  withdrawn rows and is not printed in the paper.
+- `tab_vine_nll` is an earlier UCI table that still holds withdrawn rows. It is no longer an input of
+  the manuscript, which prints `tab_vine_nll_ci` unconditionally.
 
 Tables written directly in the manuscript source:
 - `tab:claims_evidence` maps claims to the figures and tables that support them; it holds no data.

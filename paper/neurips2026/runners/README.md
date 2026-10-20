@@ -12,7 +12,7 @@ tables are rebuilt from saved outputs by the scripts in `../figures` and `../tab
 | Chronological S&P100 likelihood of VDC and pyvine-TLL | `reproduce_sp100_likelihood.py` | the paper's returns matrix (not distributed; see below) |
 | Fixed-thread vine-fitting timings, d = 100, 200, 500 (Figure 2(c); fast-fit timing table) | `reproduce_scaling_timings.py` | simulated |
 | Bivariate MI benchmark (Figure 3(a); MI table) | `scripts/mi_estimation.py` (library) | simulated |
-| TC versus dimension (Figure 3(c); appendix TC tables and figure) | `scripts/tc_benchmark.py` (library) | simulated |
+| TC versus dimension (Figure 3(b); appendix TC tables and figure) | `scripts/tc_benchmark.py` (library) | simulated |
 | MI self-consistency, 60- and 480-trial protocols | `scripts/mi_self_consistency_tests_v2.py` (library) | simulated |
 
 Run everything on allocated compute resources (a GPU for the full-size runs), with output
@@ -181,7 +181,7 @@ do not affect the one-pass denoiser). The suite also contains a Joe(theta = 3) c
 come from a defective sampler (see the paper's training-data appendix); the paper's MI table and
 Figure 3(a) exclude it, and the table generator in `../tables` drops it from the saved records.
 
-TC versus dimension, for each seed 7, 17 and 42 (Figure 3(c) shows the median runtime over the nine
+TC versus dimension, for each seed 7, 17 and 42 (Figure 3(b) shows the median runtime over the nine
 trials per dimension, the appendix TC tables and figure the mean over the three seeds; each paper run
 used one H200 GPU and 8 CPU cores):
 
@@ -196,7 +196,7 @@ first-order autoregressive process the true TC lies entirely in the first tree o
 follows the chain order.
 
 Structural control (paper appendix, "Structural control for the TC benchmark"): KSG summed over the same
-adjacent pairs, on the seed-42 samples of the Figure 3(c) sweep, with every trial and its provenance
+adjacent pairs, on the seed-42 samples of the Figure 3(b) sweep, with every trial and its provenance
 recorded. It reads an earlier seed-42 run (`tc_benchmark_neural_full.json`, `--dims 5 10 20 50`) whose
 datasets and VDC and KSG estimates equal those of the sweep's seed-42 run:
 

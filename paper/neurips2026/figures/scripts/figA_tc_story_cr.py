@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
-"""Appendix figure: TC scaling and tree-level decomposition (camera-ready), and the shared TC panels.
+"""Appendix figure: MI and TC as the dimension grows (camera-ready), and the shared information panels.
 
 Reads only saved results (the inputs manifest records their source hashes), from the inputs folder:
-tc_scaling/tc_benchmark.json and tc_knockout/tc_decomposition_uci_maf_{power,gas,hepmass}.json. Tree shares
-are computed with the earlier script's own helpers, so every plotted value is unchanged.
+  (a) paper_outputs/e6_theory_synthetic_results.json   pairwise MI error of a Gaussian AR(1) process vs d
+  (b) tc_scaling/tc_benchmark.json                     TC of a Gaussian AR(1) process vs d (true, VDC with a
+      D-vine truncated after its first tree, full chain-rule KSG; mean over three seeds)
 
-  (a) TC of a Gaussian AR(1) process vs dimension (true, VDC with a D-vine truncated after its first tree,
-      KSG; mean over three seeds)
-  (b) tree-level shares of |TC| for the MAF POWER, GAS and HEPMASS fits
-
-The panel functions below also draw Fig. 3(d)-(f) (fig3_information_cr.py): edge MI against the analytic
-ground truth (paper_outputs/tc_decomposition_ground_truth_compare.json), the tree knockout
-(tc_knockout/e17_tree_knockout_tc_maf.json) and MI self-consistency on the 480-trial protocol
-(paper_outputs/mi_self_consistency_scaleup.json).
+The panel functions below also draw Fig. 3(c) (fig3_information_cr.py: MI self-consistency on the 480-trial
+protocol, paper_outputs/mi_self_consistency_scaleup.json) and Fig. 4 (fig4_tc_decomposition_cr.py: edge MI
+against the analytic ground truth, tree-level shares of |TC| for the MAF POWER, GAS and HEPMASS fits and the
+tree knockout). Tree shares are computed with the earlier script's own helpers, so every plotted value is
+unchanged.
 """
 from __future__ import annotations
 
@@ -27,6 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from fig_tc_story_composite import _aggregate_tree_shares, _tree_abs_shares  # noqa: E402
 import vdc_figstyle as fs  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
+from matplotlib.lines import Line2D  # noqa: E402
 from matplotlib.ticker import FixedLocator, NullLocator  # noqa: E402
 
 # Datasets are told apart by fill lightness together with hatch (bars) and marker shape (points);
@@ -78,15 +77,51 @@ def panel_edge_mi(ax, gt):
     return dict(edges=len(merged), mae=mae, mae_json=float(gt["meta"]["edge_mae"]))
 
 
+def panel_mi_dim(ax, e6):
+    rows = [r for r in e6["mi_summary_records"] if r.get("scenario") == "gaussian_ar1"]
+    keys = [("dcd", "vdc"), ("ksg", "ksg"), ("gaussian", "gauss"), ("infonce", "infonce"), ("mine", "mine")]
+    dodge = np.linspace(-0.13, 0.13, len(keys))
+    handles = []
+    for (m, k), off in zip(keys, dodge):
+        pts = sorted((int(r["d"]), float(r["mi_abs_err_mean"]), float(r["mi_abs_err_std"]))
+                     for r in rows if r.get("method") == m and int(r.get("n_success", 0)) > 0
+                     and np.isfinite(float(r["mi_abs_err_mean"])))
+        if not pts:
+            continue
+        d = np.array([p[0] for p in pts], float)
+        mu = np.array([p[1] for p in pts])
+        sd = np.array([p[2] if np.isfinite(p[2]) else 0.0 for p in pts])
+        lo = np.minimum(sd, mu * 0.75)  # keep whiskers positive on the log axis (truncated, see caption)
+        x = d * np.exp(off)
+        lab = "VDC" if k == "vdc" else fs.STYLE[k].label.replace(" copula", "")
+        kw = fs.line_kw(k, label=lab, linewidth=1.3 if k == "vdc" else 0.9)
+        eb = ax.errorbar(x, mu, yerr=[lo, sd], elinewidth=0.55, capsize=1.2, **kw)
+        for art in eb[2]:
+            art.set_alpha(0.55)
+        handles.append(Line2D([], [], **kw))  # legend entry without the error-bar glyph
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xticks([5, 10, 20, 50])
+    ax.set_xticklabels(["5", "10", "20", "50"])
+    ax.minorticks_off()
+    ax.set_ylim(7e-5, 0.12)  # the band below 6e-4 holds the legend, under every (truncated) whisker
+    ax.set_xlim(4.0, 62.0)
+    ax.set_xlabel("Dimension $d$")
+    ax.set_ylabel("MI absolute error (nats)")
+    ax.set_title("MI error vs. dimension")
+    ax.legend(handles=handles, loc="lower center", ncol=3, columnspacing=0.6, handlelength=1.5,
+              handletextpad=0.3, borderaxespad=0.1, labelspacing=0.15)
+
+
 def panel_tc_dimension(ax, tc):
-    """TC of a Gaussian AR(1) process vs dimension: truth, VDC (tree 1) and KSG."""
+    """TC of a Gaussian AR(1) process vs dimension: truth, VDC (tree 1) and full chain-rule KSG."""
     dims = np.asarray(tc["dimensions"], float)
     tc_true = np.asarray(tc["tc_true"], float)
     tc_vdc = np.asarray(tc["tc_dcd_mean"], float)
     tc_ksg = np.asarray(tc["tc_ksg_mean"], float)
     ax.plot(dims, tc_true, color="0.75", linewidth=3.4, solid_capstyle="round", label="True TC", zorder=1)
     ax.plot(dims, tc_vdc, **fs.line_kw("vdc", zorder=3, label="VDC (tree 1)"))
-    ax.plot(dims, tc_ksg, **fs.line_kw("ksg", zorder=2))
+    ax.plot(dims, tc_ksg, **fs.line_kw("ksg", zorder=2, label="KSG (full chain rule)"))
     plain_log_ticks(ax, "x", [2, 5, 10, 20, 50])
     plain_log_ticks(ax, "y", [0.3, 1, 3, 10])
     ax.set_xlim(1.7, 105)
@@ -210,28 +245,24 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     fs.add_io_args(ap, "figA_tc_story")
     ap.add_argument("--tc-json", type=Path, help="override tc_scaling/tc_benchmark.json")
-    ap.add_argument("--decomp-dir", type=Path, help="override folder with tc_decomposition_uci_maf_{power,gas,hepmass}.json")
     a = ap.parse_args()
 
     def load(rel, override=None):
         return json.loads(fs.input_file(a.inputs, rel, override).read_text())
 
+    e6 = load("paper_outputs/e6_theory_synthetic_results.json")
     tc = load("tc_scaling/tc_benchmark.json", a.tc_json)
-    decomp = {k: load(f"tc_knockout/tc_decomposition_uci_maf_{k}.json",
-                      a.decomp_dir / f"tc_decomposition_uci_maf_{k}.json" if a.decomp_dir else None) for k in DATASETS}
 
     plt.rcdefaults()  # importing the earlier script applied its own style; start from defaults
     fs.apply()
     fig = plt.figure(figsize=(fs.TEXTWIDTH, 1.70))
-    gs = fig.add_gridspec(1, 2, width_ratios=[1.0, 1.08], left=0.085, right=0.99, top=0.865, bottom=0.195,
+    gs = fig.add_gridspec(1, 2, width_ratios=[1.0, 1.0], left=0.085, right=0.99, top=0.865, bottom=0.195,
                           wspace=0.3)
     ax_a, ax_b = fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[0, 1])
-    info_a = panel_tc_dimension(ax_a, tc)
-    info_b = panel_tree_shares(ax_b, decomp)
+    panel_mi_dim(ax_a, e6)
+    info_b = panel_tc_dimension(ax_b, tc)
     fs.panel_labels(fig, [ax_a, ax_b], "ab", y=0.995)
-    print(f"(a) d={info_a['dims']} true/KSG at d=50: {info_a['true_over_ksg_d50']:.3f}")
-    for key, v in info_b.items():
-        print(f"(b) {key}", v)
+    print(f"(b) d={info_b['dims']} true/KSG at d=50: {info_b['true_over_ksg_d50']:.3f}")
     fs.save(fig, a.name, a.figures_dir)
 
 

@@ -14,10 +14,11 @@ Each figure is written as a vector PDF (embedded TrueType fonts) and a 400-dpi P
 |---|---|---|
 | 1 | `fig1_overview_cr.py` | `fig1_overview/fig1_overview_data.npz` |
 | 2 | `fig2_density_runtime_cr.py` (loaders in `fig4_density_runtime_composite_v2.py`, `paper_style.py`) | `tables/tab_bivariate.tex`, `paper_outputs/e22_highdim_scaling.json`, `fast_fit_scaling/timing_summary.json`, `paper_outputs/e23_sp100_density.json`, `paper_outputs/e28_sp100_chrono.json` |
-| 3 | `fig3_information_cr.py` (panels (d)-(f) drawn by the panel functions of `figA_tc_story_cr.py`) | `tables/tab_mi.tex`, `paper_outputs/e6_theory_synthetic_results.json`, `tc_scaling/tc_benchmark.json`, `paper_outputs/tc_decomposition_ground_truth_compare.json`, `tc_knockout/e17_tree_knockout_tc_maf.json`, `paper_outputs/mi_self_consistency_scaleup.json` |
+| 3 | `fig3_information_cr.py` (panel (c) drawn by `figA_tc_story_cr.py`) | `tables/tab_mi.tex`, `tc_scaling/tc_benchmark.json`, `paper_outputs/mi_self_consistency_scaleup.json` |
+| 4 | `fig4_tc_decomposition_cr.py` (panels drawn by `figA_tc_story_cr.py`; tree-share helpers in `fig_tc_story_composite.py`) | `paper_outputs/tc_decomposition_ground_truth_compare.json`, `tc_knockout/tc_decomposition_uci_maf_{power,gas,hepmass}.json`, `tc_knockout/e17_tree_knockout_tc_maf.json` |
 | A1 | `figA_training_diagnostics_cr.py` | `fig1_overview/fig1_overview_data.npz` |
 | A2 | `figA_nonsimplified_stress_cr.py` | `paper_outputs/e18_nonsimplified_stress.json`; values are checked against `tables/tab_nonsimplified_stress.tex` |
-| A3 | `figA_tc_story_cr.py` (tree-share helpers in `fig_tc_story_composite.py`) | `tc_scaling/tc_benchmark.json`, `tc_knockout/tc_decomposition_uci_maf_{power,gas,hepmass}.json` |
+| A3 | `figA_tc_story_cr.py` | `paper_outputs/e6_theory_synthetic_results.json`, `tc_scaling/tc_benchmark.json` |
 | A4 | `figA_mi_sample_size_cr.py` | `paper_outputs/e12_block_mi_sample_size_clayton_chain_results_with_neural_seed42.json` |
 | A5 | `figA_var_calibration_cr.py` | `var_backtest/e3_var_results.json` |
 | A6 | `figA_rolling_dependence_cr.py` | `paper_outputs/e16_rolling_dependence_compact.json`, `sp100/sp100_returns_meta.json` |
@@ -62,6 +63,6 @@ The training log is not distributed; `--loss-npz` copies the loss arrays from th
 
 With Python 3.10.20, numpy 2.2.6, scipy 1.15.3, matplotlib 3.10.6 and Pillow 11.3.0, `make_figures.sh`
 reproduces the figures of the camera-ready paper exactly: identical PNG pixels and identical 300-dpi
-rasterizations of the PDFs, for all nine figures. With the same library version and checkpoint, the Figure 1
+rasterizations of the PDFs, for all ten figures. With the same library version and checkpoint, the Figure 1
 data step on CPU reproduces every array of `fig1_overview_data.npz` exactly. Other versions of matplotlib or
 its bundled STIX fonts may move text by a pixel.

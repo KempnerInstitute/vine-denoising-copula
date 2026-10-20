@@ -2,7 +2,9 @@
 """Camera-ready Fig. 1: VDC overview, drawn as a vector schematic at printed size.
 
 (a) Pretrain once on simulated copulas: a deck of noisy histograms H~ -> trained U-Net f_theta -> IPFP
-    -> output D^, compared with the true density c by the loss L, which updates f_theta.
+    -> output D^, compared with the true density c by the loss L, which updates f_theta. The pictured H~ is
+    one training input (uniform mixing of weight 0.3) and D^ the deployed network's output for exactly that
+    input at its noise level.
 (b) Fit a D-vine tree by tree: the pairs of tree k are histogrammed and passed through the frozen
     f_theta in batches (one network pass per batch), IPFP projects each grid, and the cached h-functions
     transform the pairs that feed tree k+1.
@@ -241,8 +243,8 @@ def main():
     c.deck(xa[0], yi, S, data=D["pre_hist_mixed"], norm=pnorm(D["pre_hist_mixed"]))
     c.unet(xa[1] + UW / 2, yc, TRAINED_SH)
     c.box(xa[2] + BW / 2, yc, BW, BH, [(0, "IPFP", {})])
-    dn = pnorm(D["pre_proj"], D["pre_true"])
-    c.card(xa[3], yi, S, data=D["pre_proj"], norm=dn)
+    dn = pnorm(D["pre_mixed_proj"], D["pre_true"])
+    c.card(xa[3], yi, S, data=D["pre_mixed_proj"], norm=dn)   # the forward pass of the pictured input
     c.card(xa[4], yi, S, data=D["pre_true"], norm=dn)
     for x, (w, lab, _) in zip(xa, items_a):
         if lab:
