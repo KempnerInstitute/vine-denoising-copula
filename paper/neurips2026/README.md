@@ -45,7 +45,8 @@ Each runs in a few minutes or less on a CPU and needs no GPU or checkpoint.
 ## Scope
 
 - Results use the released model. The exploratory retrained estimators of the paper's Appendix G
-  are not released, so their two tables are listed but not reproducible here.
+  are not released, so their two tables are listed but not reproducible here; nor are the three
+  alternative checkpoints of the corruption comparison, whose saved output is included.
 - Timings depend on hardware; the runners document the paper's hardware and settings.
 - Some appendix experiments are run by scripts that remain in the authors' paper workspace; the
   inventory in `tables/README.md` lists them, and their saved outputs are included where a table is
