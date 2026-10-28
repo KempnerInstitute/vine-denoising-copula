@@ -4,7 +4,8 @@
 Inputs folder:
   (a) paper_outputs/tc_decomposition_ground_truth_compare.json      edge MI vs analytic truth, d=8
   (b) tc_knockout/tc_decomposition_uci_maf_{power,gas,hepmass}.json tree-level shares of |TC|, MAF data
-  (c) tc_knockout/e17_tree_knockout_tc_maf.json                     tree knockout on the MAF data
+  (c) tc_knockout/e17_tree_knockout_tc_maf_fixed.json               tree knockout on the MAF data: the October 2
+      protocol replayed with the corrected inverse-h sampler (library 67c5b1b, job 54148983)
 All three panels are drawn by the panel functions of figA_tc_story_cr.py. Drawn at 5.5 in with the shared
 vdc_figstyle fonts and method encodings.
 """
@@ -24,7 +25,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     fs.add_io_args(ap, "fig4_tc_decomposition")
-    ap.add_argument("--knockout-json", type=Path, help="override tc_knockout/e17_tree_knockout_tc_maf.json")
+    ap.add_argument("--knockout-json", type=Path, help="override tc_knockout/e17_tree_knockout_tc_maf_fixed.json")
     a = ap.parse_args()
     plt.rcdefaults()  # the panel module's helper import applied its own style; start from defaults
     fs.apply()
@@ -34,7 +35,7 @@ def main():
 
     gt = load("paper_outputs/tc_decomposition_ground_truth_compare.json")
     decomp = {k: load(f"tc_knockout/tc_decomposition_uci_maf_{k}.json") for k in tcs.DATASETS}
-    knockout = load("tc_knockout/e17_tree_knockout_tc_maf.json", a.knockout_json)
+    knockout = load("tc_knockout/e17_tree_knockout_tc_maf_fixed.json", a.knockout_json)
 
     fig = plt.figure(figsize=(fs.TEXTWIDTH, 1.75))
     gs = fig.add_gridspec(1, 3, width_ratios=[1.0, 1.05, 1.0], wspace=0.42, left=0.085, right=0.99,

@@ -15,7 +15,7 @@ Each figure is written as a vector PDF (embedded TrueType fonts) and a 400-dpi P
 | 1 | `fig1_overview_cr.py` | `fig1_overview/fig1_overview_data.npz` |
 | 2 | `fig2_density_runtime_cr.py` (loaders in `fig4_density_runtime_composite_v2.py`, `paper_style.py`) | `tables/tab_bivariate.tex`, `paper_outputs/e22_highdim_scaling.json`, `fast_fit_scaling/timing_summary.json`, `paper_outputs/e23_sp100_density.json`, `paper_outputs/e28_sp100_chrono.json` |
 | 3 | `fig3_information_cr.py` (panel (c) drawn by `figA_tc_story_cr.py`) | `tables/tab_mi.tex`, `tc_scaling/tc_benchmark.json`, `paper_outputs/mi_self_consistency_scaleup.json` |
-| 4 | `fig4_tc_decomposition_cr.py` (panels drawn by `figA_tc_story_cr.py`; tree-share helpers in `fig_tc_story_composite.py`) | `paper_outputs/tc_decomposition_ground_truth_compare.json`, `tc_knockout/tc_decomposition_uci_maf_{power,gas,hepmass}.json`, `tc_knockout/e17_tree_knockout_tc_maf.json` |
+| 4 | `fig4_tc_decomposition_cr.py` (panels drawn by `figA_tc_story_cr.py`; tree-share helpers in `fig_tc_story_composite.py`) | `paper_outputs/tc_decomposition_ground_truth_compare.json`, `tc_knockout/tc_decomposition_uci_maf_{power,gas,hepmass}.json`, `tc_knockout/e17_tree_knockout_tc_maf_fixed.json` |
 | A1 | `figA_training_diagnostics_cr.py` | `fig1_overview/fig1_overview_data.npz` |
 | A2 | `figA_nonsimplified_stress_cr.py` | `paper_outputs/e18_nonsimplified_stress.json`; values are checked against `tables/tab_nonsimplified_stress.tex` |
 | A3 | `figA_tc_story_cr.py` | `paper_outputs/e6_theory_synthetic_results.json`, `tc_scaling/tc_benchmark.json` |
@@ -42,6 +42,11 @@ The returns matrix stores no per-row dates, so Figure A6 assigns window end date
 to consecutive NYSE trading days between the recorded first and last dates, after checking that the count
 matches. With `--returns PATH` the script also checks that known extreme market days are among the largest
 moves; the figure is identical with or without this check.
+
+`tc_knockout/e17_tree_knockout_tc_maf_fixed.json` (Figure 4(c)) is the tree-knockout experiment replayed with
+the corrected inverse-h sampler (library commit 67c5b1b, same checkpoint, seed and options as the earlier run,
+whose samples predate the fix). Its Pearson correlation between removed share and TC drop is 0.9975 over the
+12 knockouts, against 0.9974 before the fix.
 
 ## Figure 1 data (optional)
 
