@@ -2,7 +2,7 @@
 
 This directory contains SLURM wrappers that were used during research and release validation. They are convenience scripts for managed cluster environments rather than part of the stable package API.
 
-For portable public reproduction, prefer the Python commands in [docs/PAPER_REPRODUCIBILITY.md](../docs/PAPER_REPRODUCIBILITY.md).
+Many of the `paper_*` wrappers call scripts from the authors' paper workspace, which is not part of this repository, and contain cluster-specific paths, partitions and accounts; they will not run as-is elsewhere. For portable reproduction of the NeurIPS 2026 paper, use the scripts, saved outputs and runners in [paper/neurips2026](../paper/neurips2026/README.md).
 
 ## Output Layout
 

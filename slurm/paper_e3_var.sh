@@ -13,7 +13,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Denoising Copula (ICML 2026) - E3 VaR BACKTEST JOB
+# Vine Denoising Copula (NeurIPS 2026) - E3 VaR BACKTEST JOB
 # ============================================================================
 # Produces:
 #   RUN_DIR/results/e3_var_results.json

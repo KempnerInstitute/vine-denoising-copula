@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Denoising Copula (ICML 2026) - E9 real-edge neural copula scaling
+# Vine Denoising Copula (NeurIPS 2026) - E9 real-edge neural copula scaling
 # ============================================================================
 
 set -euo pipefail

@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Denoising Copula (ICML 2026) - E2 UCI BENCHMARK JOB
+# Vine Denoising Copula (NeurIPS 2026) - E2 UCI BENCHMARK JOB
 # ============================================================================
 
 set -euo pipefail

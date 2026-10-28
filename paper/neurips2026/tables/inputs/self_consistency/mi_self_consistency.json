@@ -1,0 +1,1287 @@
+[
+  {
+    "estimator": "KSG",
+    "dpi": {
+      "summary": {
+        "violation_rate": 0.03333333333333333
+      },
+      "records": [
+        {
+          "family": "gaussian",
+          "sigma": 0.1,
+          "mi_base": 0.34287818978098805,
+          "mi_noisy": 0.33379820137341376
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.3,
+          "mi_base": 0.34287818978098805,
+          "mi_noisy": 0.311452608839609
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.5,
+          "mi_base": 0.34287818978098805,
+          "mi_noisy": 0.25058142377062786
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.1,
+          "mi_base": 0.3404309738284699,
+          "mi_noisy": 0.3362039939610604
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.3,
+          "mi_base": 0.3404309738284699,
+          "mi_noisy": 0.2989518310271553
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.5,
+          "mi_base": 0.3404309738284699,
+          "mi_noisy": 0.24717703939699476
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.1,
+          "mi_base": 0.3306067415110103,
+          "mi_noisy": 0.3306868151026734
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.3,
+          "mi_base": 0.3306067415110103,
+          "mi_noisy": 0.2983929185869858
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.5,
+          "mi_base": 0.3306067415110103,
+          "mi_noisy": 0.25075090051222837
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.1,
+          "mi_base": 0.35669095906184545,
+          "mi_noisy": 0.3414157317289064
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.3,
+          "mi_base": 0.35669095906184545,
+          "mi_noisy": 0.306461829516401
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.5,
+          "mi_base": 0.35669095906184545,
+          "mi_noisy": 0.25425168921210783
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.1,
+          "mi_base": 0.33916337136681385,
+          "mi_noisy": 0.33692005397044156
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.3,
+          "mi_base": 0.33916337136681385,
+          "mi_noisy": 0.29879739494936963
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.5,
+          "mi_base": 0.33916337136681385,
+          "mi_noisy": 0.24878026275482412
+        },
+        {
+          "family": "student",
+          "sigma": 0.1,
+          "mi_base": 0.33841902110956035,
+          "mi_noisy": 0.339005363179286
+        },
+        {
+          "family": "student",
+          "sigma": 0.3,
+          "mi_base": 0.33841902110956035,
+          "mi_noisy": 0.3103108837034405
+        },
+        {
+          "family": "student",
+          "sigma": 0.5,
+          "mi_base": 0.33841902110956035,
+          "mi_noisy": 0.24613268738526273
+        },
+        {
+          "family": "student",
+          "sigma": 0.1,
+          "mi_base": 0.3475521766535845,
+          "mi_noisy": 0.3495630573407986
+        },
+        {
+          "family": "student",
+          "sigma": 0.3,
+          "mi_base": 0.3475521766535845,
+          "mi_noisy": 0.308763117552866
+        },
+        {
+          "family": "student",
+          "sigma": 0.5,
+          "mi_base": 0.3475521766535845,
+          "mi_noisy": 0.24420230977233182
+        },
+        {
+          "family": "student",
+          "sigma": 0.1,
+          "mi_base": 0.3536665152779275,
+          "mi_noisy": 0.35196270722102163
+        },
+        {
+          "family": "student",
+          "sigma": 0.3,
+          "mi_base": 0.3536665152779275,
+          "mi_noisy": 0.31062305490169173
+        },
+        {
+          "family": "student",
+          "sigma": 0.5,
+          "mi_base": 0.3536665152779275,
+          "mi_noisy": 0.2489187277851972
+        },
+        {
+          "family": "student",
+          "sigma": 0.1,
+          "mi_base": 0.33601177082491773,
+          "mi_noisy": 0.3477973390098068
+        },
+        {
+          "family": "student",
+          "sigma": 0.3,
+          "mi_base": 0.33601177082491773,
+          "mi_noisy": 0.2986992006360367
+        },
+        {
+          "family": "student",
+          "sigma": 0.5,
+          "mi_base": 0.33601177082491773,
+          "mi_noisy": 0.24457263226597803
+        },
+        {
+          "family": "student",
+          "sigma": 0.1,
+          "mi_base": 0.3541090473355535,
+          "mi_noisy": 0.34393403501960584
+        },
+        {
+          "family": "student",
+          "sigma": 0.3,
+          "mi_base": 0.3541090473355535,
+          "mi_noisy": 0.30913486260856615
+        },
+        {
+          "family": "student",
+          "sigma": 0.5,
+          "mi_base": 0.3541090473355535,
+          "mi_noisy": 0.2470998761645884
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.1,
+          "mi_base": 0.6412773144517558,
+          "mi_noisy": 0.6157850776255884
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.3,
+          "mi_base": 0.6412773144517558,
+          "mi_noisy": 0.5180709549672979
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.5,
+          "mi_base": 0.6412773144517558,
+          "mi_noisy": 0.39456183729169503
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.1,
+          "mi_base": 0.6310827152934362,
+          "mi_noisy": 0.6172148528301786
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.3,
+          "mi_base": 0.6310827152934362,
+          "mi_noisy": 0.5117584022112212
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.5,
+          "mi_base": 0.6310827152934362,
+          "mi_noisy": 0.3696327863447504
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.1,
+          "mi_base": 0.6429507909475092,
+          "mi_noisy": 0.6133215468554472
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.3,
+          "mi_base": 0.6429507909475092,
+          "mi_noisy": 0.5060036110901756
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.5,
+          "mi_base": 0.6429507909475092,
+          "mi_noisy": 0.386933730706863
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.1,
+          "mi_base": 0.642558735475605,
+          "mi_noisy": 0.6336058097906356
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.3,
+          "mi_base": 0.642558735475605,
+          "mi_noisy": 0.514124272653202
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.5,
+          "mi_base": 0.642558735475605,
+          "mi_noisy": 0.3965712056839745
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.1,
+          "mi_base": 0.6366250453580609,
+          "mi_noisy": 0.6161533494765035
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.3,
+          "mi_base": 0.6366250453580609,
+          "mi_noisy": 0.5043060577757803
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.5,
+          "mi_base": 0.6366250453580609,
+          "mi_noisy": 0.39812638951481993
+        },
+        {
+          "family": "frank",
+          "sigma": 0.1,
+          "mi_base": 0.25183059435419963,
+          "mi_noisy": 0.24244034702727824
+        },
+        {
+          "family": "frank",
+          "sigma": 0.3,
+          "mi_base": 0.25183059435419963,
+          "mi_noisy": 0.21606810315283909
+        },
+        {
+          "family": "frank",
+          "sigma": 0.5,
+          "mi_base": 0.25183059435419963,
+          "mi_noisy": 0.18615897989440455
+        },
+        {
+          "family": "frank",
+          "sigma": 0.1,
+          "mi_base": 0.24742234385805162,
+          "mi_noisy": 0.24003149780049604
+        },
+        {
+          "family": "frank",
+          "sigma": 0.3,
+          "mi_base": 0.24742234385805162,
+          "mi_noisy": 0.2225027952753038
+        },
+        {
+          "family": "frank",
+          "sigma": 0.5,
+          "mi_base": 0.24742234385805162,
+          "mi_noisy": 0.18389595292911132
+        },
+        {
+          "family": "frank",
+          "sigma": 0.1,
+          "mi_base": 0.24940760940026152,
+          "mi_noisy": 0.243313702836371
+        },
+        {
+          "family": "frank",
+          "sigma": 0.3,
+          "mi_base": 0.24940760940026152,
+          "mi_noisy": 0.22112373670431573
+        },
+        {
+          "family": "frank",
+          "sigma": 0.5,
+          "mi_base": 0.24940760940026152,
+          "mi_noisy": 0.18373987531632707
+        },
+        {
+          "family": "frank",
+          "sigma": 0.1,
+          "mi_base": 0.25944540371276936,
+          "mi_noisy": 0.25879749819914544
+        },
+        {
+          "family": "frank",
+          "sigma": 0.3,
+          "mi_base": 0.25944540371276936,
+          "mi_noisy": 0.22872491763437885
+        },
+        {
+          "family": "frank",
+          "sigma": 0.5,
+          "mi_base": 0.25944540371276936,
+          "mi_noisy": 0.1855179759414245
+        },
+        {
+          "family": "frank",
+          "sigma": 0.1,
+          "mi_base": 0.2690772968076587,
+          "mi_noisy": 0.25117310010833904
+        },
+        {
+          "family": "frank",
+          "sigma": 0.3,
+          "mi_base": 0.2690772968076587,
+          "mi_noisy": 0.2314253222182181
+        },
+        {
+          "family": "frank",
+          "sigma": 0.5,
+          "mi_base": 0.2690772968076587,
+          "mi_noisy": 0.18629619848173817
+        }
+      ]
+    },
+    "additivity": {
+      "summary": {
+        "mean_abs_error": 0.026984425408428336,
+        "mean_relative_error": 0.030263693735236897
+      },
+      "records": [
+        {
+          "copula1": "frank",
+          "copula2": "frank",
+          "mi1": 0.24470005455873078,
+          "mi2": 0.28266524115071157,
+          "rhs_sum": 0.5273652957094423,
+          "lhs_block": 0.5276258315221849,
+          "abs_error": 0.0002605358127425461
+        },
+        {
+          "copula1": "gaussian",
+          "copula2": "gaussian",
+          "mi1": 0.33201478235301174,
+          "mi2": 0.3244662991400933,
+          "rhs_sum": 0.656481081493105,
+          "lhs_block": 0.6563179646850159,
+          "abs_error": 0.00016311680808911433
+        },
+        {
+          "copula1": "clayton",
+          "copula2": "frank",
+          "mi1": 0.6246082032753151,
+          "mi2": 0.2519552962907792,
+          "rhs_sum": 0.8765634995660943,
+          "lhs_block": 0.839230028760559,
+          "abs_error": 0.037333470805535285
+        },
+        {
+          "copula1": "frank",
+          "copula2": "clayton",
+          "mi1": 0.2714361035381856,
+          "mi2": 0.6652372329824807,
+          "rhs_sum": 0.9366733365206663,
+          "lhs_block": 0.8885319852105198,
+          "abs_error": 0.04814135131014652
+        },
+        {
+          "copula1": "frank",
+          "copula2": "clayton",
+          "mi1": 0.2574615083276939,
+          "mi2": 0.6088468333078261,
+          "rhs_sum": 0.86630834163552,
+          "lhs_block": 0.8172846893298917,
+          "abs_error": 0.04902365230562822
+        }
+      ]
+    },
+    "monotone_invariance": {
+      "summary": {
+        "mean_abs_error": 9.340135764333013e-05,
+        "mean_relative_error": 0.00021130224182090135
+      },
+      "records": [
+        {
+          "family": "gaussian",
+          "transform": "cube",
+          "mi_base": 0.3511316325290572,
+          "mi_trans": 0.35118573424490407,
+          "abs_error": 5.410171584685486e-05
+        },
+        {
+          "family": "gaussian",
+          "transform": "exp",
+          "mi_base": 0.3511316325290572,
+          "mi_trans": 0.35118573424490407,
+          "abs_error": 5.410171584685486e-05
+        },
+        {
+          "family": "gaussian",
+          "transform": "cube",
+          "mi_base": 0.34702813319409387,
+          "mi_trans": 0.34713759906556696,
+          "abs_error": 0.00010946587147309117
+        },
+        {
+          "family": "gaussian",
+          "transform": "exp",
+          "mi_base": 0.34702813319409387,
+          "mi_trans": 0.34713759906556696,
+          "abs_error": 0.00010946587147309117
+        },
+        {
+          "family": "gaussian",
+          "transform": "cube",
+          "mi_base": 0.3400932202067395,
+          "mi_trans": 0.3401461681091771,
+          "abs_error": 5.294790243759451e-05
+        },
+        {
+          "family": "gaussian",
+          "transform": "exp",
+          "mi_base": 0.3400932202067395,
+          "mi_trans": 0.3401461681091771,
+          "abs_error": 5.294790243759451e-05
+        },
+        {
+          "family": "gaussian",
+          "transform": "cube",
+          "mi_base": 0.33988007724907554,
+          "mi_trans": 0.33976870210819676,
+          "abs_error": 0.00011137514087877776
+        },
+        {
+          "family": "gaussian",
+          "transform": "exp",
+          "mi_base": 0.33988007724907554,
+          "mi_trans": 0.33976870210819676,
+          "abs_error": 0.00011137514087877776
+        },
+        {
+          "family": "gaussian",
+          "transform": "cube",
+          "mi_base": 0.3462098510902596,
+          "mi_trans": 0.3462684710476971,
+          "abs_error": 5.861995743750015e-05
+        },
+        {
+          "family": "gaussian",
+          "transform": "exp",
+          "mi_base": 0.3462098510902596,
+          "mi_trans": 0.3462684710476971,
+          "abs_error": 5.861995743750015e-05
+        },
+        {
+          "family": "student",
+          "transform": "cube",
+          "mi_base": 0.37042806621319,
+          "mi_trans": 0.3705336348488366,
+          "abs_error": 0.00010556863564659125
+        },
+        {
+          "family": "student",
+          "transform": "exp",
+          "mi_base": 0.37042806621319,
+          "mi_trans": 0.3705336348488366,
+          "abs_error": 0.00010556863564659125
+        },
+        {
+          "family": "student",
+          "transform": "cube",
+          "mi_base": 0.3616974623961262,
+          "mi_trans": 0.36170438134035443,
+          "abs_error": 6.918944228218038e-06
+        },
+        {
+          "family": "student",
+          "transform": "exp",
+          "mi_base": 0.3616974623961262,
+          "mi_trans": 0.36170438134035443,
+          "abs_error": 6.918944228218038e-06
+        },
+        {
+          "family": "student",
+          "transform": "cube",
+          "mi_base": 0.3598367622021037,
+          "mi_trans": 0.3598812152981665,
+          "abs_error": 4.4453096062824216e-05
+        },
+        {
+          "family": "student",
+          "transform": "exp",
+          "mi_base": 0.3598367622021037,
+          "mi_trans": 0.3598812152981665,
+          "abs_error": 4.4453096062824216e-05
+        },
+        {
+          "family": "student",
+          "transform": "cube",
+          "mi_base": 0.3507262214349165,
+          "mi_trans": 0.35092155251978774,
+          "abs_error": 0.00019533108487124196
+        },
+        {
+          "family": "student",
+          "transform": "exp",
+          "mi_base": 0.3507262214349165,
+          "mi_trans": 0.35092155251978774,
+          "abs_error": 0.00019533108487124196
+        },
+        {
+          "family": "student",
+          "transform": "cube",
+          "mi_base": 0.34588004460789357,
+          "mi_trans": 0.34589361113417283,
+          "abs_error": 1.3566526279262803e-05
+        },
+        {
+          "family": "student",
+          "transform": "exp",
+          "mi_base": 0.34588004460789357,
+          "mi_trans": 0.34589361113417283,
+          "abs_error": 1.3566526279262803e-05
+        },
+        {
+          "family": "clayton",
+          "transform": "cube",
+          "mi_base": 0.6369596570711558,
+          "mi_trans": 0.6370087103302513,
+          "abs_error": 4.905325909554392e-05
+        },
+        {
+          "family": "clayton",
+          "transform": "exp",
+          "mi_base": 0.6369596570711558,
+          "mi_trans": 0.6370087103302513,
+          "abs_error": 4.905325909554392e-05
+        },
+        {
+          "family": "clayton",
+          "transform": "cube",
+          "mi_base": 0.6536879355342045,
+          "mi_trans": 0.6537651965952644,
+          "abs_error": 7.726106105998554e-05
+        },
+        {
+          "family": "clayton",
+          "transform": "exp",
+          "mi_base": 0.6536879355342045,
+          "mi_trans": 0.6537651965952644,
+          "abs_error": 7.726106105998554e-05
+        },
+        {
+          "family": "clayton",
+          "transform": "cube",
+          "mi_base": 0.6399373563058415,
+          "mi_trans": 0.6398307619890975,
+          "abs_error": 0.00010659431674397979
+        },
+        {
+          "family": "clayton",
+          "transform": "exp",
+          "mi_base": 0.6399373563058415,
+          "mi_trans": 0.6398307619890975,
+          "abs_error": 0.00010659431674397979
+        },
+        {
+          "family": "clayton",
+          "transform": "cube",
+          "mi_base": 0.6376784238879267,
+          "mi_trans": 0.637656733527729,
+          "abs_error": 2.1690360197723635e-05
+        },
+        {
+          "family": "clayton",
+          "transform": "exp",
+          "mi_base": 0.6376784238879267,
+          "mi_trans": 0.637656733527729,
+          "abs_error": 2.1690360197723635e-05
+        },
+        {
+          "family": "clayton",
+          "transform": "cube",
+          "mi_base": 0.6277834748411983,
+          "mi_trans": 0.6273894023488076,
+          "abs_error": 0.00039407249239076236
+        },
+        {
+          "family": "clayton",
+          "transform": "exp",
+          "mi_base": 0.6277834748411983,
+          "mi_trans": 0.6273894023488076,
+          "abs_error": 0.00039407249239076236
+        }
+      ]
+    },
+    "wall_time_s": 25.090985959395766
+  },
+  {
+    "estimator": "DCD-Vine",
+    "checkpoint": "model_step_190000.pt",
+    "dpi": {
+      "summary": {
+        "violation_rate": 0.0
+      },
+      "records": [
+        {
+          "family": "gaussian",
+          "sigma": 0.1,
+          "mi_base": 0.3245600845898741,
+          "mi_noisy": 0.32261847531635685
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.3,
+          "mi_base": 0.3245600845898741,
+          "mi_noisy": 0.29526318021432996
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.5,
+          "mi_base": 0.3245600845898741,
+          "mi_noisy": 0.2410404478811885
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.1,
+          "mi_base": 0.33033299710813446,
+          "mi_noisy": 0.3244056780331322
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.3,
+          "mi_base": 0.33033299710813446,
+          "mi_noisy": 0.2893585307605875
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.5,
+          "mi_base": 0.33033299710813446,
+          "mi_noisy": 0.2533183874079366
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.1,
+          "mi_base": 0.31139061655501793,
+          "mi_noisy": 0.3088403067180211
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.3,
+          "mi_base": 0.31139061655501793,
+          "mi_noisy": 0.2815030592710115
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.5,
+          "mi_base": 0.31139061655501793,
+          "mi_noisy": 0.2326754970046784
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.1,
+          "mi_base": 0.3294612629093624,
+          "mi_noisy": 0.3246427966922447
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.3,
+          "mi_base": 0.3294612629093624,
+          "mi_noisy": 0.295538418943011
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.5,
+          "mi_base": 0.3294612629093624,
+          "mi_noisy": 0.23497085527177208
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.1,
+          "mi_base": 0.33526933507892803,
+          "mi_noisy": 0.33314232905560914
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.3,
+          "mi_base": 0.33526933507892803,
+          "mi_noisy": 0.3009907808437319
+        },
+        {
+          "family": "gaussian",
+          "sigma": 0.5,
+          "mi_base": 0.33526933507892803,
+          "mi_noisy": 0.24679967129114275
+        },
+        {
+          "family": "student",
+          "sigma": 0.1,
+          "mi_base": 0.35006166961269636,
+          "mi_noisy": 0.3311638982185203
+        },
+        {
+          "family": "student",
+          "sigma": 0.3,
+          "mi_base": 0.35006166961269636,
+          "mi_noisy": 0.2974548292464254
+        },
+        {
+          "family": "student",
+          "sigma": 0.5,
+          "mi_base": 0.35006166961269636,
+          "mi_noisy": 0.241488598280301
+        },
+        {
+          "family": "student",
+          "sigma": 0.1,
+          "mi_base": 0.3735907682678505,
+          "mi_noisy": 0.35555314575570807
+        },
+        {
+          "family": "student",
+          "sigma": 0.3,
+          "mi_base": 0.3735907682678505,
+          "mi_noisy": 0.3094344921550243
+        },
+        {
+          "family": "student",
+          "sigma": 0.5,
+          "mi_base": 0.3735907682678505,
+          "mi_noisy": 0.26306137707665356
+        },
+        {
+          "family": "student",
+          "sigma": 0.1,
+          "mi_base": 0.35800529517831237,
+          "mi_noisy": 0.3484508336702034
+        },
+        {
+          "family": "student",
+          "sigma": 0.3,
+          "mi_base": 0.35800529517831237,
+          "mi_noisy": 0.3125853895678097
+        },
+        {
+          "family": "student",
+          "sigma": 0.5,
+          "mi_base": 0.35800529517831237,
+          "mi_noisy": 0.25117742414024846
+        },
+        {
+          "family": "student",
+          "sigma": 0.1,
+          "mi_base": 0.35512563950177367,
+          "mi_noisy": 0.35011123402333855
+        },
+        {
+          "family": "student",
+          "sigma": 0.3,
+          "mi_base": 0.35512563950177367,
+          "mi_noisy": 0.2954596595176928
+        },
+        {
+          "family": "student",
+          "sigma": 0.5,
+          "mi_base": 0.35512563950177367,
+          "mi_noisy": 0.2582674239000927
+        },
+        {
+          "family": "student",
+          "sigma": 0.1,
+          "mi_base": 0.34796962515583946,
+          "mi_noisy": 0.3446816518339515
+        },
+        {
+          "family": "student",
+          "sigma": 0.3,
+          "mi_base": 0.34796962515583946,
+          "mi_noisy": 0.3129131132411045
+        },
+        {
+          "family": "student",
+          "sigma": 0.5,
+          "mi_base": 0.34796962515583946,
+          "mi_noisy": 0.24212901576100776
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.1,
+          "mi_base": 0.6191629772847095,
+          "mi_noisy": 0.5986644162049097
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.3,
+          "mi_base": 0.6191629772847095,
+          "mi_noisy": 0.4757334688287334
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.5,
+          "mi_base": 0.6191629772847095,
+          "mi_noisy": 0.34894146538959653
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.1,
+          "mi_base": 0.6291580419781209,
+          "mi_noisy": 0.6111841323474712
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.3,
+          "mi_base": 0.6291580419781209,
+          "mi_noisy": 0.47507970180281306
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.5,
+          "mi_base": 0.6291580419781209,
+          "mi_noisy": 0.35663550353459467
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.1,
+          "mi_base": 0.6398335196906084,
+          "mi_noisy": 0.6096723142309683
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.3,
+          "mi_base": 0.6398335196906084,
+          "mi_noisy": 0.4866671199827576
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.5,
+          "mi_base": 0.6398335196906084,
+          "mi_noisy": 0.3612106736406373
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.1,
+          "mi_base": 0.6289421180936047,
+          "mi_noisy": 0.6100931054272377
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.3,
+          "mi_base": 0.6289421180936047,
+          "mi_noisy": 0.48018829630481774
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.5,
+          "mi_base": 0.6289421180936047,
+          "mi_noisy": 0.35532872041466584
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.1,
+          "mi_base": 0.6176042158650688,
+          "mi_noisy": 0.6028566549869395
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.3,
+          "mi_base": 0.6176042158650688,
+          "mi_noisy": 0.4752175189292549
+        },
+        {
+          "family": "clayton",
+          "sigma": 0.5,
+          "mi_base": 0.6176042158650688,
+          "mi_noisy": 0.35127697540899205
+        },
+        {
+          "family": "frank",
+          "sigma": 0.1,
+          "mi_base": 0.2640220944011546,
+          "mi_noisy": 0.2635143703210976
+        },
+        {
+          "family": "frank",
+          "sigma": 0.3,
+          "mi_base": 0.2640220944011546,
+          "mi_noisy": 0.23183583766694227
+        },
+        {
+          "family": "frank",
+          "sigma": 0.5,
+          "mi_base": 0.2640220944011546,
+          "mi_noisy": 0.18343315742020677
+        },
+        {
+          "family": "frank",
+          "sigma": 0.1,
+          "mi_base": 0.27134882875758287,
+          "mi_noisy": 0.26808629435595005
+        },
+        {
+          "family": "frank",
+          "sigma": 0.3,
+          "mi_base": 0.27134882875758287,
+          "mi_noisy": 0.2303036026155756
+        },
+        {
+          "family": "frank",
+          "sigma": 0.5,
+          "mi_base": 0.27134882875758287,
+          "mi_noisy": 0.19252022226806387
+        },
+        {
+          "family": "frank",
+          "sigma": 0.1,
+          "mi_base": 0.25543189199139327,
+          "mi_noisy": 0.2511582216468999
+        },
+        {
+          "family": "frank",
+          "sigma": 0.3,
+          "mi_base": 0.25543189199139327,
+          "mi_noisy": 0.22401871866312106
+        },
+        {
+          "family": "frank",
+          "sigma": 0.5,
+          "mi_base": 0.25543189199139327,
+          "mi_noisy": 0.18651530944626304
+        },
+        {
+          "family": "frank",
+          "sigma": 0.1,
+          "mi_base": 0.2726153628683837,
+          "mi_noisy": 0.2671875027361796
+        },
+        {
+          "family": "frank",
+          "sigma": 0.3,
+          "mi_base": 0.2726153628683837,
+          "mi_noisy": 0.23979945195590302
+        },
+        {
+          "family": "frank",
+          "sigma": 0.5,
+          "mi_base": 0.2726153628683837,
+          "mi_noisy": 0.20215714051325026
+        },
+        {
+          "family": "frank",
+          "sigma": 0.1,
+          "mi_base": 0.26271393268150056,
+          "mi_noisy": 0.2548258853528637
+        },
+        {
+          "family": "frank",
+          "sigma": 0.3,
+          "mi_base": 0.26271393268150056,
+          "mi_noisy": 0.22517611871914076
+        },
+        {
+          "family": "frank",
+          "sigma": 0.5,
+          "mi_base": 0.26271393268150056,
+          "mi_noisy": 0.1818374037708092
+        }
+      ]
+    },
+    "additivity": {
+      "summary": {
+        "mean_abs_error": 0.02123601410997742,
+        "mean_relative_error": 0.028855096472545444
+      },
+      "records": [
+        {
+          "copula1": "gaussian",
+          "copula2": "frank",
+          "mi1": 0.31086112671746374,
+          "mi2": 0.2441534333697604,
+          "rhs_sum": 0.5550145600872242,
+          "lhs_block": 0.5819251684889147,
+          "abs_error": 0.026910608401690572
+        },
+        {
+          "copula1": "gaussian",
+          "copula2": "frank",
+          "mi1": 0.3243330348730705,
+          "mi2": 0.2299302868933533,
+          "rhs_sum": 0.5542633217664238,
+          "lhs_block": 0.5706240777545178,
+          "abs_error": 0.016360755988094056
+        },
+        {
+          "copula1": "gaussian",
+          "copula2": "frank",
+          "mi1": 0.32785502072177575,
+          "mi2": 0.256184472562209,
+          "rhs_sum": 0.5840394932839847,
+          "lhs_block": 0.5785069467761127,
+          "abs_error": 0.005532546507872049
+        },
+        {
+          "copula1": "clayton",
+          "copula2": "clayton",
+          "mi1": 0.6393784618757127,
+          "mi2": 0.6199923043622263,
+          "rhs_sum": 1.259370766237939,
+          "lhs_block": 1.2846959064856132,
+          "abs_error": 0.025325140247674183
+        },
+        {
+          "copula1": "clayton",
+          "copula2": "frank",
+          "mi1": 0.6149986649198909,
+          "mi2": 0.2585904926156003,
+          "rhs_sum": 0.8735891575354912,
+          "lhs_block": 0.9056401769400474,
+          "abs_error": 0.032051019404556236
+        }
+      ]
+    },
+    "monotone_invariance": {
+      "summary": {
+        "mean_abs_error": 0.0,
+        "mean_relative_error": 0.0
+      },
+      "records": [
+        {
+          "family": "gaussian",
+          "transform": "cube",
+          "mi_base": 0.3145750129007185,
+          "mi_trans": 0.3145750129007185,
+          "abs_error": 0.0
+        },
+        {
+          "family": "gaussian",
+          "transform": "exp",
+          "mi_base": 0.3145750129007185,
+          "mi_trans": 0.3145750129007185,
+          "abs_error": 0.0
+        },
+        {
+          "family": "gaussian",
+          "transform": "cube",
+          "mi_base": 0.31225422308703804,
+          "mi_trans": 0.31225422308703804,
+          "abs_error": 0.0
+        },
+        {
+          "family": "gaussian",
+          "transform": "exp",
+          "mi_base": 0.31225422308703804,
+          "mi_trans": 0.31225422308703804,
+          "abs_error": 0.0
+        },
+        {
+          "family": "gaussian",
+          "transform": "cube",
+          "mi_base": 0.3292791748459819,
+          "mi_trans": 0.3292791748459819,
+          "abs_error": 0.0
+        },
+        {
+          "family": "gaussian",
+          "transform": "exp",
+          "mi_base": 0.3292791748459819,
+          "mi_trans": 0.3292791748459819,
+          "abs_error": 0.0
+        },
+        {
+          "family": "gaussian",
+          "transform": "cube",
+          "mi_base": 0.33809431992493394,
+          "mi_trans": 0.33809431992493394,
+          "abs_error": 0.0
+        },
+        {
+          "family": "gaussian",
+          "transform": "exp",
+          "mi_base": 0.33809431992493394,
+          "mi_trans": 0.33809431992493394,
+          "abs_error": 0.0
+        },
+        {
+          "family": "gaussian",
+          "transform": "cube",
+          "mi_base": 0.3170863862999337,
+          "mi_trans": 0.3170863862999337,
+          "abs_error": 0.0
+        },
+        {
+          "family": "gaussian",
+          "transform": "exp",
+          "mi_base": 0.3170863862999337,
+          "mi_trans": 0.3170863862999337,
+          "abs_error": 0.0
+        },
+        {
+          "family": "student",
+          "transform": "cube",
+          "mi_base": 0.3461199186910683,
+          "mi_trans": 0.3461199186910683,
+          "abs_error": 0.0
+        },
+        {
+          "family": "student",
+          "transform": "exp",
+          "mi_base": 0.3461199186910683,
+          "mi_trans": 0.3461199186910683,
+          "abs_error": 0.0
+        },
+        {
+          "family": "student",
+          "transform": "cube",
+          "mi_base": 0.3421590999066902,
+          "mi_trans": 0.3421590999066902,
+          "abs_error": 0.0
+        },
+        {
+          "family": "student",
+          "transform": "exp",
+          "mi_base": 0.3421590999066902,
+          "mi_trans": 0.3421590999066902,
+          "abs_error": 0.0
+        },
+        {
+          "family": "student",
+          "transform": "cube",
+          "mi_base": 0.3458360780009657,
+          "mi_trans": 0.3458360780009657,
+          "abs_error": 0.0
+        },
+        {
+          "family": "student",
+          "transform": "exp",
+          "mi_base": 0.3458360780009657,
+          "mi_trans": 0.3458360780009657,
+          "abs_error": 0.0
+        },
+        {
+          "family": "student",
+          "transform": "cube",
+          "mi_base": 0.34374213544509796,
+          "mi_trans": 0.34374213544509796,
+          "abs_error": 0.0
+        },
+        {
+          "family": "student",
+          "transform": "exp",
+          "mi_base": 0.34374213544509796,
+          "mi_trans": 0.34374213544509796,
+          "abs_error": 0.0
+        },
+        {
+          "family": "student",
+          "transform": "cube",
+          "mi_base": 0.34531627901414574,
+          "mi_trans": 0.34531627901414574,
+          "abs_error": 0.0
+        },
+        {
+          "family": "student",
+          "transform": "exp",
+          "mi_base": 0.34531627901414574,
+          "mi_trans": 0.34531627901414574,
+          "abs_error": 0.0
+        },
+        {
+          "family": "clayton",
+          "transform": "cube",
+          "mi_base": 0.61628368288582,
+          "mi_trans": 0.61628368288582,
+          "abs_error": 0.0
+        },
+        {
+          "family": "clayton",
+          "transform": "exp",
+          "mi_base": 0.61628368288582,
+          "mi_trans": 0.61628368288582,
+          "abs_error": 0.0
+        },
+        {
+          "family": "clayton",
+          "transform": "cube",
+          "mi_base": 0.6364781607262036,
+          "mi_trans": 0.6364781607262036,
+          "abs_error": 0.0
+        },
+        {
+          "family": "clayton",
+          "transform": "exp",
+          "mi_base": 0.6364781607262036,
+          "mi_trans": 0.6364781607262036,
+          "abs_error": 0.0
+        },
+        {
+          "family": "clayton",
+          "transform": "cube",
+          "mi_base": 0.616724022459877,
+          "mi_trans": 0.616724022459877,
+          "abs_error": 0.0
+        },
+        {
+          "family": "clayton",
+          "transform": "exp",
+          "mi_base": 0.616724022459877,
+          "mi_trans": 0.616724022459877,
+          "abs_error": 0.0
+        },
+        {
+          "family": "clayton",
+          "transform": "cube",
+          "mi_base": 0.6329509135967519,
+          "mi_trans": 0.6329509135967519,
+          "abs_error": 0.0
+        },
+        {
+          "family": "clayton",
+          "transform": "exp",
+          "mi_base": 0.6329509135967519,
+          "mi_trans": 0.6329509135967519,
+          "abs_error": 0.0
+        },
+        {
+          "family": "clayton",
+          "transform": "cube",
+          "mi_base": 0.6568569032242381,
+          "mi_trans": 0.6568569032242381,
+          "abs_error": 0.0
+        },
+        {
+          "family": "clayton",
+          "transform": "exp",
+          "mi_base": 0.6568569032242381,
+          "mi_trans": 0.6568569032242381,
+          "abs_error": 0.0
+        }
+      ]
+    },
+    "wall_time_s": 4.343898372724652
+  }
+]

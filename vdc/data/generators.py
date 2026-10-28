@@ -599,6 +599,145 @@ def generate_clayton_vine(n: int, d: int, theta: float = 2.0, seed: Optional[int
     return U
 
 
+def generate_gaussian_clayton_vine(
+    n: int,
+    d: int,
+    seed: Optional[int] = None,
+    rho_range: Tuple[float, float] = (0.4, 0.8),
+    theta_range: Tuple[float, float] = (1.5, 4.0),
+) -> np.ndarray:
+    """Simple alternating Gaussian/Clayton D-vine generator.
+
+    Tree-1 edges alternate between Gaussian (with random rho per edge, sign
+    randomized) and Clayton (with random theta per edge). All formulas are
+    closed-form, so the resulting U has clean uniform marginals and valid
+    h-functions.
+
+    Hypothesis: pyvine-parametric must select the right family per edge
+    (Gaussian vs Clayton). pyvine-TLL must fit a kernel density per edge.
+    VDC's pretrained operator was trained on the full family zoo and should
+    handle both families uniformly.
+    """
+    rng = np.random.default_rng(seed)
+
+    def gauss_hinv(w, v, rho):
+        z_v = norm.ppf(np.clip(v, 1e-10, 1 - 1e-10))
+        z_w = norm.ppf(np.clip(w, 1e-10, 1 - 1e-10))
+        z = rho * z_v + np.sqrt(1.0 - rho * rho) * z_w
+        return norm.cdf(z)
+
+    def clayton_hinv(w, v, theta):
+        if theta < 1e-10:
+            return w
+        t = v ** (-theta) * (w ** (-theta / (1 + theta)) - 1) + 1
+        return np.clip(t ** (-1 / theta), 1e-10, 1 - 1e-10)
+
+    U = np.zeros((n, d))
+    W = rng.uniform(0, 1, size=(n, d))
+    U[:, 0] = W[:, 0]
+    edge_records: list[tuple[str, float]] = []
+    for j in range(1, d):
+        v = U[:, j - 1]
+        w = W[:, j]
+        if j % 2 == 1:
+            rho = float(rng.uniform(*rho_range)) * (1.0 if rng.random() < 0.5 else -1.0)
+            U[:, j] = np.clip(gauss_hinv(w, v, rho), 1e-10, 1 - 1e-10)
+            edge_records.append(("gaussian", rho))
+        else:
+            theta = float(rng.uniform(*theta_range))
+            U[:, j] = clayton_hinv(w, v, theta)
+            edge_records.append(("clayton", theta))
+    return U
+
+
+def generate_heterogeneous_vine(
+    n: int,
+    d: int,
+    seed: Optional[int] = None,
+    rotate_prob: float = 0.5,
+    higher_tree_indep: bool = True,
+) -> np.ndarray:
+    """Generate samples from a D-vine where each tree-1 edge uses a randomly
+    chosen non-Gaussian family with random per-edge parameters and (with prob
+    `rotate_prob`) a 180-degree rotation. Higher trees default to independence
+    so the data is a tree-1 D-vine (Markov chain in copula space).
+
+    Implementation uses pyvinecopulib.Vinecop.simulate to avoid hand-rolled
+    h-inverse code (rotations and family parameterizations are bug-prone).
+    """
+    try:
+        import pyvinecopulib as pv
+    except ImportError as e:
+        raise ImportError(
+            "generate_heterogeneous_vine requires pyvinecopulib"
+        ) from e
+
+    rng = np.random.default_rng(seed)
+    families = ["clayton", "gumbel", "frank", "joe", "student"]
+
+    family_map = {
+        "clayton": pv.BicopFamily.clayton,
+        "gumbel": pv.BicopFamily.gumbel,
+        "frank": pv.BicopFamily.frank,
+        "joe": pv.BicopFamily.joe,
+        "student": pv.BicopFamily.student,
+    }
+
+    def make_bicop(fam_name: str) -> "pv.Bicop":
+        fam = family_map[fam_name]
+        if fam_name == "clayton":
+            theta = float(rng.uniform(1.5, 4.0))
+            params = np.array([[theta]])
+            rotation = 180 if rng.random() < rotate_prob else 0
+        elif fam_name == "gumbel":
+            theta = float(rng.uniform(1.5, 3.5))
+            params = np.array([[theta]])
+            rotation = 180 if rng.random() < rotate_prob else 0
+        elif fam_name == "frank":
+            sign = 1.0 if rng.random() < 0.5 else -1.0
+            theta = float(rng.uniform(3.0, 9.0)) * sign
+            params = np.array([[theta]])
+            rotation = 0
+        elif fam_name == "joe":
+            theta = float(rng.uniform(1.6, 3.2))
+            params = np.array([[theta]])
+            rotation = 180 if rng.random() < rotate_prob else 0
+        elif fam_name == "student":
+            sign = 1.0 if rng.random() < 0.5 else -1.0
+            rho = float(rng.uniform(0.4, 0.85)) * sign
+            df = 4.0
+            params = np.array([[rho], [df]])
+            rotation = 0
+        else:
+            raise ValueError(fam_name)
+        return pv.Bicop(family=fam, parameters=params, rotation=rotation)
+
+    pair_copulas: list[list["pv.Bicop"]] = []
+    for lvl in range(d - 1):
+        edges_at_lvl = []
+        for _e in range(d - 1 - lvl):
+            if lvl == 0:
+                fam_name = families[int(rng.integers(0, len(families)))]
+                bc = make_bicop(fam_name)
+            else:
+                if higher_tree_indep:
+                    bc = pv.Bicop(family=pv.BicopFamily.indep)
+                else:
+                    fam_name = families[int(rng.integers(0, len(families)))]
+                    bc = make_bicop(fam_name)
+            edges_at_lvl.append(bc)
+        pair_copulas.append(edges_at_lvl)
+
+    structure = pv.DVineStructure(order=list(range(1, d + 1)))
+    vine = pv.Vinecop.from_structure(structure=structure, pair_copulas=pair_copulas)
+
+    sim_seed = int(rng.integers(1, 2**31 - 1))
+    seeds = [sim_seed + k for k in range(5)]
+    U = np.asarray(vine.simulate(int(n), seeds=seeds), dtype=np.float64)
+    U = np.clip(U, 1e-10, 1.0 - 1e-10)
+    return U
+
+
 def generate_mixed_vine(n: int, d: int, seed: Optional[int] = None) -> np.ndarray:
     """Generate samples from mixed D-vine with alternating families."""
     if seed is not None:

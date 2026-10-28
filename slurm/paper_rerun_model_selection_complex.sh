@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Denoising Copula (ICML 2026) - RERUN "COMPLEX" BENCHMARK INTO AN EXISTING RUN
+# Vine Denoising Copula (NeurIPS 2026) - RERUN "COMPLEX" BENCHMARK INTO AN EXISTING RUN
 # ============================================================================
 # Evaluates a checkpoint on the *complex synthetic* copula suite (X / ring / double-banana),
 # writes results back into an existing RUN_DIR under OUTPUT_BASE.

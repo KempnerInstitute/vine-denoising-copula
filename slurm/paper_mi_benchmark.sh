@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# MI Estimation Benchmark for ICML 2026 Paper
+# MI Estimation Benchmark for NeurIPS 2026 Paper
 # ============================================================================
 # Compares DCD-Vine against MIST, MINDE, MINE, InfoNCE, KSG on bivariate
 # copula MI estimation tasks.

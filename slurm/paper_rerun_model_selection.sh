@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Denoising Copula (ICML 2026) - RERUN MODEL SELECTION INTO AN EXISTING RUN
+# Vine Denoising Copula (NeurIPS 2026) - RERUN MODEL SELECTION INTO AN EXISTING RUN
 # ============================================================================
 # Motivation:
 #   Sometimes a training run finishes but the post-hoc model_selection step fails

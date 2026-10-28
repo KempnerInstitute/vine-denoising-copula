@@ -26,7 +26,7 @@ from .recursion import VineRecursion, VinePairCopula
 from ..models.unet_grid import GridUNet
 from ..models.hfunc import HFuncLookup
 from ..models.projection import copula_project
-from ..inference.density import sample_density_grid, scatter_to_hist
+from ..inference.density import sample_density_grid, scatter_to_hist, scatter_to_hist_batch_gpu
 
 
 class VineCopulaModel:
@@ -69,6 +69,9 @@ class VineCopulaModel:
         hfunc_use_spline: bool = True,
         batch_edges: bool = False,
         edge_batch_size: int = 256,
+        gpu_histogram: bool = True,
+        hfunc_vectorized_inverse: bool = False,
+        fast_fit: bool = False,
     ):
         """
         Initialize vine copula model.
@@ -90,6 +93,11 @@ class VineCopulaModel:
             batch_edges: If True, estimate pair-copula densities in mini-batches per tree level (single-pass
                 estimators only). This substantially reduces Python overhead and improves GPU utilization.
             edge_batch_size: Max number of pair-copulas to process in one batch (single-pass path).
+            hfunc_vectorized_inverse: Use the vectorized corrected inverse-h lookup.
+                This changes sampling execution only; fitted densities and forward h-functions are unchanged.
+            fast_fit: Reuse D-vine structure correlations, vectorize monotone table
+                construction, and transfer predicted grids in bulk. Opt-in; network
+                precision, batch sizes, and density calculations are unchanged.
         """
         self.vine_type = vine_type.lower()
         self.order = order
@@ -103,6 +111,9 @@ class VineCopulaModel:
         self.hfunc_use_spline = bool(hfunc_use_spline)
         self.batch_edges = bool(batch_edges)
         self.edge_batch_size = int(edge_batch_size)
+        self.gpu_histogram = bool(gpu_histogram)
+        self.hfunc_vectorized_inverse = bool(hfunc_vectorized_inverse)
+        self.fast_fit = bool(fast_fit)
         
         self.structure: Optional[VineStructure] = None
         self.vine: Optional[VineRecursion] = None
@@ -111,6 +122,12 @@ class VineCopulaModel:
         if self.vine_type not in ['rvine', 'dvine', 'cvine']:
             raise ValueError(f"vine_type must be 'rvine', 'dvine', or 'cvine', got {vine_type}")
     
+    def _make_hfunc(self, density_grid):
+        """Construct the legacy lookup with the selected inverse execution path."""
+        return HFuncLookup(density_grid, use_spline=self.hfunc_use_spline,
+                           vectorized_inverse=self.hfunc_vectorized_inverse,
+                           vectorized_tables=self.fast_fit)
+
     def fit(
         self,
         U: np.ndarray,
@@ -150,7 +167,8 @@ class VineCopulaModel:
             self.structure = build_dvine_structure(
                 U,
                 order=self.order,
-                truncation_level=self.truncation_level
+                truncation_level=self.truncation_level,
+                reuse_tau=self.fast_fit,
             )
         
         elif self.vine_type == 'cvine':
@@ -226,7 +244,7 @@ class VineCopulaModel:
                 )
 
                 for edge, density_grid in zip(edges, densities):
-                    hfunc = HFuncLookup(density_grid, use_spline=self.hfunc_use_spline)
+                    hfunc = self._make_hfunc(density_grid)
                     copula = VinePairCopula(edge=edge, density_grid=density_grid, hfunc=hfunc, level=tree_level)
                     tree_copulas.append(copula)
                     self.vine.add_pair_copula(copula)
@@ -263,7 +281,7 @@ class VineCopulaModel:
                         pair_data=pair_data,
                         use_histogram_conditioning=use_histogram_conditioning,
                     )
-                    hfunc = HFuncLookup(density_grid, use_spline=self.hfunc_use_spline)
+                    hfunc = self._make_hfunc(density_grid)
                     
                     copula = VinePairCopula(
                         edge=edge,
@@ -346,12 +364,17 @@ class VineCopulaModel:
             vv = torch.erfinv(2 * vv.clamp(eps, 1 - eps) - 1) * (2.0 ** 0.5)
         coords_1 = torch.stack([uu, vv], dim=0).unsqueeze(0)  # (1,2,m,m)
 
+        use_gpu_hist = bool(getattr(self, "gpu_histogram", True)) and (device.type == "cuda")
         for start in range(0, B_total, bs):
             chunk = pair_data_list[start : start + bs]
 
-            # Histograms (density integrating to 1).
-            hists = [scatter_to_hist(p, m=m, reflect=True) for p in chunk]
-            hist_t = torch.from_numpy(np.stack(hists, axis=0)).float().unsqueeze(1).to(device)  # (B,1,m,m)
+            # Histograms (density integrating to 1). The GPU path runs all
+            # edges in the chunk through a single batched scatter_add kernel.
+            if use_gpu_hist:
+                hist_t = scatter_to_hist_batch_gpu(chunk, m=m, device=device, reflect=True).unsqueeze(1)  # (B,1,m,m)
+            else:
+                hists = [scatter_to_hist(p, m=m, reflect=True) for p in chunk]
+                hist_t = torch.from_numpy(np.stack(hists, axis=0)).float().unsqueeze(1).to(device)
             x = hist_t
 
             if use_log_n:
@@ -393,7 +416,10 @@ class VineCopulaModel:
             d = copula_project(d, iters=int(self.projection_iters))
             d = d / ((d * du * du).sum(dim=(-2, -1), keepdim=True).clamp_min(1e-12))
 
-            out.extend([d[i, 0].detach().cpu().numpy() for i in range(d.shape[0])])
+            if self.fast_fit:
+                out.extend(d[:, 0].detach().cpu().numpy())
+            else:
+                out.extend([d[i, 0].detach().cpu().numpy() for i in range(d.shape[0])])
 
         return out
 
@@ -487,7 +513,7 @@ class VineCopulaModel:
                 pair_data=pair_data,
                 use_histogram_conditioning=use_histogram_conditioning,
             )
-            hfunc = HFuncLookup(density_grid, use_spline=self.hfunc_use_spline)
+            hfunc = self._make_hfunc(density_grid)
 
             self.vine.add_pair_copula(
                 VinePairCopula(edge=edge, density_grid=density_grid, hfunc=hfunc, level=0)
@@ -597,7 +623,7 @@ class VineCopulaModel:
                     pair_data=pair_data,
                     use_histogram_conditioning=use_histogram_conditioning,
                 )
-                hfunc = HFuncLookup(density_grid, use_spline=self.hfunc_use_spline)
+                hfunc = self._make_hfunc(density_grid)
 
                 self.vine.add_pair_copula(
                     VinePairCopula(edge=edge, density_grid=density_grid, hfunc=hfunc, level=tree_level)
@@ -805,7 +831,7 @@ class VineCopulaModel:
         
         # Create h-function lookup
         density_np = D_copula[0, 0].detach().cpu().numpy()
-        hfunc = HFuncLookup(density_np, use_spline=self.hfunc_use_spline)
+        hfunc = self._make_hfunc(density_np)
         
         return density_np, hfunc
     
@@ -855,6 +881,24 @@ class VineCopulaModel:
         
         return self.vine.simulate(n, seed=seed)
     
+    def prepare_sampler(self, *, backend='auto', kernel=None, cache_dir=None,
+                        compiler='g++', num_threads=1, block_size=64,
+                        max_table_bytes=512*1024**2):
+        """Prepare a reusable sampler; automatic mode falls back to NumPy.
+
+        Compilation and table packing occur here, outside repeated sampling.
+        Requires a C++17/OpenMP compiler for acceleration. The default memory
+        cap is 512 MiB of extra packed tables. Inspect the returned ``backend``
+        and ``fallback_reason``. Reprepare after any fit or manual table edit.
+        Existing ``simulate`` and ``inverse_rosenblatt`` calls are unchanged.
+        """
+        if not self.fitted:
+            raise RuntimeError('Model not fitted. Call fit() first.')
+        from .compiled_sampler import PreparedVineSampler
+        return PreparedVineSampler(self.vine,backend=backend,kernel=kernel,
+            cache_dir=cache_dir,compiler=compiler,num_threads=num_threads,
+            block_size=block_size,max_table_bytes=max_table_bytes)
+
     def rosenblatt(self, U: np.ndarray) -> np.ndarray:
         """
         Forward Rosenblatt transform: copula data → independent uniforms.
@@ -916,6 +960,8 @@ class VineCopulaModel:
             'truncation_level': self.truncation_level,
             'm': self.m,
             'device': self.device,
+            'hfunc_vectorized_inverse': self.hfunc_vectorized_inverse,
+            'fast_fit': self.fast_fit,
             'structure': self.structure,
             'vine': self.vine,
             'fitted': self.fitted,
@@ -952,6 +998,8 @@ class VineCopulaModel:
             truncation_level=state['truncation_level'],
             m=state['m'],
             device=state['device'],
+            hfunc_vectorized_inverse=state.get('hfunc_vectorized_inverse', False),
+            fast_fit=state.get('fast_fit', False),
         )
         
         model.structure = state['structure']

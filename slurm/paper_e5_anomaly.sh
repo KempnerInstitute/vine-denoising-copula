@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Denoising Copula (ICML 2026) - E5 ANOMALY DETECTION JOB
+# Vine Denoising Copula (NeurIPS 2026) - E5 ANOMALY DETECTION JOB
 # ============================================================================
 # Produces:
 #   RUN_DIR/results/e5_anomaly_results.json

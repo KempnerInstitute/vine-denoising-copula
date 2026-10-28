@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vine-denoising-copula"
-version = "0.1.0"
+version = "0.2.0"
 description = "Vine Denoising Copula for high-dimensional vine-copula modeling and information estimation"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -64,6 +64,11 @@ viz = [
     "seaborn>=0.12.0",
     "pandas>=2.0.0",
 ]
+# scripts/download_uci_datasets.py: GAS ships as a pandas pickle and CCPP as an Excel workbook.
+data = [
+    "pandas>=2.0.0",
+    "openpyxl>=3.1.0",
+]
 
 r-baselines = [
     "rpy2>=3.5.0",
@@ -89,10 +94,14 @@ packages = [
     "vdc.resources.pretrained",
     "vdc.train",
     "vdc.utils",
+    "vdc.vine",
+    "vdc.inference",
+    "vdc.eval",
 ]
 
 [tool.setuptools.package-data]
 vdc = ["resources/pretrained/*.json"]
+"vdc.vine" = ["compiled_sampler.cpp"]
 
 [tool.black]
 line-length = 100

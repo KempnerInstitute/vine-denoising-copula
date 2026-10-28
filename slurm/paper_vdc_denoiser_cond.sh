@@ -12,7 +12,7 @@
 #SBATCH --account=kempner_dev
 #
 # ============================================================================
-# Vine Denoising Copula (ICML 2026) - PAPER RESULTS JOB
+# Vine Denoising Copula (NeurIPS 2026) - PAPER RESULTS JOB
 # ============================================================================
 # Variant: Noise-conditioned single-pass denoiser (one-shot at t=0)
 #

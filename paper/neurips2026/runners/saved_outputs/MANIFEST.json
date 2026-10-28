@@ -1,0 +1,32 @@
+{
+  "files": {
+    "saved_outputs/tc_replication_manifest.json": {
+      "dropped_keys": 2,
+      "hosts": 0,
+      "paths": 1,
+      "sha256": "e9109d6ee427201118199574ed1b782165c3de17fbb7e2d101ac13f364ae33a0",
+      "source_sha256": "1d4b5a0a5793a50106f7cf27fba7bf8ce57cfd4943f3bcee53fe4e11e3a31d8a"
+    },
+    "saved_outputs/tc_replication_qualification.json": {
+      "dropped_keys": 0,
+      "hosts": 0,
+      "paths": 0,
+      "sha256": "bbc946abebcd055026664e18d664bcf1232a11d9a4d0a15acf778c742c545bc3",
+      "source_sha256": "bbc946abebcd055026664e18d664bcf1232a11d9a4d0a15acf778c742c545bc3"
+    },
+    "saved_outputs/tc_replication_summary.json": {
+      "dropped_keys": 0,
+      "hosts": 0,
+      "paths": 0,
+      "sha256": "7ca1bb2a1e93ebf8a0f0a06df9514d6d8dccb1660c84f5fb47b963c5e81e1942",
+      "source_sha256": "7ca1bb2a1e93ebf8a0f0a06df9514d6d8dccb1660c84f5fb47b963c5e81e1942"
+    },
+    "saved_outputs/tc_tree1_control_results.json": {
+      "dropped_keys": 1,
+      "hosts": 1,
+      "paths": 0,
+      "sha256": "e278735528dd6980b57d0d24385c7462dc25e247fd4f0218355249fd42118817",
+      "source_sha256": "49733a5b3b07ac20a52b4c4fac00ec0edc542f5b99609c1e7d94f87b65cb4488"
+    }
+  }
+}

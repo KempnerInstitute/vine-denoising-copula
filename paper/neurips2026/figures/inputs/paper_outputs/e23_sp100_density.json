@@ -1,0 +1,123 @@
+{
+  "records": [
+    {
+      "method": "VDC",
+      "fit_s": 12.422167985001579,
+      "eval_s": 1.3113132329890504,
+      "nll_bits_per_dim": -0.5860908861180923,
+      "status": "ok",
+      "ci_self": {
+        "mean": -0.5873063024075483,
+        "lo": -0.6654707033193851,
+        "hi": -0.5225220532899811
+      },
+      "per_row_logpdf_n": 339
+    },
+    {
+      "method": "pyvine_tll",
+      "fit_s": 7.532762297982117,
+      "eval_s": 0.0629197770031169,
+      "nll_bits_per_dim": -0.45943273813167446,
+      "status": "ok",
+      "ci_self": {
+        "mean": -0.4587526241241843,
+        "lo": -0.528241396733225,
+        "hi": -0.4017664308805719
+      },
+      "per_row_logpdf_n": 339
+    },
+    {
+      "method": "gaussian_copula",
+      "fit_s": 0.017849878990091383,
+      "nll_bits_per_dim": -0.5413424879338982,
+      "status": "ok",
+      "ci_self": {
+        "mean": -0.5401674643132067,
+        "lo": -0.6152947466594485,
+        "hi": -0.47578594448858424
+      },
+      "per_row_logpdf_n": 339
+    },
+    {
+      "method": "flow_realnvp",
+      "fit_s": 17.835508196993032,
+      "nll_bits_per_dim": -0.22230622244698964,
+      "status": "ok",
+      "ci_self": {
+        "mean": -0.22185383464189573,
+        "lo": -0.29010360580412686,
+        "hi": -0.16418488705619358
+      },
+      "per_row_logpdf_n": 339
+    }
+  ],
+  "paired": [
+    {
+      "ref": "VDC",
+      "other": "pyvine_tll",
+      "delta": 0.12665814798641784,
+      "lo": 0.11168370607375196,
+      "hi": 0.14152514116399967,
+      "p": 0.0
+    },
+    {
+      "ref": "VDC",
+      "other": "gaussian_copula",
+      "delta": 0.04474839818419419,
+      "lo": 0.03456549165378222,
+      "hi": 0.05467070964278042,
+      "p": 0.0
+    },
+    {
+      "ref": "VDC",
+      "other": "flow_realnvp",
+      "delta": 0.3637846636711027,
+      "lo": 0.33904952033325103,
+      "hi": 0.39026864223142493,
+      "p": 0.0
+    },
+    {
+      "ref": "pyvine_tll",
+      "other": "VDC",
+      "delta": -0.12665814798641784,
+      "lo": -0.14152514116399967,
+      "hi": -0.11168370607375196,
+      "p": 0.0
+    },
+    {
+      "ref": "pyvine_tll",
+      "other": "gaussian_copula",
+      "delta": -0.08190974980222364,
+      "lo": -0.09531709446579868,
+      "hi": -0.06906984110100686,
+      "p": 0.0
+    },
+    {
+      "ref": "pyvine_tll",
+      "other": "flow_realnvp",
+      "delta": 0.23712651568468485,
+      "lo": 0.21413909754667548,
+      "hi": 0.261330590072826,
+      "p": 0.0
+    }
+  ],
+  "settings": {
+    "data": "sp100_returns.npy",
+    "train_frac": 0.8,
+    "seed": 42,
+    "device": "cuda",
+    "checkpoint": "model_step_190000.pt",
+    "output_base": [
+      "vine_diffusion_copula"
+    ],
+    "m_grid": 64,
+    "num_threads": 8,
+    "pyvine_timeout_s": 3600,
+    "n_boot": 2000,
+    "out_json": "e23_sp100_density.json",
+    "out_tex": "tab_sp100_density.tex",
+    "n_train": 1356,
+    "n_test": 339,
+    "d": 100
+  }
+}

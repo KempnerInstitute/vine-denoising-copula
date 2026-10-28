@@ -1,0 +1,194 @@
+{
+  "description": "Structural control for the AR(1) total-correlation benchmark (paper Appendix, TC control paragraph).",
+  "reference": {
+    "file": "tc_benchmark_neural_full.json",
+    "sha256": "1efbd6589414be7ee8f17cadcbe232ed5bd18d95df83b60dd6e1adc0911a6a0c",
+    "generated_at": "2026-03-31T03:08:58.802686",
+    "note": "VDC and full chain-rule KSG values are those of the reference run; its host is not recorded"
+  },
+  "settings": {
+    "rho": 0.7,
+    "n": 5000,
+    "ksg_k": 5,
+    "seed": 42,
+    "n_trials": 3,
+    "dimensions": [
+      5,
+      10,
+      20,
+      50
+    ],
+    "trial_seed": "42 + 10000 d + 1000 t",
+    "pair_seed": "trial_seed + 10000 i"
+  },
+  "library": {
+    "commit": "ebb05de487ccf0da6a741f4bce36e6e162cc4a1f",
+    "tracked_files_modified": false,
+    "vdc_version": "0.1.0"
+  },
+  "execution": {
+    "host": "<host>",
+    "cpu": "Intel(R) Xeon(R) Platinum 8480CL",
+    "threads": {
+      "OMP_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1"
+    },
+    "python": "3.10.20",
+    "numpy": "2.2.6",
+    "scipy": "1.15.3",
+    "finished_utc": "2026-10-19T23:17:20+00:00"
+  },
+  "trials": [
+    {
+      "d": 5,
+      "trial": 0,
+      "trial_seed": 50042,
+      "tc_true": 1.3466891065275313,
+      "ksg_tree1_tc": 1.391635380946962,
+      "ksg_tree1_time_s": 0.39210126479156315,
+      "vdc_tree1_tc": 1.343791110162218,
+      "ksg_full_tc": 1.3590446471484103
+    },
+    {
+      "d": 5,
+      "trial": 1,
+      "trial_seed": 51042,
+      "tc_true": 1.3466891065275313,
+      "ksg_tree1_tc": 1.362585096616506,
+      "ksg_tree1_time_s": 0.3796486349310726,
+      "vdc_tree1_tc": 1.324132561366066,
+      "ksg_full_tc": 1.3594780545115412
+    },
+    {
+      "d": 5,
+      "trial": 2,
+      "trial_seed": 52042,
+      "tc_true": 1.3466891065275313,
+      "ksg_tree1_tc": 1.324849519068632,
+      "ksg_tree1_time_s": 0.3820033739320934,
+      "vdc_tree1_tc": 1.325157105364989,
+      "ksg_full_tc": 1.3354979121075115
+    },
+    {
+      "d": 10,
+      "trial": 0,
+      "trial_seed": 100042,
+      "tc_true": 3.0300504896869453,
+      "ksg_tree1_tc": 3.088256191620049,
+      "ksg_tree1_time_s": 0.8579834219999611,
+      "vdc_tree1_tc": 2.985221297358036,
+      "ksg_full_tc": 2.8385789156005092
+    },
+    {
+      "d": 10,
+      "trial": 1,
+      "trial_seed": 101042,
+      "tc_true": 3.0300504896869453,
+      "ksg_tree1_tc": 3.052797832918184,
+      "ksg_tree1_time_s": 0.8621685209218413,
+      "vdc_tree1_tc": 3.1312322841266007,
+      "ksg_full_tc": 2.791656748855832
+    },
+    {
+      "d": 10,
+      "trial": 2,
+      "trial_seed": 102042,
+      "tc_true": 3.0300504896869453,
+      "ksg_tree1_tc": 3.1347372888566305,
+      "ksg_tree1_time_s": 0.8624947599601,
+      "vdc_tree1_tc": 2.9768643252270595,
+      "ksg_full_tc": 2.8854182075547623
+    },
+    {
+      "d": 20,
+      "trial": 0,
+      "trial_seed": 200042,
+      "tc_true": 6.3967732560057735,
+      "ksg_tree1_tc": 6.467551415251613,
+      "ksg_tree1_time_s": 1.8008305390831083,
+      "vdc_tree1_tc": 6.302200919134384,
+      "ksg_full_tc": 5.036711725548782
+    },
+    {
+      "d": 20,
+      "trial": 1,
+      "trial_seed": 201042,
+      "tc_true": 6.3967732560057735,
+      "ksg_tree1_tc": 6.506004981401043,
+      "ksg_tree1_time_s": 1.7983462668489665,
+      "vdc_tree1_tc": 6.353124479770595,
+      "ksg_full_tc": 5.0196617227556715
+    },
+    {
+      "d": 20,
+      "trial": 2,
+      "trial_seed": 202042,
+      "tc_true": 6.3967732560057735,
+      "ksg_tree1_tc": 6.334940963330437,
+      "ksg_tree1_time_s": 1.801069829845801,
+      "vdc_tree1_tc": 6.270314127733484,
+      "ksg_full_tc": 4.9737796073549045
+    },
+    {
+      "d": 50,
+      "trial": 0,
+      "trial_seed": 500042,
+      "tc_true": 16.49694155496225,
+      "ksg_tree1_tc": 16.4455246407015,
+      "ksg_tree1_time_s": 4.669334203004837,
+      "vdc_tree1_tc": 15.971664151871153,
+      "ksg_full_tc": 8.53433140673971
+    },
+    {
+      "d": 50,
+      "trial": 1,
+      "trial_seed": 501042,
+      "tc_true": 16.49694155496225,
+      "ksg_tree1_tc": 16.777171893386328,
+      "ksg_tree1_time_s": 4.6547505599446595,
+      "vdc_tree1_tc": 16.31752853607509,
+      "ksg_full_tc": 8.68881794906852
+    },
+    {
+      "d": 50,
+      "trial": 2,
+      "trial_seed": 502042,
+      "tc_true": 16.49694155496225,
+      "ksg_tree1_tc": 16.664324388241724,
+      "ksg_tree1_time_s": 4.655978299910203,
+      "vdc_tree1_tc": 16.443031274769005,
+      "ksg_full_tc": 8.627675151729976
+    }
+  ],
+  "summary": {
+    "5": {
+      "tc_true": 1.3466891065275313,
+      "ksg_tree1_tc": 1.3596899988773667,
+      "vdc_tree1_tc": 1.331026925631091,
+      "ksg_full_tc": 1.3513402045891543,
+      "ksg_tree1_time_s_median": 0.3820033739320934
+    },
+    "10": {
+      "tc_true": 3.030050489686945,
+      "ksg_tree1_tc": 3.091930437798288,
+      "vdc_tree1_tc": 3.031105968903899,
+      "ksg_full_tc": 2.838551290670368,
+      "ksg_tree1_time_s_median": 0.8621685209218413
+    },
+    "20": {
+      "tc_true": 6.3967732560057735,
+      "ksg_tree1_tc": 6.436165786661031,
+      "vdc_tree1_tc": 6.308546508879488,
+      "ksg_full_tc": 5.01005101855312,
+      "ksg_tree1_time_s_median": 1.8008305390831083
+    },
+    "50": {
+      "tc_true": 16.49694155496225,
+      "ksg_tree1_tc": 16.629006974109853,
+      "vdc_tree1_tc": 16.244074654238414,
+      "ksg_full_tc": 8.616941502512736,
+      "ksg_tree1_time_s_median": 4.655978299910203
+    }
+  }
+}

@@ -15,10 +15,10 @@
 
 ## Key Features
 
-- **Amortized bivariate estimation**: train-once denoising edge estimator + IPFP projection to guarantee valid copula densities
+- **Amortized bivariate estimation**: train-once denoising edge estimator + IPFP/Sinkhorn projection onto uniform grid marginals (exact in the IPFP limit; the deployed finite-iteration projection meets the copula constraints to a controlled numerical tolerance)
 - **Fast vine fitting**: GPU-batched edge estimation with cached h-functions for D-vine, C-vine, and R-vine structures
 - **Information estimation**: MI and total correlation from explicit copula densities, with edge-wise decomposition
-- **Self-consistent estimates**: 0% DPI violations under tested MI consistency protocol
+- **Self-consistency diagnostics**: data-processing-inequality, additivity and monotone-invariance tests for MI estimates (in the paper's 480-trial protocol the released model violates the DPI in 10/480 trials, against 25/480 for KSG)
 
 <p align="center">
   <img src="docs/assets/vine_schematic.png" alt="D-vine factorization" width="45%">
@@ -92,7 +92,7 @@ The inference pipeline consists of four steps:
 
 1. Build a normalized histogram from bivariate pseudo-observations
 2. Predict a positive density grid with the frozen pretrained model
-3. Project the grid to a valid copula via IPFP (uniform marginals, unit mass)
+3. Project the grid onto uniform marginals and unit mass via IPFP (`projection_iters`, default 50; the paper's experiments use 30, or 15 in its scaling runs)
 4. Reuse the resulting pair-copula estimator inside vine recursion and information calculations
 
 ## Released Model
@@ -142,14 +142,16 @@ python scripts/model_selection.py --checkpoints checkpoints/*/model_step_*.pt --
 - [API Reference](docs/API.md)
 - [Configuration](docs/CONFIGURATION.md)
 - [Model Releases](docs/MODEL_RELEASES.md)
+- [Datasets](docs/DATASETS.md)
 
 ## Associated Paper
 
-The public method paper for VDC is:
+The method paper for VDC is:
 
-- Houman Safaai, *Amortized Vine Copulas for High-Dimensional Density and Information Estimation*, arXiv:2604.20568, 2026
-- arXiv: https://arxiv.org/abs/2604.20568
-- DOI: https://doi.org/10.48550/arXiv.2604.20568
+- Houman Safaai, *Amortized Estimation of Simplified Vine Copulas for High-Dimensional Density and Information Analysis*, Advances in Neural Information Processing Systems (NeurIPS), 2026
+- An earlier version appeared as arXiv:2604.20568 under the title *Amortized Vine Copulas for High-Dimensional Density and Information Estimation*: https://arxiv.org/abs/2604.20568
+
+The scripts and compact saved outputs that reproduce the paper's figures and tables are in [paper/neurips2026](paper/neurips2026/README.md).
 
 ## Verification
 
@@ -168,7 +170,7 @@ If you use this software, please cite the repository:
   author  = {Houman Safaai},
   title   = {Vine Denoising Copula (VDC)},
   year    = {2026},
-  version = {0.1.0},
+  version = {0.2.0},
   url     = {https://github.com/KempnerInstitute/vine-denoising-copula}
 }
 ```
@@ -176,13 +178,11 @@ If you use this software, please cite the repository:
 If you use the VDC method, please also cite the paper:
 
 ```bibtex
-@article{safaai2026amortized,
-  author  = {Houman Safaai},
-  title   = {Amortized Vine Copulas for High-Dimensional Density and Information Estimation},
-  journal = {arXiv preprint arXiv:2604.20568},
-  year    = {2026},
-  doi     = {10.48550/arXiv.2604.20568},
-  url     = {https://arxiv.org/abs/2604.20568}
+@inproceedings{safaai2026amortized,
+  author    = {Houman Safaai},
+  title     = {Amortized Estimation of Simplified Vine Copulas for High-Dimensional Density and Information Analysis},
+  booktitle = {Advances in Neural Information Processing Systems},
+  year      = {2026}
 }
 ```
 
@@ -198,3 +198,19 @@ MIT; see [LICENSE](LICENSE).
 - Vine fitting uses the simplifying assumption (constant conditional copulas).
 - The released checkpoint is frozen and versioned.
 - Current grid resolution is m=64. Extensions to larger grids and the probit transform are documented in the configuration guide.
+
+### Optional faster fitting
+
+`VineCopulaModel(..., fast_fit=True)` reuses D-vine ordering correlations,
+constructs monotone h-function tables in vectorized NumPy operations, and copies
+predicted density grids from GPU to CPU in bulk. It preserves the checkpoint,
+grid, projection, network precision and `edge_batch_size`; the default remains
+`False`. Correlation reuse applies when the D-vine order is selected automatically
+(`order=None`). This option does not combine different trees into one network pass.
+
+The option is saved with fitted models; older saved models load with it disabled.
+It works with `prepare_sampler()`, including the compiled sampler and its automatic
+NumPy fallback. Run `tests/test_fast_fit_identity.py` together with the compiled
+and prepared sampler tests to check this combination on your platform. Qualify
+numerical identity on the intended device and software versions before replacing
+an existing experiment's execution configuration.
