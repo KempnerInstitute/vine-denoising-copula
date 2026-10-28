@@ -14,6 +14,7 @@ tables are rebuilt from saved outputs by the scripts in `../figures` and `../tab
 | Bivariate MI benchmark (Figure 3(a); MI table) | `scripts/mi_estimation.py` (library) | simulated |
 | TC versus dimension (Figure 3(b); appendix TC tables and figure) | `scripts/tc_benchmark.py` (library) | simulated |
 | MI self-consistency, 60- and 480-trial protocols | `scripts/mi_self_consistency_tests_v2.py` (library) | simulated |
+| Retained training-corruption variants (appendix corruption comparison) | `corruption_variants.py` | simulated and MAF splits |
 
 Run everything on allocated compute resources (a GPU for the full-size runs), with output
 directories that do not exist yet.
@@ -234,3 +235,21 @@ MI self-consistency (data-processing inequality, additivity and monotone invaria
 
 The DPI violation counts, the Fisher exact test over base datasets and the additivity errors in the
 paper are computed from these JSON files by the figure and table scripts.
+
+## Retained training-corruption variants
+
+    python paper/neurips2026/runners/corruption_variants.py --data-root /path/to/data \
+      --output /path/to/new-run --expected-module-root /path/to/repository --device cuda \
+      --checkpoint uniform=/path/to/vdc-denoiser-m64-v1.pt --checkpoint direct=PATH \
+      --checkpoint gaussian=PATH --checkpoint multinomial=PATH --checkpoint multinomial_190k=PATH
+
+Every checkpoint scores identical inputs: the Table 1 cases, the out-of-distribution cases, a common
+panel of real-data vine edges (one D-vine order and reference TLL h-functions give all checkpoints the
+same edge inputs) and its own D-vine on the MAF splits. The first checkpoint must be the released model;
+it is checked against the saved Table 1, out-of-distribution and UCI records first, and the run stops if
+it differs. The three alternative checkpoints (direct histograms, Gaussian grid noise and multinomial
+count resampling, with otherwise identical saved training settings; the appendix lists the differences in
+training code and retained steps) are not released; the paper's run is
+described in its appendix, and its saved output, with the alternatives' sha256 values, is
+`../tables/inputs/corruption/corruption_variants_results.json`. The full run takes about seven minutes on
+one A100.

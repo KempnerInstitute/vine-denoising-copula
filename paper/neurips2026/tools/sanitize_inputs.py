@@ -23,7 +23,7 @@ from pathlib import Path
 
 ABS_PATH = re.compile(r"(?<![\w.])(?:/n/|/tmp/|/home/|/scratch/|/net/)[^\s\"',;:)\]]*")
 HOST = re.compile(r"\b[a-z0-9][a-z0-9-]*\.rc\.fas\.harvard\.edu\b|\bholy[a-z0-9]*\d{3,}\b|\bboslogin\d+\b")
-DROP_KEYS = re.compile(r"^(reviewer|reviewers|slurm_job_id|slurm_jobid|job_id|jobid|hostname)$", re.IGNORECASE)
+DROP_KEYS = re.compile(r"^(reviewer|reviewers|slurm_job_id|slurm_jobid|job_id|jobid|job|hostname)$", re.IGNORECASE)
 
 
 def sha256(data: bytes) -> str:

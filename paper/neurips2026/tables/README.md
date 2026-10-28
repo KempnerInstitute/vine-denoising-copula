@@ -10,13 +10,15 @@ bash make_tables.sh /tmp/vdc_tables path/to/tables     # ... and compare them wi
 ```
 
 The comparison ignores full-line LaTeX comments (each generated table starts with one naming its
-generator) and is otherwise byte for byte. All 23 generated tables are identical to the paper's tables.
+generator) and is otherwise byte for byte. All 25 generated tables are identical to the paper's tables.
 
 ## Inputs
 
 `inputs/` holds the saved outputs the generators read, about 0.7 MB in total. Every input that
 records its estimator was produced with the released model `vdc-denoiser-m64-v1` (the deployed
-checkpoint, `model_step_190000.pt`, sha256 `8a1b71ad6d2012ed344b22a743a96e667d32a2ab54ade4444686e375e91f5c0f`).
+checkpoint, `model_step_190000.pt`, sha256 `8a1b71ad6d2012ed344b22a743a96e667d32a2ab54ade4444686e375e91f5c0f`),
+except `corruption/corruption_variants_results.json`, which also scores the retained alternative
+checkpoints of the corruption comparison (not released; their sha256 values are in that file).
 
 - JSON files were rewritten without absolute paths (only the final path component is kept),
   hostnames, scheduler job identifiers or reviewer identifiers. Numbers are unchanged.
@@ -46,6 +48,7 @@ checkpoint, `model_step_190000.pt`, sha256 `8a1b71ad6d2012ed344b22a743a96e667d32
 | `ipfp_iterations.py` | `tab_ipfp_iter_ablation` | `ipfp/ipfp_iter_ablation.json` |
 | `raw_composition.py` | `tab_raw_composition` | `sp100/e37_raw_composition.json` |
 | `threads.py` | `tab_pyvine_threads` | `threads/*.json`, `scaling/e22_highdim_scaling_seed_merged.json` |
+| `corruption.py` | `tab_corruption_variants`, `tab_corruption_edges` | `corruption/corruption_variants_results.json` (output of `../runners/corruption_variants.py`) |
 | `replicates.py` | `tab_bivariate_replicates` | `bivariate/e31_bivariate_replicates.json` |
 | `neural_copula.py` | `tab_neural_copula` | `bivariate/e8_neural_copula_results_seed{0,1,2}.json` |
 

@@ -22,7 +22,7 @@ keywords:
   - total correlation
   - amortized inference
 version: "0.2.0"
-date-released: "2026-10-19"
+date-released: "2026-10-28"
 preferred-citation:
   type: conference-paper
   title: "Amortized Estimation of Simplified Vine Copulas for High-Dimensional Density and Information Analysis"

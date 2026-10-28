@@ -36,7 +36,8 @@ Documentation and metadata
   numerical tolerance by the deployed finite-iteration projection; the self-consistency summary
   now quotes the paper's 480-trial violation rates; the paper citation is updated.
 - `paper/neurips2026/`: scripts and compact saved outputs that reproduce the paper's figures and
-  tables, with run instructions.
+  tables, with run instructions, and portable runners for the main experiments (including the
+  comparison of the retained training-corruption variants).
 - `scripts/download_uci_datasets.py`: POWER, GAS, HEPMASS and MINIBOONE are rebuilt from the MAF
   archive used by the paper (Zenodo record 1161203), with archive, member and output-array hash checks;
   the outputs are identical to the paper's files. The earlier downloader saved the Combined Cycle Power

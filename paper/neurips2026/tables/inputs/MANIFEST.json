@@ -28,6 +28,13 @@
       "sha256": "ac5ba09ae2f2a2f37eb5860e830c6f49bd2381cd9f7480ad75635e109ae7d6c0",
       "source_sha256": "9511eb9d2cede20ae40538e9ed0b67e50be33fc61782f42ea37910d68e99de15"
     },
+    "corruption/corruption_variants_results.json": {
+      "dropped_keys": 1,
+      "hosts": 1,
+      "paths": 6,
+      "sha256": "d6bd2f93ddaf78e8155310993d6401d5ce207b445415022c53228d170eea90cf",
+      "source_sha256": "cfc9bea301cbb2a398ae6eb21abd820c90ce05536447a69426b78ab6c276e621"
+    },
     "grid_floor/grid_floor_table.json": {
       "dropped_keys": 0,
       "hosts": 0,

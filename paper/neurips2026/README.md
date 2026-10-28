@@ -8,8 +8,8 @@ released model.
 | Folder | Contents |
 |---|---|
 | [`figures/`](figures/README.md) | Scripts and saved inputs that regenerate all ten figures (Figures 1-4 and A1-A6); the regenerated images are identical to the paper's. |
-| [`tables/`](tables/README.md) | Generators that rebuild 23 of the paper's tables from saved outputs, byte for byte, and an inventory of how every other table was produced. |
-| [`runners/`](runners/README.md) | Portable runners for the main experiments (Table 1 likelihoods, UCI benchmarks on the MAF splits, chronological S&P100, vine-fitting timings) and the library commands for the MI, TC and self-consistency benchmarks. |
+| [`tables/`](tables/README.md) | Generators that rebuild 25 of the paper's tables from saved outputs, byte for byte, and an inventory of how every other table was produced. |
+| [`runners/`](runners/README.md) | Portable runners for the main experiments (Table 1 likelihoods, UCI benchmarks on the MAF splits, chronological S&P100, vine-fitting timings, the comparison of retained corruption variants) and the library commands for the MI, TC and self-consistency benchmarks. |
 | `data/sp100_symbols.json` | Symbols, column order, source and date range of the S&P100 returns matrix (prices are not redistributed). |
 | `tools/sanitize_inputs.py` | How saved outputs were copied here: absolute paths and host names removed, numbers unchanged; each `MANIFEST.json` maps a copy to the sha256 of its original. |
 
