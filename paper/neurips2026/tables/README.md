@@ -31,6 +31,8 @@ checkpoints of the corruption comparison (not released; their sha256 values are 
 - `threads/d500_single_thread.json` was written by hand. It records when the single-thread
   d = 500 TLL fit of the thread sweep started and when the sweep job reached its time limit with the
   fit still running, taken from the sweep's file times and the scheduler's accounting.
+- `ipfp/ipfp_iter_ablation.json` is the 2026-11-06 rerun of the projection-iteration ablation with the coordinate
+  channels in the training order; the original run had them transposed (release 0.2.1 notes).
 - The data set called `power` in `sampling/` is the Combined Cycle Power Plant (CCPP) data, not the
   MAF POWER benchmark.
 

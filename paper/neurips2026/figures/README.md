@@ -35,6 +35,8 @@ reduced:
 
 - `paper_outputs/e16_rolling_dependence_compact.json` keeps the fields of the full rolling-dependence output
   that Figure A6 reads (`scripts/extract_rolling_dependence_inputs.py`).
+- Figure A4 measures relative MI errors against the exact MI of the chain's Clayton(theta = 3) pair copula,
+  0.6363 nats; the saved artifact's own 2048-cell grid value, 0.6401, is checked and replaced (release 0.2.1).
 - `sp100/sp100_returns_meta.json` gives the 100 S&P100 tickers (Stooq symbols), the first and last dates and
   the shape of the returns matrix; the returns themselves are not distributed.
 
