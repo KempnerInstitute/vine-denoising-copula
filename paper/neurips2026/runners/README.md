@@ -253,3 +253,9 @@ training code and retained steps) are not released; the paper's run is
 described in its appendix, and its saved output, with the alternatives' sha256 values, is
 `../tables/inputs/corruption/corruption_variants_results.json`. The full run takes about seven minutes on
 one A100.
+
+## Projection iteration timing
+
+`python paper/neurips2026/runners/ipfp_iterations.py --checkpoint /path/to/model_step_190000.pt --output ipfp.json`
+requires a CUDA GPU and checks the deployed checkpoint hash. It repeats the synchronized timing protocol
+of appendix Table A39; changing GPU or numerical libraries can change timings and last-bit errors.

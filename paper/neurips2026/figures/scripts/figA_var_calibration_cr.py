@@ -31,7 +31,7 @@ from matplotlib.patches import Patch  # noqa: E402
 METHODS = [("VDC (Ours)", fs.STYLE["vdc"]),
            ("Gaussian", fs.STYLE["gauss"]),
            ("Historical", fs.MethodStyle("Historical simulation", "#333333", "*", "-", ""))]
-TICKS = {"VDC (Ours)": "VDC", "Gaussian": "Gaussian copula", "Historical": "Historical simulation"}
+TICKS = {"VDC (Ours)": "VDC", "Gaussian": "Gaussian returns", "Historical": "Historical simulation"}
 
 
 def wilson(k: int, n: int, z: float = 1.959963984540054):
