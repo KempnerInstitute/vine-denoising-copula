@@ -43,11 +43,11 @@
       "source_sha256": "026b3d8031a5357f7cd23440cb338b8f70cb9234ea8264feb04c717560bf8088"
     },
     "ipfp/ipfp_iter_ablation.json": {
-      "dropped_keys": 0,
-      "hosts": 0,
+      "dropped_keys": 4,
+      "hosts": 1,
       "paths": 1,
-      "sha256": "fa15488c0b2af1ff6fdc6348694797daba693352008f2000af07e61b43056937",
-      "source_sha256": "d1bed5425e367625df576da39d0b6855366d9f05cc41ed758e5a02cb58bfbf2e"
+      "sha256": "3efdb3c3a466b3a2f192f11157e78828b91049140bf9768bd75d8a668d7d15cd",
+      "source_sha256": "71ef0d12cd894166e8e1b20ccf1506d7db50b80f850eb45d23d30e622300b79f"
     },
     "mi/results/mi_benchmark_multiseed_summary.json": {
       "dropped_keys": 0,

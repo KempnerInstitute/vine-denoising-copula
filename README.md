@@ -170,7 +170,7 @@ If you use this software, please cite the repository:
   author  = {Houman Safaai},
   title   = {Vine Denoising Copula (VDC)},
   year    = {2026},
-  version = {0.2.1},
+  version = {0.2.2},
   url     = {https://github.com/KempnerInstitute/vine-denoising-copula}
 }
 ```

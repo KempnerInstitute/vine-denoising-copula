@@ -9,7 +9,7 @@ The public API is centered on:
 
 from __future__ import annotations
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 # Core exports
 __all__ = [
