@@ -37,7 +37,6 @@ jobs:
             scripts/download_pretrained.py \
             scripts/package_pretrained_model.py \
             scripts/upload_pretrained_to_hf.py \
-            scripts/verify_pretrained_release.py \
             examples/use_pretrained_model.py \
             tests/test_information_metrics.py \
             tests/test_pretrained.py \

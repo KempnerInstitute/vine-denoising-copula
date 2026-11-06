@@ -20,7 +20,7 @@ Use this checklist before publishing a tagged release of Vine Denoising Copula.
 ## Released model verification
 
 - Run `python scripts/download_pretrained.py --model-id vdc-denoiser-m64-v1`
-- Run `python scripts/verify_pretrained_release.py --model-id vdc-denoiser-m64-v1 --device cpu --out-dir docs/reports/pretrained_release`
+- Run `python examples/use_pretrained_model.py --model-id vdc-denoiser-m64-v1`; the paper companion owns benchmark reports.
 - Check that the verification reports and figures regenerate cleanly
 
 ## Documentation

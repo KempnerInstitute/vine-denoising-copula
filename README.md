@@ -1,216 +1,120 @@
 # Vine Denoising Copula (VDC)
 
-<p>
-  <a href="https://github.com/KempnerInstitute/vine-denoising-copula/actions/workflows/ci.yml"><img src="https://github.com/KempnerInstitute/vine-denoising-copula/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/KempnerInstitute/vine-denoising-copula"><img src="https://img.shields.io/badge/python-3.9%2B-1f6feb" alt="Python"></a>
-  <a href="https://github.com/KempnerInstitute/vine-denoising-copula/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-137333" alt="License"></a>
-  <a href="https://huggingface.co/hsafaai/vdc-denoiser-m64-v1"><img src="https://img.shields.io/badge/Hugging%20Face-vdc--denoiser--m64--v1-f9d649" alt="Model"></a>
-</p>
+VDC estimates bivariate copula densities with a reusable pretrained network and
+assembles them into simplified vines. The library provides training, pretrained
+model loading, density evaluation, vine fitting, sampling, and information
+estimation for continuous data.
 
-**VDC** is a Python package and released model for amortized vine-copula estimation. It trains a single neural edge estimator once on synthetic copulas and reuses it across all $O(d^2)$ vine edges, replacing repeated per-edge optimization with fast forward passes while preserving explicit copula structure.
-
-<p align="center">
-  <img src="docs/assets/method_pipeline.png" alt="VDC method pipeline" width="100%">
-</p>
-
-## Key Features
-
-- **Amortized bivariate estimation**: train-once denoising edge estimator + IPFP/Sinkhorn projection onto uniform grid marginals (exact in the IPFP limit; the deployed finite-iteration projection meets the copula constraints to a controlled numerical tolerance)
-- **Fast vine fitting**: GPU-batched edge estimation with cached h-functions for D-vine, C-vine, and R-vine structures
-- **Information estimation**: MI and total correlation from explicit copula densities, with edge-wise decomposition
-- **Self-consistency diagnostics**: data-processing-inequality, additivity and monotone-invariance tests for MI estimates (in the paper's 480-trial protocol the released model violates the DPI in 10/480 trials, against 25/480 for KSG)
-
-<p align="center">
-  <img src="docs/assets/vine_schematic.png" alt="D-vine factorization" width="45%">
-</p>
-
-## Quick Start
-
-### Install
+## Install
 
 ```bash
-git clone https://github.com/KempnerInstitute/vine-denoising-copula.git vine-denoising-copula
+git clone https://github.com/KempnerInstitute/vine-denoising-copula.git
 cd vine-denoising-copula
-conda env create -f environment.yml
-conda activate vdc
 pip install -e .
 ```
 
-### Use the released model
+Use `environment.yml` for a Conda environment. Install the `data` extra for the
+UCI downloader and the `test` extra for the test suite.
 
-```bash
-python scripts/download_pretrained.py --model-id vdc-denoiser-m64-v1
-python examples/use_pretrained_model.py --model-id vdc-denoiser-m64-v1
-```
-
-### Python API
+## Estimate a pair density
 
 ```python
 import numpy as np
-from vdc import estimate_pair_density_from_samples, load_pretrained_model
+from vdc import load_pretrained_model, estimate_pair_density_from_samples
 
-# Load pretrained edge estimator
 bundle = load_pretrained_model("vdc-denoiser-m64-v1", device="cpu")
-
-# Estimate a bivariate copula density
-u = np.random.rand(2000, 2)
+u = np.random.default_rng(42).uniform(size=(2000, 2))
 density = estimate_pair_density_from_samples(bundle, u)
 print(density.shape)  # (64, 64)
 ```
 
-### Fit a vine copula
+Inputs are pseudo-observations in `[0, 1]`. Fit marginal transforms on training
+data before applying them to held-out observations. The released model is
+available from [Hugging Face](https://huggingface.co/hsafaai/vdc-denoiser-m64-v1);
+the loader checks its checkpoint hash.
+
+## Fit a vine
 
 ```python
-import numpy as np
-from vdc import VineCopulaModel, load_pretrained_model
+from vdc import VineCopulaModel
 
-bundle = load_pretrained_model("vdc-denoiser-m64-v1", device="cpu")
-U = np.random.rand(1000, 5)
-
-vine = VineCopulaModel(vine_type="dvine", m=bundle.config["data"]["m"], device="cpu")
-vine.fit(U, bundle.model, diffusion=bundle.diffusion)
-
-# Evaluate
-loglik = vine.logpdf(U)
+u = np.random.default_rng(42).uniform(size=(1000, 5))
+vine = VineCopulaModel(vine_type="dvine", m=64, device="cpu")
+vine.fit(u, bundle.model, diffusion=bundle.diffusion)
+log_density = vine.logpdf(u)
 samples = vine.simulate(n=500)
 ```
 
-### Command-line tools
+D-vine fitting batches edges from the same tree. `fast_fit=True` enables
+execution optimizations while preserving the estimator's arithmetic settings.
+The regular-vine fitting path evaluates edges separately. Inverse-Rosenblatt
+sampling supports the implemented D/C-vine paths; arbitrary R-vine sampling is
+not implemented.
 
-The installed `vdc` command supports the following public commands:
+The grid projection enforces copula marginals to finite numerical tolerance.
+Interpolated edge densities and h-functions are approximate counterparts, so
+whole-vine normalization and conditional calibration are approximate. These
+limits matter for downstream use even when edge density estimates are accurate.
+
+## Commands and training
 
 ```bash
 vdc list-models
 vdc resolve-model --model-id vdc-denoiser-m64-v1
 vdc estimate-pair data/pair.npy --output results/density.npy
 vdc fit-vine data/pseudo_obs.npy --output results/vine.pkl --vine-type dvine
-```
-
-## Core Workflow
-
-The inference pipeline consists of four steps:
-
-1. Build a normalized histogram from bivariate pseudo-observations
-2. Predict a positive density grid with the frozen pretrained model
-3. Project the grid onto uniform marginals and unit mass via IPFP (`projection_iters`, default 50; the paper's experiments use 30, or 15 in its scaling runs)
-4. Reuse the resulting pair-copula estimator inside vine recursion and information calculations
-
-## Released Model
-
-The packaged released model is `vdc-denoiser-m64-v1`. The published weights live on [Hugging Face](https://huggingface.co/hsafaai/vdc-denoiser-m64-v1), and the release workflow is documented in [docs/MODEL_RELEASES.md](docs/MODEL_RELEASES.md).
-
-### Verification
-
-```bash
-python scripts/verify_pretrained_release.py \
-  --model-id vdc-denoiser-m64-v1 \
-  --device cpu \
-  --out-dir docs/reports/pretrained_release
-```
-
-The verification checks analytic bivariate cases (Gaussian, Clayton, Frank, Gumbel), mass preservation after IPFP projection, and MI accuracy from the released checkpoint.
-
-Reports:
-- [Pretrained release verification](docs/reports/pretrained_release/PRETRAINED_RELEASE_VERIFICATION.md)
-- [MI benchmark](docs/reports/pretrained_release/MI_BENCHMARK_DCD_RELEASE.md)
-
-## Training
-
-Train a denoiser:
-
-```bash
 python scripts/train_unified.py --config configs/train/denoiser_cond.yaml --model-type denoiser
 ```
 
-Train a diffusion-style model:
+See `examples/` for model loading, vine fitting, information estimation and
+custom training. The older `scripts/train.py`, `infer.py` and `evaluate.py`
+commands target the legacy GridUNet workflow; use the pretrained API or unified
+trainer for the released denoiser.
 
-```bash
-python scripts/train_unified.py --config configs/train/diffusion_cond.yaml --model-type diffusion_unet
-```
+## Repository contents
 
-Evaluate a checkpoint:
+- `vdc/`: models, training, data generators/loaders, inference, vine operations,
+  information metrics and baseline adapters.
+- `scripts/`: software entry points, dataset/model downloads and release tools.
+- `tests/`: library correctness and numerical identity tests.
+- `examples/`, `configs/`, `docs/`: usage examples, training configurations and
+  software documentation.
 
-```bash
-python scripts/evaluate.py --checkpoint checkpoints/model.pt
-python scripts/model_selection.py --checkpoints checkpoints/*/model_step_*.pt --n-samples 2000
-```
+Paper figures, tables, experiment protocols, saved results, research notes and
+cluster launchers live in the separate
+[paper repository](https://github.com/houman1359/diffusion-vine-copula/tree/camera-ready).
+Its [reproducibility directory](https://github.com/houman1359/diffusion-vine-copula/tree/camera-ready/reproducibility)
+contains the plotting and table-generation scripts. The VDC library can be used
+and tested without that repository.
 
-## Documentation
+## Documentation and tests
 
-- [Getting Started](docs/GETTING_STARTED.md)
-- [User Guide](docs/USER_GUIDE.md)
-- [API Reference](docs/API.md)
-- [Configuration](docs/CONFIGURATION.md)
-- [Model Releases](docs/MODEL_RELEASES.md)
+- [Getting started](docs/GETTING_STARTED.md)
+- [User guide](docs/USER_GUIDE.md)
+- [API reference](docs/API.md)
+- [Training configuration](docs/CONFIGURATION.md)
+- [Pretrained models](docs/MODEL_RELEASES.md)
 - [Datasets](docs/DATASETS.md)
+- [Optimized fitting](docs/fast_fit.md)
+- [Compiled sampler and fallback](docs/compiled_sampler.md)
 
-## Associated Paper
+```bash
+pip install -e '.[test]'
+python -m pytest tests
+```
 
-The method paper for VDC is:
-
-- Houman Safaai, *Amortized Estimation of Simplified Vine Copulas for High-Dimensional Density and Information Analysis*, Advances in Neural Information Processing Systems (NeurIPS), 2026
-- An earlier version appeared as arXiv:2604.20568 under the title *Amortized Vine Copulas for High-Dimensional Density and Information Estimation*: https://arxiv.org/abs/2604.20568
-
-The scripts and compact saved outputs that reproduce the paper's figures and tables are in [paper/neurips2026](paper/neurips2026/README.md).
-
-## Verification
-
-This public repository supports:
-
-- loading and verifying the released checkpoint
-- rerunning benchmark scripts that live in the package repo
-- regenerating the public verification reports under `docs/reports/`
+The compiled sampler has an automatic NumPy fallback and a configurable packed
+table memory limit. See its documentation before choosing resources for large
+vines.
 
 ## Citation
 
-If you use this software, please cite the repository:
+Houman Safaai. *Amortized Estimation of Simplified Vine Copulas for
+High-Dimensional Density and Information Analysis*. NeurIPS, 2026.
+[arXiv:2604.20568](https://arxiv.org/abs/2604.20568).
 
-```bibtex
-@software{safaai2026vdc,
-  author  = {Houman Safaai},
-  title   = {Vine Denoising Copula (VDC)},
-  year    = {2026},
-  version = {0.2.2},
-  url     = {https://github.com/KempnerInstitute/vine-denoising-copula}
-}
-```
-
-If you use the VDC method, please also cite the paper:
-
-```bibtex
-@inproceedings{safaai2026amortized,
-  author    = {Houman Safaai},
-  title     = {Amortized Estimation of Simplified Vine Copulas for High-Dimensional Density and Information Analysis},
-  booktitle = {Advances in Neural Information Processing Systems},
-  year      = {2026}
-}
-```
-
-A machine-readable citation record is available in [CITATION.cff](CITATION.cff).
+Software version: 0.2.3. Machine-readable citation: [CITATION.cff](CITATION.cff).
 
 ## License
 
 MIT; see [LICENSE](LICENSE).
-
-## Notes
-
-- The released model assumes continuous marginals and pseudo-observations in `[0,1]`.
-- Vine fitting uses the simplifying assumption (constant conditional copulas).
-- The released checkpoint is frozen and versioned.
-- Current grid resolution is m=64. Extensions to larger grids and the probit transform are documented in the configuration guide.
-
-### Optional faster fitting
-
-`VineCopulaModel(..., fast_fit=True)` reuses D-vine ordering correlations,
-constructs monotone h-function tables in vectorized NumPy operations, and copies
-predicted density grids from GPU to CPU in bulk. It preserves the checkpoint,
-grid, projection, network precision and `edge_batch_size`; the default remains
-`False`. Correlation reuse applies when the D-vine order is selected automatically
-(`order=None`). This option does not combine different trees into one network pass.
-
-The option is saved with fitted models; older saved models load with it disabled.
-It works with `prepare_sampler()`, including the compiled sampler and its automatic
-NumPy fallback. Run `tests/test_fast_fit_identity.py` together with the compiled
-and prepared sampler tests to check this combination on your platform. Qualify
-numerical identity on the intended device and software versions before replacing
-an existing experiment's execution configuration.

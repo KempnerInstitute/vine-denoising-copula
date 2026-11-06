@@ -454,8 +454,8 @@ python scripts/evaluate.py --checkpoint model.pt \
 | `CONFIG` | Path to config file | `export CONFIG=configs/train/default.yaml` |
 | `SLURM_JOB_ID` | Auto-included in output directory | (set by SLURM) |
 
-Example SLURM usage:
+Pass paths explicitly to the functional entry points. On a cluster, run these commands inside an allocated job:
 ```bash
-CHECKPOINT=checkpoints/model.pt sbatch slurm/evaluate.sh
-CONFIG=configs/train/custom.yaml sbatch slurm/train.sh
+python scripts/evaluate.py --checkpoint checkpoints/model.pt
+python scripts/train.py --config configs/train/custom.yaml
 ```

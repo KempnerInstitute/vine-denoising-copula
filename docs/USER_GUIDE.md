@@ -448,8 +448,7 @@ python scripts/train.py --config configs/train/default.yaml \
 python scripts/train.py --config configs/train/default.yaml \
     --resume checkpoints/model_step_50000.pt
 
-# SLURM submission
-sbatch slurm/train.sh
+# On a cluster, put the same command in a job script with site-appropriate resources.
 ```
 
 ---

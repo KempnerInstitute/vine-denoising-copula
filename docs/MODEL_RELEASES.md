@@ -19,7 +19,6 @@ Packaged manifest:
 - `scripts/package_pretrained_model.py`
 - `scripts/upload_pretrained_to_hf.py`
 - `scripts/download_pretrained.py`
-- `scripts/verify_pretrained_release.py`
 
 ## What Lives Outside The Repo
 
@@ -99,14 +98,11 @@ Fill in:
 
 This makes the packaged loader portable for external users.
 
-### 6. Re-verify the published model
+### 6. Check the published model
 
-```bash
-python scripts/verify_pretrained_release.py \
-  --model-id vdc-denoiser-m64-v1 \
-  --device cpu \
-  --out-dir docs/reports/pretrained_release
-```
+Load it with `python examples/use_pretrained_model.py --model-id vdc-denoiser-m64-v1`.
+The loader checks the downloaded checkpoint against the packaged manifest. Numerical
+benchmark reports and their runner are in the [paper companion](https://github.com/houman1359/diffusion-vine-copula/tree/camera-ready/reproducibility).
 
 ## Download Workflow For Users
 

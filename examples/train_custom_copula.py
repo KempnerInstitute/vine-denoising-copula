@@ -189,17 +189,12 @@ def main():
     print("-" * 50)
     
     print(f"""
-  Submit training job:
-  
-    CONFIG={config_path} sbatch slurm/train.sh
-  
-  Or edit slurm/train.sh to set your config path, then:
-  
-    sbatch slurm/train.sh
-  
-  Monitor progress:
-  
-    tail -f slurm_logs/vdc_train_*.out
+  On a cluster, request resources using your site's scheduler, then run:
+
+    python scripts/train.py --config {config_path}
+
+  Use a job script with your own partition, account and output-log paths.
+
 """)
     
     # =========================================================================
