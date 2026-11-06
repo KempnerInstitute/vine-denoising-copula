@@ -15,7 +15,7 @@ released model.
 
 ## Requirements
 
-- The `vdc` package of this repository (version 0.2.0): `pip install -e .` from the repository root;
+- The `vdc` package of this repository (version 0.2.1): `pip install -e .` from the repository root;
   `runners/constraints.txt` pins the numerical packages of the environment used for the paper.
 - The figure and table scripts need only NumPy, SciPy and Matplotlib; they read saved outputs and
   run no estimator. The figures were rendered with Python 3.10, NumPy 2.2.6, SciPy 1.15.3 and

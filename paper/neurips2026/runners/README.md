@@ -1,7 +1,7 @@
 # Experiment runners for the NeurIPS 2026 paper
 
 These runners reproduce the paper's main experiments with the released model and the `vdc` package
-of this repository (version 0.2.0). Each one writes into a new output directory, records the
+of this repository (version 0.2.1; its library code is that of 0.2.0). Each one writes into a new output directory, records the
 checkpoint hash and software versions, and never edits files outside that directory. Figures and
 tables are rebuilt from saved outputs by the scripts in `../figures` and `../tables`.
 
@@ -105,7 +105,7 @@ Qualification: on a reduced CPU configuration (POWER and GAS, 1,000 training and
 100 bootstrap resamples, 3 flow epochs, 4 threads), this runner and the paper's original runner gave
 identical results. All 74 reported statistics (NLL, bootstrap bounds, PIT-KS, paired differences
 and their p-values) and every per-row test log-density were bitwise equal, both with the library
-version used for the paper's UCI runs and with this release (0.2.0). The full-size GPU runs were
+version used for the paper's UCI runs and with release 0.2.0, whose library code 0.2.1 keeps. The full-size GPU runs were
 not repeated for the release.
 
 ## Chronological S&P100

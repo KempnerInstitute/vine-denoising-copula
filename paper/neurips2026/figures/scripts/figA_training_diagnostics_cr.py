@@ -43,7 +43,7 @@ def main():
     rms = smooth(D["loss_row_marg_rms"])
     for ax, y, color, title, ylabel, yt in [
             (ax_l, excess, "#D55E00", "Training loss", "Loss minus its minimum", [0.3, 1, 3]),
-            (ax_r, rms, "#0072B2", "Pre-projection marginals", "RMS deviation from uniform", [0.006, 0.01, 0.02, 0.03])]:
+            (ax_r, rms, "#0072B2", "Row marginals, training IPFP", "RMS deviation from uniform", [0.006, 0.01, 0.02, 0.03])]:
         ax.plot(step, y, color=color, linestyle="-", linewidth=0.9)
         ax.set_yscale("log")
         ax.set_yticks(yt)

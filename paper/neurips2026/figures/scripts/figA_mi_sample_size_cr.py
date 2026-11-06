@@ -5,12 +5,17 @@ Replaces figA2_mi_sensitivity_composite.py. Reads only the merged E12 artifact (
 paper_outputs/e12_block_mi_sample_size_clayton_chain_results_with_neural_seed42.json (VDC, KSG and Gaussian from
 ..._results_seed42.json, MINE and InfoNCE from ..._neural_results_seed42.json). For every estimator it plots the
 mean over the three trials at each sample size of
-  (a) the relative MI error 100 |I_hat - I| / I against the artifact's true block MI (0.640 nats), and
+  (a) the relative MI error 100 |I_hat - I| / I against the true block MI, and
   (b) the wall-clock runtime.
 Shaded bands show the range (minimum to maximum) over the three trials, which stays positive on the log axes, so
 nothing is clipped or floored. ``--band sd`` draws mean +- 1 s.d. (ddof=1) instead; where mean - s.d. <= 0 the band
 is cut at the lower axis limit and the affected points are printed. Drawn at 5.5 in with the shared vdc_figstyle
 fonts and method encodings (same keys and order as Fig. 3(b)).
+
+True block MI: for this first-order Markov chain the MI between the two blocks equals the MI of one Clayton(theta=3)
+pair copula, 0.636294 nats (adaptive quadrature of c log c; a 8e6-sample Monte Carlo check gives 0.6367 +- 0.0002).
+The artifact's own `true_mi`, 0.6401 nats, comes from a 2048-cell grid evaluation and is 0.6% too high; it is
+checked against the exact value (to 0.005) and replaced by it.
 """
 from __future__ import annotations
 
@@ -28,16 +33,20 @@ from matplotlib.ticker import FixedLocator, LogFormatterMathtext, NullFormatter 
 
 DATA = "paper_outputs/e12_block_mi_sample_size_clayton_chain_results_with_neural_seed42.json"
 KEYS = [("dcd", "vdc"), ("ksg", "ksg"), ("gaussian", "gauss"), ("infonce", "infonce"), ("mine", "mine")]
+EXACT_CLAYTON3_MI = 0.6362943630917693  # nats; see the module docstring
 YLIM = {"range": {"err": (0.1, 1000.0), "time": (1e-4, 4e3)},
         "sd": {"err": (1.0, 1000.0), "time": (1e-4, 4e3)}}
 
 
 def collect(obj):
     """Per method: sample sizes, per-trial relative errors (%) and per-trial runtimes (s)."""
-    true_mi = float(obj["true_mi"])
+    s = obj["settings"]
+    assert s["scenario"] == "clayton_chain" and float(s["theta"]) == 3.0, "exact MI applies to the Clayton(3) chain"
+    assert abs(float(obj["true_mi"]) - EXACT_CLAYTON3_MI) < 5e-3, "artifact truth far from the exact value"
+    saved_mi, true_mi = float(obj["true_mi"]), EXACT_CLAYTON3_MI
     series = {}
     for row in obj["results"]:
-        assert abs(float(row["true_mi"]) - true_mi) < 1e-12, "rows use different true MI values"
+        assert abs(float(row["true_mi"]) - saved_mi) < 1e-12, "rows use different true MI values"
         for m, s in row["methods"].items():
             est = np.asarray(s["estimates"], float)
             series.setdefault(m, []).append((int(row["n_samples"]), 100.0 * np.abs(est - true_mi) / true_mi,
