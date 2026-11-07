@@ -29,5 +29,5 @@ commands use the legacy GridUNet workflow and are not interchangeable with
 pretrained-denoiser loading.
 
 Paper-specific benchmarks, plotting scripts and saved results are in the
-[paper companion](https://github.com/houman1359/diffusion-vine-copula/tree/camera-ready/reproducibility).
+[NeurIPS project](https://github.com/KempnerInstitute/vine-denoising-copula/tree/main/projects/neurips2026).
 They are not needed to use the library.

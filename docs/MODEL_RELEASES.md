@@ -102,7 +102,7 @@ This makes the packaged loader portable for external users.
 
 Load it with `python examples/use_pretrained_model.py --model-id vdc-denoiser-m64-v1`.
 The loader checks the downloaded checkpoint against the packaged manifest. Numerical
-benchmark reports and their runner are in the [paper companion](https://github.com/houman1359/diffusion-vine-copula/tree/camera-ready/reproducibility).
+benchmark reports and their runner are in the [NeurIPS project](https://github.com/KempnerInstitute/vine-denoising-copula/tree/main/projects/neurips2026).
 
 ## Download Workflow For Users
 

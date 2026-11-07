@@ -1,0 +1,46 @@
+{
+  "paper_commit": "c9a9ae0046a2a5454cd1ddcb59bb62aebb080454",
+  "library_commit": "67c5b1bc6311214695d4c7fc044ea06546324906",
+  "script_sha256": "81b6be337483191970e9b95c4b062b72b1301df49b04d6e4e6386ab0d4a2984c",
+  "protocol_sha256": "8412b7fe4d890cb81595848853b7d603faac876eae9afcf675faaf9f06ccb5e6",
+  "checkpoint_sha256": "8a1b71ad6d2012ed344b22a743a96e667d32a2ab54ade4444686e375e91f5c0f",
+  "reference_sha256": "49733a5b3b07ac20a52b4c4fac00ec0edc542f5b99609c1e7d94f87b65cb4488",
+  "module_path": "__init__.py",
+  "cpu": "AMD EPYC 9454 48-Core Processor",
+  "gpu": "NVIDIA H100 80GB HBM3",
+  "device": "cuda",
+  "versions": {
+    "python": "3.10.20",
+    "numpy": "2.2.6",
+    "scipy": "1.15.3",
+    "torch": "2.9.1+cu128",
+    "vdc": "0.2.0"
+  },
+  "thread_env": {
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1"
+  },
+  "settings": {
+    "d": 50,
+    "n": 5000,
+    "rho": 0.7,
+    "k": 5,
+    "n_train": 3750,
+    "n_test": 1250,
+    "n_datasets": 50,
+    "seed_entropy": [
+      20261019,
+      50,
+      "trial"
+    ],
+    "edge_batch": 256,
+    "projection_iters": 30,
+    "fast_fit": false,
+    "test_fraction": 0.25,
+    "threads": 1,
+    "dtype": "float32",
+    "matmul_tf32": false,
+    "cudnn_tf32": true
+  }
+}

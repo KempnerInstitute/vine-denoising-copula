@@ -81,4 +81,4 @@ The paper's sampling comparison uses 5,000 S&P100 draws at `d=100`:
 Kernel compilation was a separate one-time 0.37 s. VDC fits a D-vine and TLL
 fits a regular vine. This does not establish speed at `d=200/500` or for the
 retrained exact-density models. The paper's scripts and saved outputs are in
-[paper reproduction companion](https://github.com/houman1359/diffusion-vine-copula/tree/camera-ready/reproducibility).
+[NeurIPS project](https://github.com/KempnerInstitute/vine-denoising-copula/tree/main/projects/neurips2026).

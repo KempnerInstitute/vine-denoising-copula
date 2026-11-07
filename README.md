@@ -80,12 +80,12 @@ trainer for the released denoiser.
 - `examples/`, `configs/`, `docs/`: usage examples, training configurations and
   software documentation.
 
-Paper figures, tables, experiment protocols, saved results, research notes and
-cluster launchers live in the separate
-[paper repository](https://github.com/houman1359/diffusion-vine-copula/tree/camera-ready).
-Its [reproducibility directory](https://github.com/houman1359/diffusion-vine-copula/tree/camera-ready/reproducibility)
-contains the plotting and table-generation scripts. The VDC library can be used
-and tested without that repository.
+The [NeurIPS 2026 project](projects/neurips2026/) provides portable benchmark
+runners, exact protocols, reference results and checkpoint hashes. The
+[versioned figure archive](https://github.com/KempnerInstitute/vine-denoising-copula/releases/download/v0.2.4/vdc-neurips2026-figures-v0.2.4.zip)
+provides the figure/table generators and their saved inputs. The manuscript
+workspace and historical cluster launchers are not required. Projects are not
+installed as part of the `vdc` Python package.
 
 ## Documentation and tests
 

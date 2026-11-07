@@ -1,0 +1,25 @@
+{
+  "description": "Selected sanitized archived outputs; values unchanged from the qualified paper inputs.",
+  "files": {
+    "corruption/corruption_variants_results.json": {
+      "sha256": "d6bd2f93ddaf78e8155310993d6401d5ce207b445415022c53228d170eea90cf",
+      "source_sha256": "d6bd2f93ddaf78e8155310993d6401d5ce207b445415022c53228d170eea90cf"
+    },
+    "ood/e26_rescored.json": {
+      "sha256": "397f97f77c28bbc57f1fd636d9fe239016ed3c46c4399c22713082f93992b5c4",
+      "source_sha256": "397f97f77c28bbc57f1fd636d9fe239016ed3c46c4399c22713082f93992b5c4"
+    },
+    "table1/table1_v2.json": {
+      "sha256": "0a1e6306a9a13a02f8cd0cdee693cf588585f8d7680757828e0a37ccbd44667e",
+      "source_sha256": "0a1e6306a9a13a02f8cd0cdee693cf588585f8d7680757828e0a37ccbd44667e"
+    },
+    "tc_benchmark_neural_full.json": {
+      "sha256": "3d6e6f7a06def1ad85448dde05131df3a4e251cfbc1ab7b03ee8c6379c5ffadb",
+      "source_sha256": "3d6e6f7a06def1ad85448dde05131df3a4e251cfbc1ab7b03ee8c6379c5ffadb"
+    },
+    "uci/e21_maf5k.json": {
+      "sha256": "02f1b746ddf148072aae38484af31f72d5450e62618aedcc438950968c805ce3",
+      "source_sha256": "02f1b746ddf148072aae38484af31f72d5450e62618aedcc438950968c805ce3"
+    }
+  }
+}
