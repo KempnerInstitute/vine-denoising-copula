@@ -82,7 +82,7 @@ trainer for the released denoiser.
 
 The [NeurIPS 2026 project](projects/neurips2026/) provides portable benchmark
 runners, exact protocols, reference results and checkpoint hashes. The
-[versioned figure archive](https://github.com/KempnerInstitute/vine-denoising-copula/releases/download/v0.2.5/vdc-neurips2026-figures-v0.2.5.zip)
+[versioned figure archive](https://github.com/KempnerInstitute/vine-denoising-copula/releases/download/v0.2.6/vdc-neurips2026-figures-v0.2.6.zip)
 provides the figure/table generators and their saved inputs. The manuscript
 workspace and historical cluster launchers are not required. Projects are not
 installed as part of the `vdc` Python package.

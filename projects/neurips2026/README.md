@@ -8,7 +8,7 @@ to the authors' manuscript repository, home directory or cluster is required.
 
 ## Start here
 
-Use the versioned `v0.2.5` checkout or its source archive, Python 3.10 and the
+Use the versioned `v0.2.6` checkout or its source archive, Python 3.10 and the
 pinned numerical environment:
 
 ```bash
@@ -48,7 +48,7 @@ bitwise reconstruction of that run. Use the released checkpoint for evaluation.
 
 ## Figures and tables
 
-Download the [figure reproduction archive](https://github.com/KempnerInstitute/vine-denoising-copula/releases/download/v0.2.5/vdc-neurips2026-figures-v0.2.5.zip) from the `v0.2.5` release.
+Download the [figure reproduction archive](https://github.com/KempnerInstitute/vine-denoising-copula/releases/download/v0.2.6/vdc-neurips2026-figures-v0.2.6.zip) from the `v0.2.6` release.
 It includes all ten figure generators, generators for 25 tables, compact saved
 inputs with hashes, reference tables and an inventory of the remaining tables.
 It formats saved experimental outputs; it does not rerun model training or the
