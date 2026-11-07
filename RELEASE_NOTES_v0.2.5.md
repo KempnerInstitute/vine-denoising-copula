@@ -8,5 +8,7 @@
     created artificial rises at both ends of the curves.
   - Paired-replication and imputation tables are reformatted to fit the text width; two Table A26 ISE cells
     are rescaled before rounding (1.891, 2.715).
-- No plotted value, saved input, runtime file (apart from the version string), checkpoint or published
-  numerical result changes. Figures 3, A3, A5 and A6 are pixel-identical to v0.2.4.
+- Saved experimental inputs, runtime code (apart from the version string), checkpoints and headline
+  results are unchanged. Figure A1's displayed averages change with the corrected smoothing rule;
+  the two Table A26 rounding corrections are listed above. Figures 3, A3, A5 and A6 are pixel-identical
+  to v0.2.4.
