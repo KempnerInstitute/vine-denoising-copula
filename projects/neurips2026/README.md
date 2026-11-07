@@ -1,6 +1,6 @@
 # NeurIPS 2026: Vine Denoising Copula
 
-**Amortized Estimation of Simplified Vine Copulas for High-Dimensional Density and Information Analysis**
+**Amortized Vine Copulas for High-Dimensional Density and Information Estimation**
 
 This project reproduces selected experiments with the frozen paper estimator.
 The reusable implementation is the `vdc` package in this repository. No access

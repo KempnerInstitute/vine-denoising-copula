@@ -109,11 +109,10 @@ vines.
 
 ## Citation
 
-Houman Safaai. *Amortized Estimation of Simplified Vine Copulas for
-High-Dimensional Density and Information Analysis*. NeurIPS, 2026.
+Houman Safaai. *Amortized Vine Copulas for High-Dimensional Density and Information Estimation*. NeurIPS, 2026.
 [arXiv:2604.20568](https://arxiv.org/abs/2604.20568).
 
-Software version: 0.2.3. Machine-readable citation: [CITATION.cff](CITATION.cff).
+Software version: 0.2.6. Machine-readable citation: [CITATION.cff](CITATION.cff).
 
 ## License
 
