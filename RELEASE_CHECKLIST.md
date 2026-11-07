@@ -32,7 +32,7 @@ Use this checklist before publishing a tagged release of Vine Denoising Copula.
 
 ## Paper and arXiv
 
-- If uploading the preprint, rebuild `drafts/vine_diffusion_arxiv.pdf`
+- Rebuild `paper_arxiv.pdf` from `paper_arxiv.tex` in the companion manuscript workspace
 - Confirm the arXiv PDF uses the public repository URL
 - Add the arXiv link back into the repo only after the paper is live
 
