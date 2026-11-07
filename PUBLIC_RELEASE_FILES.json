@@ -1,11 +1,12 @@
 {
-  "description": "Files exported in the v0.2.4 reproducibility bundle; manuscript source and figure assets are separate.",
+  "description": "Files exported in the v0.2.5 reproducibility bundle; manuscript source and figure assets are separate.",
   "files": [
     "CITATION.cff",
     "LICENSE",
     "MANIFEST.in",
     "README.md",
     "RELEASE_NOTES_v0.2.4.md",
+    "RELEASE_NOTES_v0.2.5.md",
     "configs/data/synthetic.yaml",
     "configs/default.yaml",
     "configs/inference/default.yaml",

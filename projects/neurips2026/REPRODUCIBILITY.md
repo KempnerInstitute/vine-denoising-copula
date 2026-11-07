@@ -1,6 +1,6 @@
 # Reproducibility scope
 
-Replay release: VDC v0.2.4. The reusable runtime is identical to v0.2.3
+Replay release: VDC v0.2.5. The reusable runtime is identical to v0.2.3
 (commit 9b2d33ca610b63282b9bdc493dcad607522d313b) except its version string.
 That release was qualified against the earlier camera-ready runtime; generation
 pins inside archived outputs identify the original runs and are not overwritten.
