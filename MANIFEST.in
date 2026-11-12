@@ -1,9 +1,7 @@
-include docs/compiled_sampler.md
-include docs/fast_fit.md
-include tests/test_fast_fit_identity.py
-include tests/test_vine_structure_robustness.py
-include tests/test_vine_recursion.py
-include tests/test_compiled_sampler.py
-include tests/test_prepared_sampler.py
-include tests/test_hfunc_vectorized_inverse.py
+include LICENSE README.md CHANGELOG.md CONTRIBUTING.md CITATION.cff
+recursive-include docs *.md *.html *.css
+recursive-include configs *.yaml *.md
+recursive-include examples *.py *.md
+recursive-include scripts *.py
+recursive-include tests *.py
 include vdc/vine/compiled_sampler.cpp

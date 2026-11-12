@@ -21,8 +21,8 @@ keywords:
   - mutual information
   - total correlation
   - amortized inference
-version: "0.2.6"
-date-released: "2026-11-07"
+version: "0.2.7"
+date-released: 2026-11-12
 preferred-citation:
   type: conference-paper
   title: "Amortized Vine Copulas for High-Dimensional Density and Information Estimation"

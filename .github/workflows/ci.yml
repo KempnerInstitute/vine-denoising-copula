@@ -2,15 +2,18 @@ name: CI
 
 on:
   push:
-    branches:
-      - dev
-      - main
-      - master
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  OMP_NUM_THREADS: "2"
+  MKL_NUM_THREADS: "2"
+  OPENBLAS_NUM_THREADS: "2"
 
 jobs:
   lint:
@@ -44,30 +47,45 @@ jobs:
             tests/test_probit_transform.py \
             tests/test_hfunc_independence_accuracy.py
 
-  smoke-tests:
+  tests:
     runs-on: ubuntu-latest
-    env:
-      PYTHONPATH: ${{ github.workspace }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11"]
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-
-      - name: Install package
+          python-version: ${{ matrix.python }}
+      - name: Install CPU dependencies and package
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest numpy scipy
           python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
-          python -m pip install --no-deps -e .
+          python -m pip install -e '.[test,data]' build
+      - name: Run complete library test suite
+        run: python -m pytest tests --junitxml=test-results.xml
+      - name: Build wheel and source distribution
+        run: python -m build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.python }}
+          path: test-results.xml
 
-      - name: Run smoke tests
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install documentation tools
         run: |
-          python -m pytest tests/test_information_metrics.py -q
-          python -m pytest tests/test_pretrained.py -q
-          python -m pytest tests/test_ipfp_log.py -q
-          python -m pytest tests/test_probit_transform.py -q
-          python -m pytest tests/test_hfunc_independence_accuracy.py -q
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq pandoc
+          python -m pip install pytest
+      - name: Verify documentation links
+        run: python -m pytest tests/test_docs.py
+      - name: Build documentation
+        run: python scripts/build_docs_site.py --out-dir site
