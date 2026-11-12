@@ -15,8 +15,10 @@
 
 ## Publish
 
-Create a new version tag after verification. Publish release notes and package
-artifacts from that exact commit. Never move a historical tag or replace a
+Create a new version tag after verification. Pushing a `v*` tag runs the
+release workflow: it verifies the package version, tests the code, builds the
+wheel and source distribution, and publishes the packages and checksums to
+GitHub Releases. Never move a historical tag or replace a
 checkpoint under an existing model ID. The paper's source and figure archives
 retain their generation pins even when later software versions are published.
 
