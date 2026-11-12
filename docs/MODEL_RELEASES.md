@@ -1,124 +1,54 @@
-# Model Releases
+# Pretrained models
 
-This project treats pretrained checkpoints as versioned artifacts. The repository contains the manifest, loader, packaging scripts, and verification tooling. Large model weights should live in a model store such as Hugging Face, not in git.
+## Released estimator
 
-## Released Model
+| Property | Value |
+|---|---|
+| Model ID | `vdc-denoiser-m64-v1` |
+| Architecture | Single-pass denoiser, 64 × 64 grid |
+| Training step | 190,000 |
+| Model host | [Hugging Face](https://huggingface.co/hsafaai/vdc-denoiser-m64-v1) |
+| SHA-256 | `8a1b71ad6d2012ed344b22a743a96e667d32a2ab54ade4444686e375e91f5c0f` |
+| Manifest | [`vdc_denoiser_m64_v1.json`](../vdc/resources/pretrained/vdc_denoiser_m64_v1.json) |
 
-Current packaged model id:
+The model ID versions the weights separately from the Python package. A library
+update does not silently replace this checkpoint. Later research checkpoints
+are not registered public replacements.
 
-- `vdc-denoiser-m64-v1`
+## Download and cache
 
-Packaged manifest:
-
-- `vdc/resources/pretrained/vdc_denoiser_m64_v1.json`
-
-## What Lives In The Repo
-
-- packaged manifests in `vdc/resources/pretrained`
-- a versioned loader in `vdc/pretrained.py`
-- `scripts/package_pretrained_model.py`
-- `scripts/upload_pretrained_to_hf.py`
-- `scripts/download_pretrained.py`
-
-## What Lives Outside The Repo
-
-- the full model checkpoint
-- the staged release bundle
-- the public Hugging Face model repository
-
-## Release Workflow
-
-### 1. Stage the bundle
-
-Run this from repo root:
-
-```bash
-python scripts/package_pretrained_model.py \
-  --model-id vdc-denoiser-m64-v1 \
-  --out-dir /tmp/vdc-denoiser-m64-v1 \
-  --repo-id YOUR_USER_OR_ORG/vdc-denoiser-m64-v1
+```python
+from vdc import load_pretrained_model
+bundle = load_pretrained_model("vdc-denoiser-m64-v1", device="cpu")
 ```
 
-The staged directory will contain:
-
-- `vdc-denoiser-m64-v1.pt`
-- `train_config.yaml`
-- `manifest.json`
-- `model_selection_joint_best.json`
-- a model-card `README.md`
-
-### 2. Create or choose the Hugging Face repo
-
-Recommended repo name:
-
-- `YOUR_USER_OR_ORG/vdc-denoiser-m64-v1`
-
-You can let the upload script create it automatically.
-
-### 3. Provide Hugging Face authentication
-
-Set a token in your shell:
+Or download without loading the network:
 
 ```bash
-export HF_TOKEN=YOUR_HF_WRITE_TOKEN
+vdc resolve-model --model-id vdc-denoiser-m64-v1
 ```
 
-The upload script reads `HF_TOKEN` by default.
+The cache defaults to `~/.cache/vdc`; override it with `VDC_PRETRAINED_CACHE` or
+`cache_dir=`. The loader checks the checkpoint's SHA-256. An incorrect cached
+file is an error, not an accepted replacement. A public download needs no write
+token or personal cluster account.
 
-### 4. Upload the bundle
+## Local and offline models
 
-```bash
-python scripts/upload_pretrained_to_hf.py \
-  --bundle-dir /tmp/vdc-denoiser-m64-v1 \
-  --repo-id YOUR_USER_OR_ORG/vdc-denoiser-m64-v1 \
-  --create-repo
+```python
+from vdc import load_checkpoint_bundle
+bundle = load_checkpoint_bundle("/path/to/trusted-model.pt", device="cpu")
 ```
 
-If you want the repo private during staging:
+Only load trusted checkpoints. This reconstructs the model from its embedded
+configuration; it does not certify a custom checkpoint against the public model
+hash. The released denoiser and iterative diffusion models have different input
+and inference conventions, handled by the loader.
 
-```bash
-python scripts/upload_pretrained_to_hf.py \
-  --bundle-dir /tmp/vdc-denoiser-m64-v1 \
-  --repo-id YOUR_USER_OR_ORG/vdc-denoiser-m64-v1 \
-  --create-repo \
-  --private
-```
+## Publishing a separate model
 
-### 5. Update the packaged manifest
-
-After upload succeeds, update:
-
-- `vdc/resources/pretrained/vdc_denoiser_m64_v1.json`
-
-Fill in:
-
-- `sources.huggingface.repo_id`
-- `sources.huggingface.revision`
-- `sources.huggingface.filename`
-
-This makes the packaged loader portable for external users.
-
-### 6. Check the published model
-
-Load it with `python examples/use_pretrained_model.py --model-id vdc-denoiser-m64-v1`.
-The loader checks the downloaded checkpoint against the packaged manifest. Numerical
-benchmark reports and their runner are in the [NeurIPS project](https://github.com/KempnerInstitute/vine-denoising-copula/tree/main/projects/neurips2026).
-
-## Download Workflow For Users
-
-Once the Hugging Face repo is public and the manifest points to it, users can run:
-
-```bash
-python scripts/download_pretrained.py --model-id vdc-denoiser-m64-v1
-python examples/use_pretrained_model.py --model-id vdc-denoiser-m64-v1
-```
-
-## Notes On Versioning
-
-- Keep the released checkpoint frozen.
-- If you publish a better later model, give it a new model id and version.
-- Do not silently replace the checkpoint behind `vdc-denoiser-m64-v1`.
-
-## Notes For This Repository
-
-The packaged loader is designed to work from the public manifest plus the Hugging Face release. Local unpublished checkpoints should be treated as development artifacts rather than part of the public API.
+Maintainers can use `scripts/package_pretrained_model.py` and
+`scripts/upload_pretrained_to_hf.py`; see each command's `--help` and the
+[release guide](RELEASING.md). Give new weights a new model ID, publish their
+training/evaluation configuration, pin the host revision and record their hash.
+Never overwrite the weights of an existing released model ID.

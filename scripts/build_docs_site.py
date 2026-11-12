@@ -21,7 +21,10 @@ NAV_ITEMS = [
     ("User Guide", Path("USER_GUIDE.html")),
     ("API", Path("API.html")),
     ("Configuration", Path("CONFIGURATION.html")),
-    ("Model Releases", Path("MODEL_RELEASES.html")),
+    ("Pretrained models", Path("MODEL_RELEASES.html")),
+    ("Training data", Path("TRAINING_DATA.html")),
+    ("Datasets", Path("DATASETS.html")),
+    ("Sampling", Path("compiled_sampler.html")),
 ]
 
 
@@ -63,7 +66,7 @@ def resolve_internal_target(source: Path, raw_url: str) -> Path | None:
     raw = raw_url.split("#", 1)[0]
     if not raw:
         return None
-    if raw == "README.md":
+    if (source.parent / raw).resolve() == REPO_ROOT / "README.md":
         return Path("readme.html")
     if raw.startswith("docs/"):
         p = Path(raw[5:])
@@ -101,8 +104,13 @@ def rewrite_url(raw_url: str, source: Path, current_out_rel: Path, repo_base: st
     if internal is not None:
         return rel_link(current_out_rel, internal) + anchor
 
-    repo_rel = raw_no_anchor.lstrip("./")
-    return git_blob_url(repo_base, repo_rel) + anchor
+    candidate = (source.parent / raw_no_anchor).resolve()
+    try:
+        repo_rel = candidate.relative_to(REPO_ROOT.resolve()).as_posix()
+    except ValueError:
+        return raw_url
+    kind = "tree" if candidate.is_dir() else "blob"
+    return f"{repo_base}/{kind}/main/{repo_rel}" + anchor
 
 
 def rewrite_markdown_links(text: str, source: Path, current_out_rel: Path, repo_base: str) -> str:

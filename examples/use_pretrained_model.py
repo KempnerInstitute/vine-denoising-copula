@@ -78,7 +78,7 @@ def main() -> None:
     print(f"  Density range: [{density.min():.4f}, {density.max():.4f}]")
     print(f"  Total mass:    {mass:.4f}")
     print(f"  h(u|v):        {np.round(hfunc.h_u_given_v(test_u, test_v), 4)}")
-    print(f"  h(v|u):        {np.round(hfunc.h_v_given_u(test_u, test_v), 4)}")
+    print(f"  h(v|u):        {np.round(hfunc.h_v_given_u(test_v, test_u), 4)}")
 
     if args.fit_vine:
         from vdc.vine.api import VineCopulaModel

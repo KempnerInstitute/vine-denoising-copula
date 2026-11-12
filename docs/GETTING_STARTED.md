@@ -1,33 +1,67 @@
 # Getting started
 
-Install the package from the repository root:
+## Install
+
+Python 3.10 or 3.11 is recommended. From a fresh environment:
 
 ```bash
-pip install -e .
-python scripts/download_pretrained.py --model-id vdc-denoiser-m64-v1
-python examples/use_pretrained_model.py --model-id vdc-denoiser-m64-v1
+git clone https://github.com/KempnerInstitute/vine-denoising-copula.git
+cd vine-denoising-copula
+python -m pip install -e .
 ```
 
-The loader verifies the downloaded checkpoint against the packaged manifest.
-Set `device="cuda"` when using the Python API on a suitable GPU. A CPU is
-sufficient to load the model and estimate pair densities, but its memory
-requirements still apply.
-
-The [README](../README.md) gives pair-density and vine-fitting examples.
-[API](API.md) describes the public classes and functions;
-[model releases](MODEL_RELEASES.md) describes checkpoint storage and versioning.
-
-To train a denoiser, use the unified trainer:
+For a CPU-only PyTorch installation, install Torch from its CPU wheel index
+before installing VDC:
 
 ```bash
-python scripts/train_unified.py --config configs/train/denoiser_cond.yaml --model-type denoiser
+python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+python -m pip install -e .
 ```
 
-The `configs/train/` files specify model and data choices. Inspect the selected
-configuration before training. The older `train.py`, `infer.py` and `evaluate.py`
-commands use the legacy GridUNet workflow and are not interchangeable with
-pretrained-denoiser loading.
+GPU users should install the PyTorch build appropriate for their CUDA driver.
+The package does not require a GPU. The pretrained network is large; allow
+several GB of memory. The optional compiled sampler requires a C++17 compiler
+with OpenMP and falls back to NumPy when unavailable.
 
-Paper-specific benchmarks, plotting scripts and saved results are in the
-[NeurIPS project](https://github.com/KempnerInstitute/vine-denoising-copula/tree/main/projects/neurips2026).
-They are not needed to use the library.
+## First pair-density estimate
+
+```python
+import numpy as np
+from scipy.stats import norm
+from vdc import load_pretrained_model, estimate_pair_density_from_samples
+
+rng = np.random.default_rng(42)
+z = rng.multivariate_normal([0, 0], [[1, 0.6], [0.6, 1]], size=2000)
+u = norm.cdf(z)
+bundle = load_pretrained_model("vdc-denoiser-m64-v1", device="cpu")
+density = estimate_pair_density_from_samples(bundle, u)
+print(density.shape)  # (64, 64)
+print(density.sum() / density.size)  # grid-integrated mass, approximately 1
+```
+
+The loader verifies the checkpoint hash. Set `VDC_PRETRAINED_CACHE` to choose a
+cache directory. To use an already downloaded model without network access,
+pass its path to `load_checkpoint_bundle`.
+
+## Run the examples
+
+```bash
+python examples/use_pretrained_model.py --device cpu
+python examples/fit_vine_copula.py --device cpu
+python examples/estimate_mutual_information.py --device cpu
+```
+
+Each example uses the same public loader as applications. A local trusted
+checkpoint can be supplied with `--checkpoint /path/to/model.pt`.
+
+## Next steps
+
+- [User guide](USER_GUIDE.md): raw-data transforms, fitting, sampling and information.
+- [API reference](API.md): supported signatures and defaults.
+- [Training configuration](CONFIGURATION.md): train a separate model.
+- [Pretrained models](MODEL_RELEASES.md): caching, hashes and artifact versions.
+- [NeurIPS reproduction](../projects/neurips2026/README.md): fixed experimental protocols.
+
+The paper's plotting scripts and saved figure inputs are distributed in its
+versioned release archive, linked from the NeurIPS project. They are separate
+from the library and portable experiment runners.

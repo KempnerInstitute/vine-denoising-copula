@@ -1,454 +1,124 @@
-# Vine Denoising Copula - API Documentation
+# API reference
 
-API reference for the Vine Denoising Copula package.
+Start with the functions exported by `vdc`. Examples assume the package is
+installed and inputs are finite arrays of continuous pseudo-observations in
+`[0, 1]`. Raw-data transforms are described in the [user guide](USER_GUIDE.md).
 
-The public API for the released package is:
-
-- `vdc.load_pretrained_model`
-- `vdc.estimate_pair_density_from_samples`
-- `vdc.VineCopulaModel`
-- the `vdc` command-line interface for listing models, resolving checkpoints, pair estimation, and vine fitting
-
----
-
-## Table of Contents
-
-1. [Installation](#installation)
-2. [Core Classes](#core-classes)
-3. [Vine Copula API](#vine-copula-api)
-4. [Utility Functions](#utility-functions)
-5. [Configuration](#configuration)
-6. [Examples](#examples)
-
----
-
-## Installation
-
-```bash
-git clone https://github.com/KempnerInstitute/vine-denoising-copula.git vine-denoising-copula
-cd vine-denoising-copula
-pip install -e .
-```
-
----
-
-## Stable Public API
+## Pretrained models
 
 ```python
-import numpy as np
-from vdc import VineCopulaModel, estimate_pair_density_from_samples, load_pretrained_model
+from vdc import load_pretrained_model, estimate_pair_density_from_samples
 
 bundle = load_pretrained_model("vdc-denoiser-m64-v1", device="cpu")
-pair_samples = np.random.rand(2000, 2)
-density = estimate_pair_density_from_samples(bundle, pair_samples)
-
-U = np.random.rand(1000, 5)
-vine = VineCopulaModel(vine_type="dvine", m=bundle.config["data"]["m"], device="cpu")
-vine.fit(U, bundle.model, diffusion=bundle.diffusion)
+density = estimate_pair_density_from_samples(bundle, pair_data)
 ```
 
-Command-line entry points:
+| Function | Arguments and result |
+|---|---|
+| `load_pretrained_model` | `model_id="vdc-denoiser-m64-v1"`, keyword arguments `device=None`, `cache_dir=None`, `force_download=False`, `prefer_local=True`, `repo_id=None`, `revision=None`; returns a `LoadedPretrainedModel`. |
+| `load_checkpoint_bundle` | A trusted `checkpoint_path`, keyword `device=None`; loads a local unified-trainer checkpoint. |
+| `resolve_pretrained_checkpoint` | The same model/download options, without `device`; returns a verified checkpoint `Path`. |
+| `estimate_pair_density_from_samples` | `bundle`, an `(n, 2)` array, keywords `m=None`, `diffusion_steps=None`, `cfg_scale=1.0`, `projection_iters=50`; returns an `(m, m)` density grid. |
+| `list_pretrained_models()` | Returns the packaged model manifests. |
+| `load_pretrained_manifest(model_id)` | Returns one packaged manifest. |
+
+A bundle contains `model`, `diffusion`, `config`, `device`, `model_id`,
+`checkpoint_path` and `manifest`. `diffusion` is `None` for the released
+single-pass denoiser. `device=None` selects CUDA when available; choose an
+explicit device for reproducible resource use. The loader verifies the public
+checkpoint's SHA-256. See [pretrained models](MODEL_RELEASES.md) for caching.
+
+The grid uses cell centers `(i + 0.5) / m`. Values are **densities**, not cell
+probabilities: on a uniform grid, the mass is `density.sum() / m**2`.
+Projection corrects grid marginals to finite numerical tolerance.
+
+## VineCopulaModel
+
+```python
+from vdc import VineCopulaModel
+
+vine = VineCopulaModel(
+    vine_type="dvine", m=64, device="cpu",
+    batch_edges=True, edge_batch_size=16,
+)
+vine.fit(train_u, bundle.model, diffusion=bundle.diffusion, verbose=False)
+log_density = vine.logpdf(test_u)
+```
+
+Constructor defaults in the library are:
+
+```python
+VineCopulaModel(
+    vine_type="rvine", order=None, truncation_level=None, m=64,
+    device="cuda", diffusion_steps=50, cfg_scale=1.0, projection_iters=50,
+    pred_noise_clip=10.0, hfunc_use_spline=True, batch_edges=False,
+    edge_batch_size=256, gpu_histogram=True,
+    hfunc_vectorized_inverse=False, fast_fit=False,
+)
+```
+
+Select `vine_type` and `device` explicitly. `order` gives the D-vine order or
+C-vine root order; `None` selects it from the data. `truncation_level=None`
+fits all `d - 1` trees. `m` must match the estimator's grid.
+
+`batch_edges=True` enables batches within D/C-vine trees for single-pass models;
+R-vine fitting evaluates edges individually. Trees remain sequential.
+`fast_fit=True` enables the qualified execution optimizations described in
+[optimized fitting](fast_fit.md). Neither option changes the network weights.
+
+| Method | Behavior |
+|---|---|
+| `fit(U, diffusion_model, diffusion=None, verbose=True)` | Fits structure and pair densities to `(n, d)` inputs. |
+| `logpdf(U)`, `pdf(U)` | Return one copula log density or density per row. |
+| `logpdf_decomposed(U)` | Returns `per_sample`, `mean_total`, `per_tree_mean` and `per_edge_mean`. |
+| `simulate(n, seed=None)` | Draws `(n, d)` samples for supported D/C-vines. A supplied seed resets NumPy's global random state. |
+| `rosenblatt(U)`, `inverse_rosenblatt(W)` | Forward and inverse transforms for supported D/C-vines. |
+| `prepare_sampler(...)` | Prepares a reusable sampler with automatic compiled/NumPy selection; see [sampling](compiled_sampler.md). |
+| `summary()` | Returns the fitted dimension, tree/edge counts, type, order, truncation and grid size. |
+| `get_structure_matrix()` | Returns the fitted vine matrix. |
+| `save(path)`, `VineCopulaModel.load(path)` | Save/load a fitted model with pickle. Load only files you trust. |
+
+General R-vine density fitting is supported; general R-vine sampling is not.
+`fit_from_matrix(U, vine_matrix, diffusion_model, diffusion, verbose=True)` uses
+the diagonal order for D/C-vines. The R-vine path selects its own structure;
+it does not enforce an arbitrary supplied matrix.
+
+## Grid transforms and information
+
+| Function or object | Interface |
+|---|---|
+| `vdc.models.hfunc.HFuncLookup` | Construct from an `(m, m)` density grid; optional `use_spline=True`, `vectorized_inverse=False`, `vectorized_tables=False`. |
+| `HFuncLookup.h_u_given_v(u, v)` | Conditional CDF of `u` given `v`. |
+| `HFuncLookup.h_v_given_u(v, u)` | Conditional CDF of `v` given `u`; note the argument order. |
+| `HFuncLookup.hinv_u_given_v(q, v)` | Inverse conditional CDF of `u` given `v`. |
+| `HFuncLookup.hinv_v_given_u(q, u)` | Inverse conditional CDF of `v` given `u`. |
+| `HFuncLookup.pdf(u, v)` | Interpolated pair density. |
+| `vdc.models.projection.copula_project` | Projects a tensor density grid; `iters=30`, `eps=1e-8`, `method="sinkhorn"`, optional marginal targets. |
+| `vdc.utils.metrics.mutual_information_from_density_grid` | Accepts a Torch density tensor and computes grid-integrated MI in nats. |
+| `vdc.utils.information.ksg_mutual_information` | `x, y, k=5, seed=None` with keyword-only `k` and `seed`; KSG MI in nats. |
+| `vdc.data.tabular.EmpiricalMarginals` | `fit(X_train)`, then `transform(X)` or `inverse_transform(U)`. |
+
+The continuous density interpolation and cached conditional tables are
+approximate counterparts. Grid projection does not imply exact normalization
+or calibration of the complete interpolated vine.
+
+## Command line
 
 ```bash
 vdc list-models
 vdc resolve-model --model-id vdc-denoiser-m64-v1
-vdc estimate-pair data/pair.npy --output results/density.npy
-vdc fit-vine data/pseudo_obs.npy --output results/vine.pkl --vine-type dvine
+vdc estimate-pair pair.npy --output density.npy --device cpu
+vdc fit-vine pseudo_obs.npy --output vine.pkl --vine-type dvine --device cpu
 ```
 
-The lower-level classes documented below remain available for advanced use, but most users should start with the public API above.
-
----
-
-## Core Classes
-
-### `GridUNet`
-
-The main diffusion model architecture for copula density estimation.
-
-**Location:** `vdc.models.unet_grid`
-
-```python
-from vdc.models.unet_grid import GridUNet
-
-model = GridUNet(
-    m=64,                          # Grid resolution
-    in_channels=1,                 # Input channels
-    base_channels=64,              # Base feature channels
-    channel_mults=(1, 2, 3, 4),    # Channel multipliers
-    num_res_blocks=2,              # Residual blocks per level
-    attention_resolutions=(16, 8), # Resolutions with attention
-    dropout=0.1,                   # Dropout rate
-    time_emb_dim=256,              # Time embedding dimension
-)
-```
-
-**Methods:**
-
-| Method | Signature | Description |
-|--------|-----------|-------------|
-| `forward` | `(x, t) -> Tensor` | Forward pass with noisy input and time |
-
-**Parameters:**
-- `x`: `(B, C, m, m)` - Noisy log-density tensor
-- `t`: `(B,)` - Normalized timestep in [0, 1]
-
-**Returns:**
-- `(B, 1, m, m)` - Predicted noise
-
----
-
-### `CopulaAwareDiffusion`
-
-Manages the diffusion process with noise scheduling.
-
-**Location:** `vdc.models.copula_diffusion`
-
-```python
-from vdc.models.copula_diffusion import CopulaAwareDiffusion
-
-diffusion = CopulaAwareDiffusion(
-    timesteps=1000,              # Total diffusion steps
-    beta_schedule='cosine',      # 'linear' or 'cosine'
-)
-```
-
-**Methods:**
-
-| Method | Signature | Description |
-|--------|-----------|-------------|
-| `q_sample` | `(x_0, t, noise=None) -> Tensor` | Add noise at timestep t |
-| `alphas_cumprod` | `Tensor` | Cumulative product of (1-beta) |
-
-**Example:**
-```python
-# Forward diffusion (add noise)
-t = torch.randint(0, 1000, (batch_size,))
-noise = torch.randn_like(x_0)
-x_t = diffusion.q_sample(x_0, t, noise)
-
-# Get alpha values for sampling
-alpha_t = diffusion.alphas_cumprod[t]
-```
-
----
-
-### `HFuncLookup`
-
-Computes h-functions (conditional CDFs) from a density grid.
-
-**Location:** `vdc.models.hfunc`
-
-```python
-from vdc.models.hfunc import HFuncLookup
-
-hfunc = HFuncLookup(density_grid)  # (m, m) numpy array
-```
-
-**Methods:**
-
-| Method | Signature | Description |
-|--------|-----------|-------------|
-| `h_u_given_v` | `(u, v) -> ndarray` | H(u\|v) = ∫₀ᵘ c(s,v)ds |
-| `h_v_given_u` | `(u, v) -> ndarray` | H(v\|u) = ∫₀ᵛ c(u,s)ds |
-| `h_inv_u_given_v` | `(p, v) -> ndarray` | Inverse of h_u_given_v |
-| `h_inv_v_given_u` | `(p, u) -> ndarray` | Inverse of h_v_given_u |
-| `pdf` | `(u, v) -> ndarray` | Interpolated density c(u,v) |
-
-**Example:**
-```python
-u = np.array([0.3, 0.5, 0.7])
-v = np.array([0.4, 0.6, 0.8])
-
-# Conditional CDFs
-h1 = hfunc.h_u_given_v(u, v)  # P(U ≤ u | V = v)
-h2 = hfunc.h_v_given_u(u, v)  # P(V ≤ v | U = u)
-
-# Density at points
-density_at_points = hfunc.pdf(u, v)
-```
-
----
-
-### `copula_project`
-
-Projects a density grid to satisfy copula constraints (uniform marginals).
-
-**Location:** `vdc.models.projection`
-
-```python
-from vdc.models.projection import copula_project
-
-projected = copula_project(
-    density,                    # (B, 1, m, m) tensor
-    iters=50,                   # IPFP iterations
-    row_target=None,            # Target row marginal (default: uniform)
-    col_target=None,            # Target col marginal (default: uniform)
-)
-```
-
-**Returns:** `(B, 1, m, m)` - Projected density with uniform marginals
-
----
-
-## Vine Copula API
-
-### `VineCopulaModel`
-
-High-level interface for fitting and using vine copulas.
-
-**Location:** `vdc.vine.api`
-
-```python
-from vdc.vine.api import VineCopulaModel
-
-vine = VineCopulaModel(
-    vine_type='dvine',          # 'dvine', 'cvine', or 'rvine'
-    order=None,                 # Variable ordering (auto if None)
-    truncation_level=None,      # Truncate at this tree level
-    m=64,                       # Grid resolution
-    device='cuda',              # Compute device
-)
-```
-
-**Methods:**
-
-| Method | Signature | Description |
-|--------|-----------|-------------|
-| `fit` | `(U, model, diffusion, verbose=True)` | Fit vine to data |
-| `logpdf` | `(U) -> ndarray` | Compute log-density |
-| `pdf` | `(U) -> ndarray` | Compute density |
-| `simulate` | `(n, seed=None) -> ndarray` | Generate samples |
-| `rosenblatt` | `(U) -> ndarray` | Forward Rosenblatt transform |
-| `save` | `(path)` | Save to pickle file |
-| `load` | `(path) -> VineCopulaModel` | Load from pickle file |
-| `summary` | `() -> dict` | Get model summary |
-
-**Example:**
-```python
-# Fit D-vine to 5-dimensional data
-U = np.random.uniform(0, 1, (1000, 5))
-
-vine = VineCopulaModel(vine_type='dvine', m=64)
-vine.fit(U, diffusion_model, diffusion, verbose=True)
-
-# Evaluate
-logpdf = vine.logpdf(U_test)
-print(f"Mean log-likelihood: {logpdf.mean():.2f}")
-
-# Sample
-new_samples = vine.simulate(n=500)
-
-# Save/load
-vine.save('my_vine.pkl')
-loaded = VineCopulaModel.load('my_vine.pkl')
-```
-
----
-
-### Convenience Functions
-
-```python
-from vdc.vine.api import fit_dvine, fit_cvine, fit_rvine
-
-# Quick D-vine fitting
-dvine = fit_dvine(U, model, order=[0, 2, 1, 3, 4], m=64)
-
-# Quick C-vine fitting
-cvine = fit_cvine(U, model, m=64)
-
-# Quick R-vine fitting
-rvine = fit_rvine(U, model, truncation_level=3, m=64)
-```
-
----
-
-## Utility Functions
-
-### Data Generation
-
-**Location:** `vdc.data.generators`
-
-```python
-from vdc.data.generators import (
-    # Bivariate copula samplers
-    sample_gaussian_copula,
-    sample_student_copula,
-    sample_clayton_copula,
-    sample_gumbel_copula,
-    sample_frank_copula,
-    sample_joe_copula,
-    
-    # High-dimensional generators
-    generate_gaussian_vine,
-    generate_student_vine,
-    generate_clayton_vine,
-    generate_mixed_vine,
-    
-    # Density functions
-    gaussian_copula_density,
-    clayton_copula_density,
-)
-
-# Bivariate sampling
-samples = sample_gaussian_copula(n=1000, rho=0.7)
-samples = sample_clayton_copula(n=1000, theta=3.0)
-
-# High-dimensional
-U = generate_gaussian_vine(n=1000, d=5, rho=0.6, seed=42)
-```
-
-### Histogram Creation
-
-**Location:** `vdc.data.hist`
-
-```python
-from vdc.data.hist import scatter_to_hist
-
-hist = scatter_to_hist(
-    pts,                # (n, 2) points in [0,1]²
-    m=64,               # Grid resolution
-    reflect=True,       # Boundary reflection
-)
-```
-
-### Metrics
-
-**Location:** `vdc.utils.metrics`
-
-```python
-from vdc.utils.metrics import (
-    ise,                # Integrated squared error
-    kl_divergence,      # KL divergence
-    kendall_tau,        # Kendall's tau from samples
-    tail_dependence_from_grid,  # λ_U, λ_L
-)
-```
-
----
-
-## Configuration
-
-### `Config` Class
-
-**Location:** `vdc.config`
-
-```python
-from vdc.config import Config, get_run_dir
-
-# Load configuration
-config = Config.load(
-    'configs/train/default.yaml',
-    overrides=['training.max_steps=200000'],
-)
-
-# Access values
-print(config.training.max_steps)
-print(config.model.base_channels)
-
-# Save
-config.save('my_config.yaml')
-
-# Create run directory
-run_dir = get_run_dir(
-    base_dir='results',
-    experiment_name='my_experiment',
-    include_timestamp=True,
-    include_job_id=True,
-)
-# Returns: Path like results/my_experiment_20251209_143022_job12345/
-```
-
----
-
-## Examples
-
-### Complete Bivariate Example
-
-```python
-import numpy as np
-import torch
-from scipy.stats import norm
-
-from vdc.models.unet_grid import GridUNet
-from vdc.models.copula_diffusion import CopulaAwareDiffusion
-from vdc.models.projection import copula_project
-from vdc.models.hfunc import HFuncLookup
-from vdc.data.hist import scatter_to_hist
-
-# 1. Load model
-checkpoint = torch.load('checkpoints/model.pt', map_location='cuda')
-config = checkpoint['config']
-
-model = GridUNet(
-    m=config['data']['m'],
-    in_channels=config['model'].get('in_channels', 1),
-    base_channels=config['model'].get('base_channels', 64),
-).cuda()
-model.load_state_dict(checkpoint['model_state_dict'])
-model.eval()
-
-diffusion = CopulaAwareDiffusion(
-    timesteps=config['diffusion']['timesteps'],
-    beta_schedule=config['diffusion']['noise_schedule'],
-).cuda()
-
-# 2. Generate test data
-rho = 0.7
-n = 1000
-Z = np.random.randn(n, 2)
-Z[:, 1] = rho * Z[:, 0] + np.sqrt(1-rho**2) * Z[:, 1]
-samples = norm.cdf(Z)
-
-# 3. Estimate density (simplified DDIM)
-m = 64
-hist = scatter_to_hist(samples, m, reflect=True)
-hist = hist / (hist.sum() * (1/m)**2 + 1e-12)
-
-with torch.no_grad():
-    x_t = torch.randn(1, 1, m, m, device='cuda')
-    # ... DDIM sampling loop (see scripts/infer.py for full implementation)
-    
-# 4. Project to copula constraints
-# density = copula_project(density, iters=50)
-
-# 5. Create h-function lookup
-# hfunc = HFuncLookup(density.cpu().numpy())
-```
-
-### Complete Vine Example
-
-```python
-import numpy as np
-from vdc.vine.api import VineCopulaModel
-from vdc.data.generators import generate_gaussian_vine
-
-# 1. Generate high-dimensional data
-d = 5
-n_train, n_test = 2000, 500
-U_train = generate_gaussian_vine(n_train, d, rho=0.6, seed=42)
-U_test = generate_gaussian_vine(n_test, d, rho=0.6, seed=123)
-
-# 2. Load diffusion model (see above)
-# model, diffusion = ...
-
-# 3. Fit D-vine (pass both model and diffusion process)
-vine = VineCopulaModel(vine_type='dvine', m=64, device='cuda')
-vine.fit(U_train, model, diffusion, verbose=True)
-
-# 4. Evaluate
-logpdf = vine.logpdf(U_test)
-print(f"Mean log-likelihood: {logpdf.mean():.2f}")
-
-# 5. Sample
-new_samples = vine.simulate(n=1000, seed=42)
-
-# 6. Save
-vine.save('fitted_dvine.pkl')
-```
-
----
-
-## License
-
-MIT License
+Array inputs may be `.npy`, comma-separated `.csv` or whitespace-separated
+`.txt` files. Use `vdc COMMAND --help` for the complete options. These commands
+expect pseudo-observations, not untransformed raw measurements.
+
+## Advanced models
+
+`vdc.GridUNet` and `vdc.CopulaAwareDiffusion` support iterative diffusion
+checkpoints. They are not the released single-pass denoiser. Use
+`load_checkpoint_bundle` to reconstruct an architecture from its checkpoint,
+rather than guessing constructor arguments. Training options are in
+[configuration](CONFIGURATION.md).

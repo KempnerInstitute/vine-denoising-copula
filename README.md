@@ -1,5 +1,8 @@
 # Vine Denoising Copula (VDC)
 
+[Documentation](docs/GETTING_STARTED.md) · [Examples](examples/) ·
+[NeurIPS 2026 project](projects/neurips2026/) · [Changelog](CHANGELOG.md)
+
 VDC estimates bivariate copula densities with a reusable pretrained network and
 assembles them into simplified vines. The library provides training, pretrained
 model loading, density evaluation, vine fitting, sampling, and information
@@ -39,13 +42,16 @@ the loader checks its checkpoint hash.
 from vdc import VineCopulaModel
 
 u = np.random.default_rng(42).uniform(size=(1000, 5))
-vine = VineCopulaModel(vine_type="dvine", m=64, device="cpu")
+vine = VineCopulaModel(
+    vine_type="dvine", m=64, device="cpu", batch_edges=True, edge_batch_size=16,
+)
 vine.fit(u, bundle.model, diffusion=bundle.diffusion)
 log_density = vine.logpdf(u)
 samples = vine.simulate(n=500)
 ```
 
-D-vine fitting batches edges from the same tree. `fast_fit=True` enables
+D/C-vine fitting can batch edges from the same tree with `batch_edges=True`.
+`fast_fit=True` enables
 execution optimizations while preserving the estimator's arithmetic settings.
 The regular-vine fitting path evaluates edges separately. Inverse-Rosenblatt
 sampling supports the implemented D/C-vine paths; arbitrary R-vine sampling is
@@ -67,9 +73,9 @@ python scripts/train_unified.py --config configs/train/denoiser_cond.yaml --mode
 ```
 
 See `examples/` for model loading, vine fitting, information estimation and
-custom training. The older `scripts/train.py`, `infer.py` and `evaluate.py`
-commands target the legacy GridUNet workflow; use the pretrained API or unified
-trainer for the released denoiser.
+custom training. The older `scripts/infer.py` and `scripts/evaluate.py` commands target the
+GridUNet workflow. `scripts/train.py` is a separate training frontend; use the
+pretrained API or `scripts/train_unified.py` for the workflow documented here.
 
 ## Repository contents
 
@@ -83,8 +89,7 @@ trainer for the released denoiser.
 The [NeurIPS 2026 project](projects/neurips2026/) provides portable benchmark
 runners, exact protocols, reference results and checkpoint hashes. The
 [versioned figure archive](https://github.com/KempnerInstitute/vine-denoising-copula/releases/download/v0.2.6/vdc-neurips2026-figures-v0.2.6.zip)
-provides the figure/table generators and their saved inputs. The manuscript
-workspace and historical cluster launchers are not required. Projects are not
+provides the figure/table generators and their saved inputs. Projects are not
 installed as part of the `vdc` Python package.
 
 ## Documentation and tests
@@ -112,7 +117,12 @@ vines.
 Houman Safaai. *Amortized Vine Copulas for High-Dimensional Density and Information Estimation*. NeurIPS, 2026.
 [arXiv:2604.20568](https://arxiv.org/abs/2604.20568).
 
-Software version: 0.2.6. Machine-readable citation: [CITATION.cff](CITATION.cff).
+Software version: 0.2.7. Machine-readable citation: [CITATION.cff](CITATION.cff).
+
+## Contributing
+
+`main` is the maintained public library branch. See [CONTRIBUTING.md](CONTRIBUTING.md)
+for development checks and [the release guide](docs/RELEASING.md) for publication.
 
 ## License
 
