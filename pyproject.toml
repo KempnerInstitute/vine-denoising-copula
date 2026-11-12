@@ -43,7 +43,7 @@ dependencies = [
 Homepage = "https://github.com/KempnerInstitute/vine-denoising-copula"
 Repository = "https://github.com/KempnerInstitute/vine-denoising-copula"
 Issues = "https://github.com/KempnerInstitute/vine-denoising-copula/issues"
-Documentation = "https://github.com/KempnerInstitute/vine-denoising-copula/tree/main/docs"
+Documentation = "https://kempnerinstitute.github.io/vine-denoising-copula/"
 
 [project.optional-dependencies]
 dev = [

@@ -1,6 +1,6 @@
 # Vine Denoising Copula (VDC)
 
-[Documentation](docs/GETTING_STARTED.md) · [Examples](examples/) ·
+[Documentation](https://kempnerinstitute.github.io/vine-denoising-copula/) · [Examples](examples/) ·
 [NeurIPS 2026 project](projects/neurips2026/) · [Changelog](CHANGELOG.md)
 
 VDC estimates bivariate copula densities with a reusable pretrained network and
