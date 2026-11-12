@@ -16,11 +16,6 @@ import torch
 from torch.utils.data import Dataset
 from vdc.data.generators import sample_bicop, analytic_logpdf_grid
 from vdc.data.complex_copulas import complex_copula_density_grid
-from vdc.data.conditional_copulas import (
-    sample_bb1, sample_bb7, bb1_density, bb7_density,
-    generate_conditional_copula_samples, h_gaussian, h_clayton,
-    H_FUNCTIONS, TWO_PARAM_SAMPLERS, TWO_PARAM_DENSITIES,
-)
 from vdc.inference.density import scatter_to_hist
 from vdc.utils.probit_transform import copula_logdensity_to_probit_logdensity
 from vdc.vine.copula_diffusion import DiffusionCopulaModel
@@ -74,9 +69,6 @@ class OnTheFlyCopulaDataset(Dataset):
             # Two-parameter families (better tail modeling)
             'bb1': 0.06,
             'bb7': 0.06,
-            # Conditional copulas (for vine higher trees)
-            'conditional_gaussian': 0.05,
-            'conditional_clayton': 0.05,
             # Independence
             'independence': 0.05,
             # Complex synthetic
@@ -89,6 +81,31 @@ class OnTheFlyCopulaDataset(Dataset):
             if len(fam_list) == 0:
                 raise ValueError("families list cannot be empty")
             self.families = {f: 1.0 for f in fam_list}
+
+        supported = {"gaussian", "student", "clayton", "gumbel", "frank", "joe",
+                     "bb1", "bb7", "independence"}
+        for family, weight in self.families.items():
+            if family.startswith("conditional_"):
+                raise ValueError("conditional_* examples are not bivariate copulas and their "
+                                 "samples do not match the training target. Use ordinary "
+                                 "copula families; see docs/CONFIGURATION.md.")
+            if family not in supported and not family.startswith("complex"):
+                raise ValueError(f"Unsupported training family: {family}")
+            if not np.isfinite(weight) or weight < 0:
+                raise ValueError("Family weights must be finite and nonnegative")
+        if not self.families or sum(self.families.values()) <= 0:
+            raise ValueError("At least one family must have positive weight")
+        if not 0 <= rotation_prob <= 1 or not 0 <= mixture_prob <= 1:
+            raise ValueError("rotation_prob and mixture_prob must lie in [0, 1]")
+        if m < 2:
+            raise ValueError("m must be at least 2")
+        lo, hi = n_mixture_components
+        if lo < 1 or hi < lo:
+            raise ValueError("Invalid mixture component range")
+        self._mixture_families = {f: w for f, w in self.families.items()
+                                  if f in supported and w > 0}
+        if mixture_prob > 0 and not self._mixture_families:
+            raise ValueError("Mixtures require at least one parametric family")
 
         # Parameter ranges: accept both legacy and config-style keys.
         # Notes:
@@ -198,10 +215,11 @@ class OnTheFlyCopulaDataset(Dataset):
     def __len__(self):
         return 10**9  # effectively infinite
 
-    def _sample_family(self):
+    def _sample_family(self, families=None):
         rng = self._get_rng()
-        fams = list(self.families.keys())
-        probs = np.array(list(self.families.values()))
+        families = self.families if families is None else families
+        fams = list(families.keys())
+        probs = np.array(list(families.values()))
         probs = probs / probs.sum()  # Normalize in case weights don't sum to 1
         family = rng.choice(fams, p=probs)
         params = {}
@@ -269,7 +287,7 @@ class OnTheFlyCopulaDataset(Dataset):
             key = f"{family}_theta"
             lo, hi = self.param_ranges.get(key, [1.0, 5.0])
             params['theta'] = rng.uniform(lo, hi)
-        elif family in ['bb1', 'bb6', 'bb7', 'bb8']:
+        elif family in ['bb1', 'bb7']:
             # Two-parameter families
             theta_key = f"{family}_theta"
             delta_key = f"{family}_delta"
@@ -277,33 +295,12 @@ class OnTheFlyCopulaDataset(Dataset):
             params['theta'] = rng.uniform(lo, hi)
             lo, hi = self.param_ranges.get(delta_key, [1.0, 5.0])
             params['delta'] = rng.uniform(lo, hi)
-        elif family.startswith('conditional_'):
-            # Conditional copulas for vine higher-tree training
-            # e.g., conditional_gaussian, conditional_clayton
-            base_family = family.replace('conditional_', '')
-            # Sample conditioning value uniformly
-            params['v_condition'] = float(rng.uniform(0.1, 0.9))
-            if base_family == 'gaussian':
-                lo, hi = self.param_ranges.get('gaussian_rho', [-0.95, 0.95])
-                params['rho'] = rng.uniform(lo, hi)
-            elif base_family == 'clayton':
-                lo, hi = self.param_ranges.get('clayton_theta', [0.2, 12.0])
-                params['theta'] = rng.uniform(lo, hi)
-            elif base_family == 'student':
-                lo, hi = self.param_ranges.get('student_rho', [-0.95, 0.95])
-                params['rho'] = rng.uniform(lo, hi)
-                lo, hi = self.param_ranges.get('student_df', [2.5, 30.0])
-                params['df'] = float(rng.uniform(lo, hi))
-            else:
-                # Default to Gaussian-like
-                params['rho'] = rng.uniform(-0.9, 0.9)
-            family = f"conditional_{base_family}"
         elif family == 'independence':
             pass  # No parameters needed
         
         # Apply rotation for asymmetric copulas
         rotation = 0
-        rotatable_families = ['clayton', 'gumbel', 'joe', 'bb1', 'bb6', 'bb7', 'bb8']
+        rotatable_families = ['clayton', 'gumbel', 'joe', 'bb1', 'bb7']
         if family in rotatable_families and rng.random() < self.rotation_prob:
             rotation = rng.choice([0, 90, 180, 270])
         
@@ -316,35 +313,14 @@ class OnTheFlyCopulaDataset(Dataset):
         weights = rng.dirichlet(np.ones(k))
         all_samples = []
         all_density = []
-        # sample_bicop() supports only one-parameter / standard families.
-        # Keep mixture sampling on this subset to avoid unsupported-family errors.
-        sample_bicop_families = {
-            "gaussian", "student", "student_t", "t", "studentt",
-            "clayton", "gumbel", "frank", "joe", "independence",
-        }
-        for i, w in enumerate(weights):
-            # Avoid complex families inside mixtures by default (they're expensive to sample
-            # and mixtures are primarily meant for parametric augmentation).
-            for _attempt in range(50):
-                family, params, rotation = self._sample_family()
-                fam_s = str(family)
-                if (not fam_s.startswith("complex")) and (fam_s in sample_bicop_families):
-                    break
-            n_k = int(w * n_total)
-            if i == k - 1:
-                n_k = n_total - sum(len(s) for s in all_samples)
-            n_k = max(1, n_k)
-            samples_k = sample_bicop(family, params, n_k, rotation=rotation)
-            all_samples.append(samples_k)
-            try:
-                lg = analytic_logpdf_grid(family if family!='student' else 'student_t', params, self.m, rotation=rotation)
-                # Clip log-density BEFORE exponentiation to prevent overflow
-                lg = np.clip(lg, -15, 15)
-                dens = np.exp(lg)
-                dens = np.clip(dens, 1e-10, 1e3)
-            except Exception:
-                dens = np.ones((self.m,self.m))
-            all_density.append(dens)
+        counts = rng.multinomial(n_total, weights)
+        for count in counts:
+            family, params, rotation = self._sample_family(self._mixture_families)
+            if count:
+                all_samples.append(sample_bicop(family, params, int(count), rotation=rotation,
+                                               seed=int(rng.randint(0, 2**31 - 1))))
+            log_density = analytic_logpdf_grid(family, params, self.m, rotation=rotation)
+            all_density.append(np.exp(log_density))
         samples = np.vstack(all_samples)
         perm = rng.permutation(len(samples))
         samples = samples[perm]
@@ -373,94 +349,28 @@ class OnTheFlyCopulaDataset(Dataset):
                     n_samples=int(n),
                     rng=np.random.default_rng(seed),
                 )
-            elif str(family).startswith("conditional_"):
-                # Conditional copulas for vine higher-tree training
-                base_family = str(family).replace("conditional_", "")
-                v_cond = float(params.get("v_condition", 0.5))
-                seed = int(rng.randint(0, 2**31 - 1))
-                
-                # Generate samples from the conditional distribution
-                samples = generate_conditional_copula_samples(
-                    base_family, params, v_cond, n, seed=seed
-                )
-                
-                # Build density grid: for conditional copulas, we create a 2D grid
-                # showing how the conditional density varies with v
-                m = self.m
-                u_grid = np.linspace(0.5/m, 1 - 0.5/m, m)
-                v_grid = np.linspace(0.5/m, 1 - 0.5/m, m)
-                U, V = np.meshgrid(u_grid, v_grid, indexing='ij')
-                
-                # Use h-function to get conditional structure
-                if base_family in H_FUNCTIONS:
-                    h_func = H_FUNCTIONS[base_family]
-                    if base_family in ['gaussian', 'student']:
-                        rho = params.get('rho', 0.5)
-                        df = int(params.get('df', params.get('nu', 5)))
-                        if base_family == 'gaussian':
-                            h_vals = h_func(U, V, rho)
-                        else:
-                            h_vals = h_func(U, V, rho, df)
-                    else:
-                        theta = params.get('theta', 2.0)
-                        h_vals = h_func(U, V, theta)
-                    # Density from h-function: |∂h/∂u|
-                    density_grid = np.abs(np.gradient(h_vals, axis=0)) * m
-                    density_grid = np.clip(density_grid, 1e-10, 1e6)
-                else:
-                    density_grid = np.ones((m, m))
-                
-                # Normalize
-                du = 1.0 / m
-                density_grid = density_grid / (density_grid.sum() * du * du + 1e-12)
-                
-            elif family in TWO_PARAM_SAMPLERS:
-                # BB1, BB7 two-parameter families
-                theta = float(params.get('theta', 2.0))
-                delta = float(params.get('delta', 2.0))
-                seed = int(rng.randint(0, 2**31 - 1))
-                samples = TWO_PARAM_SAMPLERS[family](n, theta, delta, seed=seed)
-                
-                # Compute density
-                m = self.m
-                u_grid = np.linspace(0.5/m, 1 - 0.5/m, m)
-                v_grid = np.linspace(0.5/m, 1 - 0.5/m, m)
-                U, V = np.meshgrid(u_grid, v_grid, indexing='ij')
-                
-                if family in TWO_PARAM_DENSITIES:
-                    density_grid = TWO_PARAM_DENSITIES[family](U, V, theta, delta)
-                    density_grid = np.clip(density_grid, 1e-10, 1e6)
-                else:
-                    # Fallback to histogram
-                    density_grid = scatter_to_hist(samples, m, reflect=True)
-                
-                # Normalize
-                du = 1.0 / m
-                density_grid = density_grid / (density_grid.sum() * du * du + 1e-12)
-                
             else:
-                samples = sample_bicop(family, params, n, rotation=rotation)
-                try:
-                    lg = analytic_logpdf_grid(family if family!='student' else 'student_t', params, self.m, rotation=rotation)
-                    # Clip log-density BEFORE exponentiation to prevent overflow
-                    # log(1e6) ≈ 13.8, so clamp to [-20, 20] gives density range [2e-9, 4.8e8]
-                    # Use wider range to preserve natural peak structure
-                    lg = np.clip(lg, -20, 20)
-                    density_grid = np.exp(lg)
-                    # Additional safety clip (should rarely trigger after log clipping)
-                    density_grid = np.clip(density_grid, 1e-12, 1e6)
-                except Exception:
-                    density_grid = scatter_to_hist(samples, self.m, reflect=True)
-        
+                samples = sample_bicop(family, params, n, rotation=rotation,
+                                       seed=int(rng.randint(0, 2**31 - 1)))
+                density_grid = np.exp(analytic_logpdf_grid(family, params, self.m,
+                                                          rotation=rotation))
+
+        if (samples.shape != (n, 2) or not np.isfinite(samples).all()
+                or np.any(samples < 0) or np.any(samples > 1)):
+            raise ValueError("Generator returned invalid copula samples")
+        if (not np.isfinite(density_grid).all() or np.any(density_grid < 0)
+                or density_grid.sum() <= 0):
+            raise ValueError("Generator returned an invalid density target")
+
         # Conditioning histogram (density integrating to 1)
         hist_grid = scatter_to_hist(samples, m=self.m, reflect=True)
         hist_tensor = torch.from_numpy(hist_grid).float().unsqueeze(0)  # (1, m, m)
         if torch.isnan(hist_tensor).any() or torch.isinf(hist_tensor).any():
-            hist_tensor = torch.ones(1, self.m, self.m)
+            raise ValueError("Generated histogram contains NaN or infinity")
         du = dv = 1.0 / self.m
         hist_tensor = hist_tensor / ((hist_tensor * du * dv).sum().clamp_min(1e-12))
         
-        # CRITICAL: Normalize so integral = 1 (proper copula density)
+        # Normalize the midpoint grid; this alone does not ensure uniform margins.
         du = dv = 1.0 / self.m
         density_grid = density_grid / (density_grid.sum() * du * dv)
         
@@ -469,9 +379,7 @@ class OnTheFlyCopulaDataset(Dataset):
         
         # Safety check for NaN/Inf before returning
         if torch.isnan(density_tensor).any() or torch.isinf(density_tensor).any():
-            # Fallback to uniform density if preprocessing fails
-            print(f"Warning: NaN/Inf detected in generated density, using uniform fallback")
-            density_tensor = torch.ones(1, self.m, self.m)
+            raise ValueError("Generated target contains NaN or infinity")
         
         # Transform to probit space if requested (using log-space for numerical stability)
         if self.transform_to_probit_space:

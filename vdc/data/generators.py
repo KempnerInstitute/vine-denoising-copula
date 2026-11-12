@@ -105,6 +105,9 @@ def sample_bicop(
         samples = sample_frank_copula(n=n, theta=float(params["theta"]))
     elif fam == "joe":
         samples = sample_joe_copula(n=n, theta=float(params["theta"]))
+    elif fam in {"bb1", "bb7"}:
+        from vdc.data._bicop import sample
+        samples = sample(fam, [params["theta"], params["delta"]], n)
     else:
         raise ValueError(f"Unknown family '{family}'")
 
@@ -190,34 +193,10 @@ def sample_frank_copula(n: int, theta: float) -> np.ndarray:
 
 
 def sample_joe_copula(n: int, theta: float) -> np.ndarray:
-    """Sample from bivariate Joe copula."""
-    if theta <= 1:
-        return np.random.uniform(0, 1, (n, 2))
-    
-    u = np.random.uniform(0, 1, n)
-    w = np.random.uniform(0, 1, n)
-    
-    # Approximate inverse conditional via bisection
-    v = np.zeros(n)
-    for i in range(n):
-        def h_func(v_val):
-            t1 = (1 - u[i]) ** theta
-            t2 = (1 - v_val) ** theta
-            t3 = t1 + t2 - t1 * t2
-            return (1 - v_val) ** (theta - 1) * (t2 - t1 * t2) ** (1/theta - 1) * t1
-        
-        # Simple bisection
-        lo, hi = 1e-10, 1 - 1e-10
-        target = w[i]
-        for _ in range(50):
-            mid = (lo + hi) / 2
-            if h_func(mid) < target:
-                hi = mid
-            else:
-                lo = mid
-        v[i] = (lo + hi) / 2
-    
-    return np.column_stack([u, v])
+    """Sample the Joe copula using pyvinecopulib's conditional inversion."""
+    from vdc.data._bicop import sample
+
+    return sample("joe", [theta], n)
 
 
 # =============================================================================
@@ -388,6 +367,9 @@ def analytic_logpdf_grid(
             density = gumbel_copula_density(U0, V0, float(params["theta"]))
         elif fam == "joe":
             density = joe_copula_density(U0, V0, float(params["theta"]))
+        elif fam in {"bb1", "bb7"}:
+            from vdc.data._bicop import density as bicop_density
+            density = bicop_density(fam, [params["theta"], params["delta"]], U0, V0)
         else:
             raise ValueError(f"Unknown family '{family}'")
 
