@@ -38,6 +38,21 @@ jobs:
           python -m pytest tests
           python -m build
           sha256sum dist/* > dist/SHA256SUMS
+      - name: Verify installed wheel outside the checkout
+        run: |
+          python -m venv --system-site-packages "$RUNNER_TEMP/vdc-wheel"
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/vdc-wheel/bin/python" -m pip install --ignore-installed --no-deps "$GITHUB_WORKSPACE"/dist/*.whl
+          "$RUNNER_TEMP/vdc-wheel/bin/python" -I - <<'PY'
+          import sys
+          from pathlib import Path
+          import vdc
+          from vdc import VineCopulaModel
+          from vdc.data.mixtures import MixtureCopula
+          assert Path(vdc.__file__).is_relative_to(Path(sys.prefix))
+          print("Installed wheel:", vdc.__version__, vdc.__file__)
+          PY
+          "$RUNNER_TEMP/vdc-wheel/bin/vdc" list-models
       - uses: actions/upload-artifact@v4
         with:
           name: release-packages
