@@ -82,9 +82,7 @@ r-baselines = [
     "rpy2>=3.5.0",
 ]
 
-papetracking = ["wandb>=0.15.0"]
-
-r-baselines = [
+paper-baselines = [
     "copulas>=0.13.0",
     "ennemi>=1.4.0",
     "pytorch-lightning>=2.1.0",
