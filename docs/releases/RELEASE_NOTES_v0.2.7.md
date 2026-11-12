@@ -19,7 +19,7 @@ paper and figure archive remain pinned to v0.2.6.
 - Raise errors for invalid examples instead of substituting uniform targets.
 - Add distribution-level checks against closed-form CDFs and their derivatives.
 
-See [training data](../TRAINING_DATA.md) for compatibility with historical runs.
+See [training data](https://github.com/KempnerInstitute/vine-denoising-copula/blob/v0.2.7/docs/TRAINING_DATA.md) for compatibility with historical runs.
 
 ## Documentation and maintenance
 

@@ -37,7 +37,7 @@ jobs:
         run: |
           python -m pytest tests
           python -m build
-          sha256sum dist/* > dist/SHA256SUMS
+          (cd dist && sha256sum *.whl *.tar.gz > SHA256SUMS)
       - name: Verify installed wheel outside the checkout
         run: |
           python -m venv --system-site-packages "$RUNNER_TEMP/vdc-wheel"
