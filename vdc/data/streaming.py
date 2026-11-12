@@ -163,14 +163,15 @@ class StreamingCopulaDataset(IterableDataset):
         
         # Random flip
         if random.random() > 0.5:
-            log_pdf_grid = np.fliplr(log_pdf_grid)
+            log_pdf_grid = np.flipud(log_pdf_grid)
             points[:, 0] = 1 - points[:, 0]
         
         if random.random() > 0.5:
-            log_pdf_grid = np.flipud(log_pdf_grid)
+            log_pdf_grid = np.fliplr(log_pdf_grid)
             points[:, 1] = 1 - points[:, 1]
         
-        return points, log_pdf_grid
+        # Rotations/flips create negative strides that torch.from_numpy rejects.
+        return np.ascontiguousarray(points), np.ascontiguousarray(log_pdf_grid)
     
     def __iter__(self) -> Iterator[Dict[str, torch.Tensor]]:
         """Iterate over samples."""

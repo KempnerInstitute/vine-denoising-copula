@@ -9,10 +9,9 @@ import numpy as np
 from typing import List, Dict, Tuple, Optional
 import h5py
 from pathlib import Path
-from dataclasses import dataclass
-import pyvinecopulib as pv
+from dataclasses import dataclass, replace
 
-from vdc.data.generators import sample_bicop, compute_copula_density
+from vdc.data.generators import sample_bicop, analytic_logpdf_grid
 
 
 @dataclass
@@ -36,13 +35,14 @@ class MixtureCopula:
         Args:
             components: List of mixture components with weights summing to 1
         """
-        self.components = components
-        
-        # Normalize weights
+        if not components or any(not np.isfinite(c.weight) or c.weight < 0 for c in components):
+            raise ValueError("Mixture weights must be finite, nonnegative and nonempty")
         total_weight = sum(c.weight for c in components)
-        for c in self.components:
-            c.weight /= total_weight
-        
+        if total_weight <= 0:
+            raise ValueError("At least one mixture weight must be positive")
+        self.components = [replace(c, params=dict(c.params), weight=c.weight / total_weight)
+                           for c in components]
+
         self.n_components = len(components)
     
     def sample(self, n: int, seed: Optional[int] = None) -> np.ndarray:
@@ -93,7 +93,7 @@ class MixtureCopula:
     
     def density_grid(self, m: int = 64) -> np.ndarray:
         """
-        Compute mixture density on grid: c(u,v) = Σ w_i c_i(u,v)
+        Compute a normalized mixture target at uniform cell centers.
         
         Args:
             m: Grid resolution
@@ -101,29 +101,14 @@ class MixtureCopula:
         Returns:
             Array (m, m) of density values
         """
-        grid = np.linspace(0, 1, m)
-        u_grid, v_grid = np.meshgrid(grid, grid, indexing='ij')
-        
-        # Stack for vectorized evaluation
-        uv_pairs = np.stack([u_grid.ravel(), v_grid.ravel()], axis=1)
-        
-        # Accumulate weighted densities
-        density = np.zeros(m * m)
-        
+        if m < 2:
+            raise ValueError("m must be at least 2")
+        density = np.zeros((m, m))
         for component in self.components:
-            # Compute density for this component
-            c_i = compute_copula_density(
-                family=component.family,
-                params=component.params,
-                uv=uv_pairs,
-                rotation=component.rotation,
-            )
-            
-            # Add weighted contribution
-            density += component.weight * c_i
-        
-        return density.reshape(m, m)
-    
+            density += component.weight * np.exp(analytic_logpdf_grid(
+                component.family, component.params, m, rotation=component.rotation))
+        return density
+
     def log_density_grid(self, m: int = 64) -> np.ndarray:
         """Compute log-density on grid."""
         density = self.density_grid(m)

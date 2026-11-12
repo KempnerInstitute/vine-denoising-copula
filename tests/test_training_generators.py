@@ -4,7 +4,7 @@ import pytest
 from scipy.stats import kstest
 
 from vdc.data.conditional_copulas import bb1_density, bb7_density, h_frank, h_joe, hinv_frank
-from vdc.data.generators import analytic_logpdf_grid, sample_bicop
+from vdc.data.generators import analytic_logpdf_grid, sample_bicop, joe_copula_density
 from vdc.data.onthefly import OnTheFlyCopulaDataset
 
 
@@ -41,7 +41,8 @@ def test_samples_have_uniform_margins_and_correct_joint_cdf(family, theta, delta
                                                 rotation=rotation, seed=20391))
 
 
-@pytest.mark.parametrize("family,fn", [("bb1", bb1_density), ("bb7", bb7_density)])
+@pytest.mark.parametrize("family,fn", [("bb1", bb1_density), ("bb7", bb7_density),
+                                       ("joe", lambda u, v, theta, delta: joe_copula_density(u, v, theta))])
 def test_density_matches_mixed_derivative_of_cdf(family, fn):
     u = np.array([.15, .35, .6, .85])[:, None]
     v = np.array([.2, .5, .8])[None, :]
@@ -97,3 +98,38 @@ def test_invalid_training_configuration_fails_early(families):
 def test_complex_only_mixture_is_rejected():
     with pytest.raises(ValueError, match="Mixtures require"):
         OnTheFlyCopulaDataset(families={"complex": 1}, mixture_prob=.5)
+
+
+def test_public_mixture_generator_uses_consistent_density_targets():
+    from vdc.data.mixtures import MixtureComponent, MixtureCopula
+    components = [MixtureComponent("bb1", {"theta": 1.2, "delta": 1.5}, 90, 2),
+                  MixtureComponent("joe", {"theta": 2.}, 0, 1)]
+    mixture = MixtureCopula(components)
+    samples = mixture.sample(16000, seed=98)
+    assert [c.weight for c in components] == [2, 1]  # Do not mutate caller's spec.
+    expected = (2/3 * (0.5 - cdf("bb1", .5, .5, 1.2, 1.5))
+                + 1/3 * cdf("joe", .5, .5, 2.))
+    empirical = np.mean((samples[:,0] <= .5) & (samples[:,1] <= .5))
+    assert abs(empirical - expected) < .02
+    target = mixture.density_grid(256)
+    assert abs(target.mean() - 1) < 1e-10
+    assert abs(target[:128,:128].sum()/256**2 - expected) < .01
+
+
+@pytest.mark.parametrize("rotation", [0, 1, 2, 3])
+@pytest.mark.parametrize("flip_u,flip_v", [(False, False), (True, False), (False, True), (True, True)])
+def test_streamed_augmentation_keeps_samples_and_grid_aligned(monkeypatch, rotation, flip_u, flip_v):
+    from vdc.data.streaming import StreamingCopulaDataset
+    import torch
+    # Distinct cell masses, represented exactly by repeated cell-center samples.
+    m = 4
+    grid = np.arange(1, m*m+1).reshape(m, m)
+    cells = np.argwhere(grid)
+    points = np.repeat((cells+.5)/m, grid.ravel(), axis=0)
+    choices = iter([float(flip_u), float(flip_v)])
+    monkeypatch.setattr("vdc.data.streaming.random.randint", lambda *_: rotation)
+    monkeypatch.setattr("vdc.data.streaming.random.random", lambda: next(choices))
+    uv, log_grid = StreamingCopulaDataset._augment_sample(None, points, np.log(grid))
+    counts, _, _ = np.histogram2d(uv[:,0], uv[:,1], bins=m, range=[[0,1],[0,1]])
+    np.testing.assert_allclose(counts, np.exp(log_grid), atol=1e-12)
+    assert torch.from_numpy(log_grid).shape == (m, m)

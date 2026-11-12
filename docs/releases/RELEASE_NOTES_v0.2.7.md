@@ -12,6 +12,8 @@ paper and figure archive remain pinned to v0.2.6.
 - Apply BB rotations consistently to samples and targets; include BB families
   in mixtures and draw exact sample counts from the mixture weights.
 - Correct the Frank and Joe conditional CDFs.
+- Repair the public mixture generator import and midpoint targets; keep streaming
+  augmentation coordinates aligned with their grids and return contiguous arrays.
 - Reject the historical `conditional_*` training examples: their samples did
   not match the target density. Keep conditional diagnostics as separate APIs.
 - Raise errors for invalid examples instead of substituting uniform targets.
