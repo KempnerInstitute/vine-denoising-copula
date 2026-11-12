@@ -121,6 +121,7 @@
     "tests/test_information_metrics.py",
     "tests/test_ipfp_log.py",
     "tests/test_metrics_tail.py",
+    "tests/test_package_imports.py",
     "tests/test_prepared_sampler.py",
     "tests/test_pretrained.py",
     "tests/test_probit_transform.py",

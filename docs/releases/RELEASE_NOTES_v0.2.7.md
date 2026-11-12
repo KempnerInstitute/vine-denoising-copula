@@ -27,6 +27,8 @@ See [training data](../TRAINING_DATA.md) for compatibility with historical runs.
   Gaussian mutual-information reference. Duplicate demonstration entry points
   now forward to the maintained example and announce their deprecation.
 - Correct API signatures, batching defaults and architecture configuration.
+- Repair the legacy grid trainer's dataset import and make experiment tracking
+  optional; add package-module import checks.
 - Consolidate release notes under `docs/releases/` and provide contribution,
   configuration, dataset and model-loading guides.
 - Use the package metadata as the dependency source, constrain the qualified

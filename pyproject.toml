@@ -76,11 +76,15 @@ release = [
     "huggingface-hub>=0.20.0",
 ]
 
+tracking = ["wandb>=0.15.0"]
+
 r-baselines = [
     "rpy2>=3.5.0",
 ]
 
-paper-baselines = [
+papetracking = ["wandb>=0.15.0"]
+
+r-baselines = [
     "copulas>=0.13.0",
     "ennemi>=1.4.0",
     "pytorch-lightning>=2.1.0",

@@ -20,7 +20,6 @@ from torch.utils.data import DataLoader, DistributedSampler
 from torch.cuda.amp import autocast, GradScaler
 import numpy as np
 from tqdm import tqdm
-import wandb
 from typing import Optional, Dict, Any
 import argparse
 import json
@@ -31,7 +30,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from vdc.models.unet_grid import GridUNet
 from vdc.models.projection import copula_project
 from vdc.losses import nll_points, ise_logdensity, marginal_penalty, tail_weighted_loss
-from vdc.data.loaders import CopulaPairsDataset
+from vdc.data.loaders import CopulaPairs
 
 
 class DiffusionCopulaTrainer:
@@ -93,7 +92,9 @@ class DiffusionCopulaTrainer:
         # Logging
         self.use_wandb = self.config.get('use_wandb', False) and self.is_main_process
         if self.use_wandb:
-            wandb.init(
+            import wandb
+            self._wandb = wandb
+            self._wandb.init(
                 project=self.config.get('wandb_project', 'vine-copula'),
                 name=self.config.get('wandb_run_name', None),
                 config=self.config
@@ -322,7 +323,7 @@ class DiffusionCopulaTrainer:
                 if self.global_step % self.log_every == 0 and self.is_main_process:
                     pbar.set_postfix(metrics)
                     if self.use_wandb:
-                        wandb.log(metrics, step=self.global_step)
+                        self._wandb.log(metrics, step=self.global_step)
                 
                 # Validation
                 if self.global_step % self.val_every == 0:
@@ -330,7 +331,7 @@ class DiffusionCopulaTrainer:
                     if self.is_main_process and val_metrics:
                         print(f"\nValidation at step {self.global_step}: {val_metrics}")
                         if self.use_wandb:
-                            wandb.log(val_metrics, step=self.global_step)
+                            self._wandb.log(val_metrics, step=self.global_step)
                         
                         # Save best model
                         val_loss = val_metrics.get('val_nll', float('inf'))
@@ -355,7 +356,7 @@ class DiffusionCopulaTrainer:
             self.save_checkpoint('final.pt')
         
         if self.use_wandb:
-            wandb.finish()
+            self._wandb.finish()
 
 
 def setup_ddp(rank: int, world_size: int):
@@ -428,14 +429,14 @@ def main():
         model = DDP(model, device_ids=[local_rank], output_device=local_rank)
     
     # Dataset
-    train_dataset = CopulaPairsDataset(
-        root=args.data_root,
+    train_dataset = CopulaPairs(
+        data_root=args.data_root,
         split='train',
         m=args.m
     )
     
-    val_dataset = CopulaPairsDataset(
-        root=args.data_root,
+    val_dataset = CopulaPairs(
+        data_root=args.data_root,
         split='val',
         m=args.m
     )
