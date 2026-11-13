@@ -4,7 +4,7 @@
 Requires the authenticated returns artifact; raw-price provenance is not
 reconstructed here. Reports VDC/TLL only; does not rewrite any paper table.
 With --rebuilt-returns, runs the same protocol on another (1695, 100) returns
-matrix, such as one rebuilt from projects/neurips2026/data/sp100_symbols.json, and
+matrix, such as one rebuilt from paper/data/sp100_symbols.json, and
 skips the checks against the paper's matrix hash and reported values.
 """
 import argparse

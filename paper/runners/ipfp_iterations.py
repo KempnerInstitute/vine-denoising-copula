@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Reproduce the synchronized projection-iteration ablation on a CUDA GPU.
 
-python projects/neurips2026/runners/ipfp_iterations.py --checkpoint model_step_190000.pt --output ipfp.json
+python paper/run.py runners/ipfp_iterations.py --checkpoint model_step_190000.pt --output ipfp.json
 Uses the released model, training-order coordinates, ten warmups per K and 100
 randomized-order repetitions with CUDA synchronization before and after each projection.
 Outputs include every timing, marginal errors, hardware and checkpoint hash.

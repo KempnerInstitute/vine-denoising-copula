@@ -4,8 +4,8 @@
 Release copy of the authors' runner (paper workspace commit c9a9ae0). Numerics are unchanged; the
 reference file is an argument, and the checks that pin the library commit and a clean checkout run only
 with --require-pins (the authors' run used library commit 67c5b1b). Usage from the repository root:
-  python projects/neurips2026/runners/tc_replication_paired.py --library . --checkpoint MODEL.pt \
-    --reference projects/neurips2026/runners/saved_outputs/tc_tree1_control_results.json --output NEW_DIR
+  python paper/runners/tc_replication_paired.py --library . --checkpoint MODEL.pt \
+    --reference paper/runners/saved_outputs/tc_tree1_control_results.json --output NEW_DIR
 """
 import argparse
 import hashlib
