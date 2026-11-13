@@ -31,7 +31,9 @@ def test_v2_manifests(model_id):
     assert manifest["sha256"] == sha and manifest["grid_size"] == m
     assert manifest["checkpoint_filename"] == model_id + ".pt"
     hf = manifest["sources"]["huggingface"]
-    assert hf["repo_id"] is None and hf["proposed_repo_id"] == "hsafaai/" + model_id
+    assert hf["repo_id"] == "hsafaai/" + model_id and "proposed_repo_id" not in hf
+    assert len(hf["revision"]) == 40 and manifest["status"] == "published"
+    assert manifest["training"]["pilot"]["repo_id"] == "hsafaai/vdc-linear-grid-pilot"
     assert manifest["inference"]["pair_estimator"] == "linear_grid"
     assert "local_checkpoint" not in manifest["sources"]
     text = json.dumps(manifest)
@@ -44,9 +46,12 @@ def test_default_model_is_unchanged():
     assert manifest["model_id"] == "vdc-denoiser-m64-v1" and "inference" not in manifest
 
 
-def test_unpublished_model_explains_local_loading(tmp_path):
+def test_unpublished_model_explains_local_loading(tmp_path, monkeypatch):
+    manifest = {"model_id": "test-v2", "sha256": "0" * 64, "checkpoint_filename": "test-v2.pt",
+                "sources": {"huggingface": {"repo_id": None, "proposed_repo_id": "owner/test-v2"}}}
+    monkeypatch.setattr(pretrained, "load_pretrained_manifest", lambda model_id=None: manifest)
     with pytest.raises(FileNotFoundError, match="not yet published"):
-        resolve_pretrained_checkpoint("vdc-denoiser-m64-v2", cache_dir=tmp_path)
+        resolve_pretrained_checkpoint("test-v2", cache_dir=tmp_path)
 
 
 def test_checkpoint_path_is_verified(tmp_path, monkeypatch):
@@ -56,6 +61,10 @@ def test_checkpoint_path_is_verified(tmp_path, monkeypatch):
                 "checkpoint_filename": "test-v2.pt", "sources": {"huggingface": {"repo_id": None}}}
     monkeypatch.setattr(pretrained, "load_pretrained_manifest", lambda model_id=None: manifest)
     assert resolve_pretrained_checkpoint("test-v2", checkpoint_path=good, cache_dir=tmp_path) == good
+    cached = tmp_path / "cache" / "test-v2" / "test-v2.pt"
+    cached.parent.mkdir(parents=True)
+    cached.write_bytes(b"weights")
+    assert resolve_pretrained_checkpoint("test-v2", cache_dir=str(tmp_path / "cache")) == cached
     bad = tmp_path / "other.pt"
     bad.write_bytes(b"other")
     with pytest.raises(RuntimeError, match="SHA256 mismatch"):

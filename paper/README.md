@@ -575,8 +575,8 @@ The paper is not completely reproducible from a fresh download:
   the paper's matrix; a rebuilt matrix gives a protocol replay, not the reported values.
 - **Checkpoints.** The alternative corruption checkpoints (Tables A3–A4) and the DDIM ablation
   checkpoints (Table A36) are not released. The exploratory retrained estimators of
-  Tables A40–A41 are separate models whose weights are not yet published; their runner needs
-  local copies ([retrained estimators](#retrained-estimators)). None of these results may be
+  Tables A40–A41 are separate, published models (`vdc-denoiser-m64-v2`, `vdc-denoiser-m128-v2`;
+  [retrained estimators](#retrained-estimators)). None of these results may be
   attributed to the released checkpoint.
 - **Training.** The deployed model's training source is only partially pinned, so the public
   checkpoint permits evaluation without claiming an exact retraining replay.

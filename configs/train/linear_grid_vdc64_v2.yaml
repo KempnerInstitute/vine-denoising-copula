@@ -7,7 +7,8 @@
 stage: finetune
 output_dir: runs/linear_grid/vdc_denoiser_m64_v2
 initial_checkpoint: runs/linear_grid/pilot/pilot_ema_step60000.pt
-# Pilot used for the released model; set initial_sha256=null for another pilot.
+# Pilot used for the released model (https://huggingface.co/hsafaai/vdc-linear-grid-pilot);
+# set initial_sha256=null for another pilot.
 initial_sha256: 6e48f8c65012f4170ee9003c4aca28600abdb602ef624e47c3c3f92c0f5ace20
 cache_dir: runs/linear_grid/cache_202610091
 grid_size: 64

@@ -3,7 +3,7 @@
   "model_id": "vdc-denoiser-m64-v2",
   "display_name": "VDC-64 linear-grid denoiser (exploratory retraining)",
   "version": "2.0.0",
-  "status": "unpublished",
+  "status": "published",
   "paper_tag": "neurips2026_appendix_exploratory_retraining",
   "model_type": "denoiser",
   "method_tag": "linear_grid_likelihood_finetune",
@@ -18,9 +18,8 @@
   "frozen_on": "2026-10-11",
   "sources": {
     "huggingface": {
-      "repo_id": null,
-      "proposed_repo_id": "hsafaai/vdc-denoiser-m64-v2",
-      "revision": null,
+      "repo_id": "hsafaai/vdc-denoiser-m64-v2",
+      "revision": "e8003fb9ac4db1ec631b34b5b04a2ab0c77ec1d6",
       "filename": "vdc-denoiser-m64-v2.pt"
     }
   },
@@ -52,6 +51,11 @@
       "numpy": "2.2.6",
       "scipy": "1.15.3",
       "pyvinecopulib": "0.7.5"
+    },
+    "pilot": {
+      "repo_id": "hsafaai/vdc-linear-grid-pilot",
+      "revision": "d851c53623c8dce346cfe1473aa2e46892af1f9b",
+      "filename": "vdc-linear-grid-pilot.pt"
     }
   },
   "evaluation": {

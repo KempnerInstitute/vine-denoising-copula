@@ -18,17 +18,19 @@ update does not silently replace this checkpoint.
 
 | Model ID | Paper name | Grid | SHA-256 | Status |
 |---|---|---|---|---|
-| `vdc-denoiser-m64-v2` | VDC-64 | 64 × 64 | `73097772a18eb4b02fb0608b4bfa87c0205b71667d97af6a39483fd44d0df0fc` | publication pending |
-| `vdc-denoiser-m128-v2` | VDC-128 | 128 × 128 | `f0a753d50b3cfb089e6d7dec999cfe741c6342c188454ec83183a9b3514d4653` | publication pending |
+| [`vdc-denoiser-m64-v2`](https://huggingface.co/hsafaai/vdc-denoiser-m64-v2) | VDC-64 | 64 × 64 | `73097772a18eb4b02fb0608b4bfa87c0205b71667d97af6a39483fd44d0df0fc` | released |
+| [`vdc-denoiser-m128-v2`](https://huggingface.co/hsafaai/vdc-denoiser-m128-v2) | VDC-128 | 128 × 128 | `f0a753d50b3cfb089e6d7dec999cfe741c6342c188454ec83183a9b3514d4653` | released |
 
 These estimators of the paper's exploratory-retraining appendix are registered
 manifests ([m64](../vdc/resources/pretrained/vdc_denoiser_m64_v2.json),
 [m128](../vdc/resources/pretrained/vdc_denoiser_m128_v2.json)) that record their
 hashes and evaluated inference settings. They complement, and do not replace,
-`vdc-denoiser-m64-v1`, which produced every main result of the paper. Until their
-weights are published, `load_pretrained_model(<model id>, checkpoint_path=...)`
-loads a local copy after checking its SHA-256; `VineCopulaModel.from_pretrained(bundle)`
-applies the evaluated vine settings. See [linear-grid estimators](IMPROVED_ESTIMATORS.md).
+`vdc-denoiser-m64-v1`, which produced every main result of the paper. The manifests pin the
+Hugging Face revision of each upload; `load_pretrained_model(<model id>)` downloads and verifies the
+checkpoint, and `VineCopulaModel.from_pretrained(bundle)` applies the evaluated vine settings. The
+pilot from which both were fine-tuned is published as
+[`hsafaai/vdc-linear-grid-pilot`](https://huggingface.co/hsafaai/vdc-linear-grid-pilot)
+(SHA-256 `6e48f8c65012f4170ee9003c4aca28600abdb602ef624e47c3c3f92c0f5ace20`) for exact retraining. See [linear-grid estimators](IMPROVED_ESTIMATORS.md).
 
 ## Download and cache
 

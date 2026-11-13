@@ -136,7 +136,7 @@ def resolve_pretrained_checkpoint(
         _verify_sha256(local_path, expected_sha)
         return local_path
 
-    cache_root = cache_dir or _default_cache_dir()
+    cache_root = Path(cache_dir).expanduser() if cache_dir else _default_cache_dir()
     cache_root.mkdir(parents=True, exist_ok=True)
     filename = str(manifest.get("checkpoint_filename", "")).strip() or "model.pt"
     cached_path = cache_root / model_id / filename

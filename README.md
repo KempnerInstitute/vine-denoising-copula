@@ -97,13 +97,13 @@ the [user guide](docs/USER_GUIDE.md).
 | Model | Grid | Use | Status |
 |---|---|---|---|
 | [`vdc-denoiser-m64-v1`](https://huggingface.co/hsafaai/vdc-denoiser-m64-v1) | 64x64 | the estimator of all main paper results | released |
-| `vdc-denoiser-m64-v2` | 64x64 | retrained linear-grid estimator VDC-64 (paper, Appendix G) | publication pending |
-| `vdc-denoiser-m128-v2` | 128x128 | retrained linear-grid estimator VDC-128 (paper, Appendix G) | publication pending |
+| [`vdc-denoiser-m64-v2`](https://huggingface.co/hsafaai/vdc-denoiser-m64-v2) | 64x64 | retrained linear-grid estimator VDC-64 (paper, Appendix G) | released |
+| [`vdc-denoiser-m128-v2`](https://huggingface.co/hsafaai/vdc-denoiser-m128-v2) | 128x128 | retrained linear-grid estimator VDC-128 (paper, Appendix G) | released |
 
 Every checkpoint is verified by SHA-256 on load. The v2 estimators were trained after the paper's
 main experiments on corrected synthetic data; they use a continuous bilinear density with exact
-h-functions and are selected with `VineCopulaModel.from_pretrained(bundle)`. Until their weights
-are published, load a local copy with `load_pretrained_model(<id>, checkpoint_path=...)`.
+h-functions and are selected with `VineCopulaModel.from_pretrained(bundle)`. Their training
+initialization is published as [`vdc-linear-grid-pilot`](https://huggingface.co/hsafaai/vdc-linear-grid-pilot).
 See [docs/MODEL_RELEASES.md](docs/MODEL_RELEASES.md) and [docs/IMPROVED_ESTIMATORS.md](docs/IMPROVED_ESTIMATORS.md).
 
 ## Train an estimator

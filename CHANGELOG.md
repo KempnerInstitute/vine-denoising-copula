@@ -21,8 +21,9 @@ its checkpoints and reproduction archives remain available.
   `VineCopulaModel.from_pretrained` and `estimate_pair_copula_from_samples`.
   Defaults and the results of `vdc-denoiser-m64-v1` are unchanged.
 - Add configurable conditional clipping (`conditional_clip_eps`, default 1e-6).
-- Register the unpublished `vdc-denoiser-m64-v2` and `vdc-denoiser-m128-v2`
-  manifests; `checkpoint_path=` loads a hash-verified local copy.
+- Release `vdc-denoiser-m64-v2` and `vdc-denoiser-m128-v2` on Hugging Face (manifests pin the
+  upload revisions) and their training pilot `vdc-linear-grid-pilot`; `checkpoint_path=` loads a
+  hash-verified local copy of any registered model.
 - Add their pretraining, continuous-mixture data and fine-tuning recipes
   (`scripts/train_linear_grid_estimator.py`, `configs/train/linear_grid_*.yaml`).
 - Fix `stage_release_bundle` for manifests without local source files.

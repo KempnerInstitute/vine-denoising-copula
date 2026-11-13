@@ -11,12 +11,12 @@ features. The paper's main results, and the library defaults, still use
 | `vdc-denoiser-m64-v2` | VDC-64 | 64 × 64 | latent uniforms with probability 0.5, otherwise ranks | `73097772a18eb4b02fb0608b4bfa87c0205b71667d97af6a39483fd44d0df0fc` |
 | `vdc-denoiser-m128-v2` | VDC-128 | 128 × 128 | latent uniforms with probability 0.75, otherwise ranks | `f0a753d50b3cfb089e6d7dec999cfe741c6342c188454ec83183a9b3514d4653` |
 
-**Status: not yet published.** The packaged manifests
-([m64](../vdc/resources/pretrained/vdc_denoiser_m64_v2.json),
-[m128](../vdc/resources/pretrained/vdc_denoiser_m128_v2.json)) record each
-checkpoint's hash and evaluated settings; their Hugging Face repository is a
-proposal (`hsafaai/vdc-denoiser-m64-v2`, `hsafaai/vdc-denoiser-m128-v2`) until
-the weights are released. Until then, load a local copy of the checkpoint.
+**Released** on Hugging Face: [`hsafaai/vdc-denoiser-m64-v2`](https://huggingface.co/hsafaai/vdc-denoiser-m64-v2)
+and [`hsafaai/vdc-denoiser-m128-v2`](https://huggingface.co/hsafaai/vdc-denoiser-m128-v2), with the
+pilot they were fine-tuned from at [`hsafaai/vdc-linear-grid-pilot`](https://huggingface.co/hsafaai/vdc-linear-grid-pilot).
+The packaged manifests ([m64](../vdc/resources/pretrained/vdc_denoiser_m64_v2.json),
+[m128](../vdc/resources/pretrained/vdc_denoiser_m128_v2.json)) pin each upload's revision and record
+the checkpoint hash and the evaluated settings.
 
 ## What differs from the original model
 
@@ -53,9 +53,8 @@ import numpy as np
 from vdc import (VineCopulaModel, estimate_pair_copula_from_samples,
                  estimate_pair_density_from_samples, load_pretrained_model)
 
-# Before publication: a local copy, verified against the manifest's SHA-256.
-bundle = load_pretrained_model("vdc-denoiser-m128-v2",
-                               checkpoint_path="vdc-denoiser-m128-v2.pt", device="cuda")
+# Downloads once, verifies the SHA-256 and caches (checkpoint_path=... loads a verified local copy).
+bundle = load_pretrained_model("vdc-denoiser-m128-v2", device="cuda")
 
 # uv: (n, 2) pseudo-observations; u, v, q: arrays in [0, 1];
 # U_train, U_test: (n, d) pseudo-observations.
@@ -73,8 +72,7 @@ pit = vine.rosenblatt(U_test)
 samples = vine.inverse_rosenblatt(np.random.default_rng(0).uniform(size=(1000, U_train.shape[1])))
 ```
 
-After publication, omit `checkpoint_path`; the model then downloads and
-caches like `vdc-denoiser-m64-v1`. A file placed at
+The model downloads and caches like `vdc-denoiser-m64-v1`. A file placed at
 `$VDC_PRETRAINED_CACHE/<model id>/<model id>.pt` (default cache `~/.cache/vdc`)
 is also found and verified. `estimate_pair_copulas_from_samples` estimates many
 pairs in one call. On GPUs, a pair's estimate can depend on the other pairs in
@@ -209,9 +207,10 @@ result with `vdc.load_checkpoint_bundle(path)`;
 `VineCopulaModel.from_pretrained` recognizes its embedded linear-grid settings.
 
 The fine-tuning configurations check the released pilot's hash
-(`6e48f8c65012f4170ee9003c4aca28600abdb602ef624e47c3c3f92c0f5ace20`). That
-pilot is not part of the two model releases; a new pilot run on other
-hardware is a new initialization (set `initial_sha256=null`). The pilot bank
+(`6e48f8c65012f4170ee9003c4aca28600abdb602ef624e47c3c3f92c0f5ace20`), published as
+[`hsafaai/vdc-linear-grid-pilot`](https://huggingface.co/hsafaai/vdc-linear-grid-pilot); pass its
+path as `initial_checkpoint=`. A new pilot run on other hardware is a new initialization (set
+`initial_sha256=null`). The pilot bank
 and the fine-tuning data are deterministic for the recorded software
 (NumPy 2.2.6, SciPy 1.15.3, pyvinecopulib 0.7.5).
 
