@@ -1,0 +1,253 @@
+{
+  "config": {
+    "n_train": 2000,
+    "n_test": 10000,
+    "rho_low": -0.75,
+    "rho_high": 0.75,
+    "split": 0.5,
+    "seed": 0,
+    "m": 64,
+    "hist_alpha": 0.5,
+    "hist_sinkhorn_iters": 30
+  },
+  "diagnostics": {
+    "gaussian_sign_flip": {
+      "label": "Gaussian sign flip",
+      "short": "Gaussian flip",
+      "diagnostic": "opposite-sign conditional correlations",
+      "oracle_nll": -0.41806528266191945,
+      "tau_low_empirical": -0.5447843584343253,
+      "tau_high_empirical": 0.5382399102642866,
+      "tau_pooled_empirical": -0.004161256125612561,
+      "tau_low_true": -0.5398930876747683,
+      "tau_high_true": 0.5398930876747683,
+      "tail_low_lower": 0.0,
+      "tail_low_upper": 0.0,
+      "tail_high_lower": 0.5134376253509827,
+      "tail_high_upper": 0.5334937825912555,
+      "rho_pooled_hat": -0.0020980506051734376,
+      "rho_low_hat": -0.7511161135322365,
+      "rho_high_hat": 0.7708309950263168,
+      "vdc": {
+        "status": "ok",
+        "checkpoint": "model_step_190000.pt",
+        "grid_size": 64,
+        "projection_iters": 30,
+        "fit_s": 0.7987274279585108
+      },
+      "pyvine": {
+        "parametric": {
+          "status": "ok",
+          "mode": "parametric",
+          "family": "student",
+          "rotation": 0,
+          "fit_s": 0.5674506180221215
+        },
+        "nonparametric": {
+          "status": "ok",
+          "mode": "nonparametric",
+          "family": "tll",
+          "rotation": 0,
+          "fit_s": 0.06912025099154562
+        }
+      }
+    },
+    "clayton_gumbel_tail_switch": {
+      "label": "Clayton/Gumbel tail switch",
+      "short": "Tail switch",
+      "diagnostic": "same tau, different tail geometry",
+      "oracle_nll": -0.5956647279240561,
+      "tau_low_empirical": 0.6004403707918249,
+      "tau_high_empirical": 0.5960685908507714,
+      "tau_pooled_empirical": 0.5964063206320631,
+      "tau_low_true": 0.6,
+      "tau_high_true": 0.6,
+      "tail_low_lower": 0.7518946948544076,
+      "tail_low_upper": 0.3091344236138811,
+      "tail_high_lower": 0.49338146811071,
+      "tail_high_upper": 0.6498194945848375,
+      "rho_pooled_hat": 0.8004735147851707,
+      "rho_low_hat": 0.7920136703942429,
+      "rho_high_hat": 0.8095977058057616,
+      "vdc": {
+        "status": "ok",
+        "checkpoint": "model_step_190000.pt",
+        "grid_size": 64,
+        "projection_iters": 30,
+        "fit_s": 0.7472975919954479
+      },
+      "pyvine": {
+        "parametric": {
+          "status": "ok",
+          "mode": "parametric",
+          "family": "bb1",
+          "rotation": 180,
+          "fit_s": 0.7500903549371287
+        },
+        "nonparametric": {
+          "status": "ok",
+          "mode": "nonparametric",
+          "family": "tll",
+          "rotation": 0,
+          "fit_s": 0.07024333195295185
+        }
+      }
+    }
+  },
+  "rows": [
+    {
+      "case_key": "gaussian_sign_flip",
+      "case_label": "Gaussian sign flip",
+      "method": "Oracle",
+      "uses_u1": "yes",
+      "test_nll": -0.41806528266191945,
+      "excess_nll": 0.0,
+      "note": "true conditional",
+      "fit_s": null,
+      "group": "oracle"
+    },
+    {
+      "case_key": "gaussian_sign_flip",
+      "case_label": "Gaussian sign flip",
+      "method": "Regime Gaussian",
+      "uses_u1": "yes",
+      "test_nll": -0.4162858792133652,
+      "excess_nll": 0.001779403448554262,
+      "note": "-0.75/0.77 rho",
+      "fit_s": null,
+      "group": "conditional"
+    },
+    {
+      "case_key": "gaussian_sign_flip",
+      "case_label": "Gaussian sign flip",
+      "method": "VDC",
+      "uses_u1": "no",
+      "test_nll": -0.1387438743105782,
+      "excess_nll": 0.2793214083513412,
+      "note": "pooled grid",
+      "fit_s": 0.7987274279585108,
+      "group": "simplified"
+    },
+    {
+      "case_key": "gaussian_sign_flip",
+      "case_label": "Gaussian sign flip",
+      "method": "pyvine-param.",
+      "uses_u1": "no",
+      "test_nll": -0.127511562374707,
+      "excess_nll": 0.29055372028721244,
+      "note": "student",
+      "fit_s": 0.5674506180221215,
+      "group": "simplified"
+    },
+    {
+      "case_key": "gaussian_sign_flip",
+      "case_label": "Gaussian sign flip",
+      "method": "pyvine-TLL",
+      "uses_u1": "no",
+      "test_nll": -0.1210612591001817,
+      "excess_nll": 0.2970040235617377,
+      "note": "tll",
+      "fit_s": 0.06912025099154562,
+      "group": "simplified"
+    },
+    {
+      "case_key": "gaussian_sign_flip",
+      "case_label": "Gaussian sign flip",
+      "method": "Gaussian",
+      "uses_u1": "no",
+      "test_nll": 3.2894928086929536e-06,
+      "excess_nll": 0.41806857215472815,
+      "note": "-0.00 rho",
+      "fit_s": null,
+      "group": "simplified"
+    },
+    {
+      "case_key": "gaussian_sign_flip",
+      "case_label": "Gaussian sign flip",
+      "method": "Histogram",
+      "uses_u1": "no",
+      "test_nll": 0.006819430810953395,
+      "excess_nll": 0.4248847134728728,
+      "note": "pooled grid",
+      "fit_s": null,
+      "group": "simplified"
+    },
+    {
+      "case_key": "clayton_gumbel_tail_switch",
+      "case_label": "Clayton/Gumbel tail switch",
+      "method": "Oracle",
+      "uses_u1": "yes",
+      "test_nll": -0.5956647279240561,
+      "excess_nll": 0.0,
+      "note": "true conditional",
+      "fit_s": null,
+      "group": "oracle"
+    },
+    {
+      "case_key": "clayton_gumbel_tail_switch",
+      "case_label": "Clayton/Gumbel tail switch",
+      "method": "Regime Gaussian",
+      "uses_u1": "yes",
+      "test_nll": -0.47834730472377524,
+      "excess_nll": 0.11731742320028088,
+      "note": "0.79/0.81 rho",
+      "fit_s": null,
+      "group": "conditional"
+    },
+    {
+      "case_key": "clayton_gumbel_tail_switch",
+      "case_label": "Clayton/Gumbel tail switch",
+      "method": "VDC",
+      "uses_u1": "no",
+      "test_nll": -0.5197368484729297,
+      "excess_nll": 0.07592787945112645,
+      "note": "pooled grid",
+      "fit_s": 0.7472975919954479,
+      "group": "simplified"
+    },
+    {
+      "case_key": "clayton_gumbel_tail_switch",
+      "case_label": "Clayton/Gumbel tail switch",
+      "method": "pyvine-param.",
+      "uses_u1": "no",
+      "test_nll": -0.5073800365444735,
+      "excess_nll": 0.08828469137958261,
+      "note": "bb1",
+      "fit_s": 0.7500903549371287,
+      "group": "simplified"
+    },
+    {
+      "case_key": "clayton_gumbel_tail_switch",
+      "case_label": "Clayton/Gumbel tail switch",
+      "method": "pyvine-TLL",
+      "uses_u1": "no",
+      "test_nll": -0.5061273009816949,
+      "excess_nll": 0.08953742694236122,
+      "note": "tll",
+      "fit_s": 0.07024333195295185,
+      "group": "simplified"
+    },
+    {
+      "case_key": "clayton_gumbel_tail_switch",
+      "case_label": "Clayton/Gumbel tail switch",
+      "method": "Gaussian",
+      "uses_u1": "no",
+      "test_nll": -0.4777272548970869,
+      "excess_nll": 0.11793747302696922,
+      "note": "0.80 rho",
+      "fit_s": null,
+      "group": "simplified"
+    },
+    {
+      "case_key": "clayton_gumbel_tail_switch",
+      "case_label": "Clayton/Gumbel tail switch",
+      "method": "Histogram",
+      "uses_u1": "no",
+      "test_nll": -0.27379333158182884,
+      "excess_nll": 0.3218713963422273,
+      "note": "pooled grid",
+      "fit_s": null,
+      "group": "simplified"
+    }
+  ]
+}

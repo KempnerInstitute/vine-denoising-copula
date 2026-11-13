@@ -1,0 +1,459 @@
+{
+  "generated_at": "2026-10-13T15:58:02.003239",
+  "checkpoint": "model_step_190000.pt",
+  "settings": {
+    "datasets": [
+      "power",
+      "sp100"
+    ],
+    "sp100_data": "sp100_returns.npy",
+    "train_frac": 0.8,
+    "seeds": [
+      7,
+      17,
+      42
+    ],
+    "n_sim": 5000,
+    "max_pairs": 200,
+    "pair_seed": 12345,
+    "tail_q": 0.05,
+    "max_train": 20000,
+    "max_test": 20000,
+    "checkpoint": "model_step_190000.pt",
+    "output_base": [],
+    "device": "cuda",
+    "m_grid": 64,
+    "num_threads": 8,
+    "pyvine_timeout_s": 3600,
+    "methods": [
+      "vdc",
+      "pyvine_tll",
+      "data_ref"
+    ],
+    "out_json": "sampling.json",
+    "out_tex": "sampling_raw.tex",
+    "vectorized_inverse": true
+  },
+  "records": [
+    {
+      "dataset": "power",
+      "seed": 7,
+      "method": "vdc",
+      "d": 5,
+      "n_train": 7654,
+      "n_test": 1914,
+      "n_sim": 5000,
+      "n_pairs": 10,
+      "tail_q": 0.05,
+      "fit_s": 0.44441312784329057,
+      "sim_s": 0.016856778878718615,
+      "status": "ok",
+      "tau_rmse": 0.023385170099000343,
+      "lambdaL_mae": 0.056089864158829675,
+      "lambdaU_mae": 0.019878369905956112
+    },
+    {
+      "dataset": "power",
+      "seed": 7,
+      "method": "pyvine_tll",
+      "d": 5,
+      "n_train": 7654,
+      "n_test": 1914,
+      "n_sim": 5000,
+      "n_pairs": 10,
+      "tail_q": 0.05,
+      "fit_s": 0.30755112087354064,
+      "sim_s": 0.061608032789081335,
+      "status": "ok",
+      "tau_rmse": 0.038697145989549604,
+      "lambdaL_mae": 0.030440543364681293,
+      "lambdaU_mae": 0.021478369905956113
+    },
+    {
+      "dataset": "power",
+      "seed": 7,
+      "method": "data_ref",
+      "d": 5,
+      "n_train": 7654,
+      "n_test": 1914,
+      "n_sim": 5000,
+      "n_pairs": 10,
+      "tail_q": 0.05,
+      "fit_s": 0.0,
+      "sim_s": 0.0,
+      "status": "ok",
+      "tau_rmse": 0.011480477980496461,
+      "lambdaL_mae": 0.02085809822361546,
+      "lambdaU_mae": 0.005060815047021944
+    },
+    {
+      "dataset": "power",
+      "seed": 17,
+      "method": "vdc",
+      "d": 5,
+      "n_train": 7654,
+      "n_test": 1914,
+      "n_sim": 5000,
+      "n_pairs": 10,
+      "tail_q": 0.05,
+      "fit_s": 0.08577332505956292,
+      "sim_s": 0.016645377967506647,
+      "status": "ok",
+      "tau_rmse": 0.013635864804065683,
+      "lambdaL_mae": 0.05368986415882967,
+      "lambdaU_mae": 0.03427836990595611
+    },
+    {
+      "dataset": "power",
+      "seed": 17,
+      "method": "pyvine_tll",
+      "d": 5,
+      "n_train": 7654,
+      "n_test": 1914,
+      "n_sim": 5000,
+      "n_pairs": 10,
+      "tail_q": 0.05,
+      "fit_s": 0.28249230282381177,
+      "sim_s": 0.055971344001591206,
+      "status": "ok",
+      "tau_rmse": 0.037034666899403434,
+      "lambdaL_mae": 0.024840543364681292,
+      "lambdaU_mae": 0.017478369905956113
+    },
+    {
+      "dataset": "power",
+      "seed": 17,
+      "method": "data_ref",
+      "d": 5,
+      "n_train": 7654,
+      "n_test": 1914,
+      "n_sim": 5000,
+      "n_pairs": 10,
+      "tail_q": 0.05,
+      "fit_s": 0.0,
+      "sim_s": 0.0,
+      "status": "ok",
+      "tau_rmse": 0.009225804202288747,
+      "lambdaL_mae": 0.018718913270637405,
+      "lambdaU_mae": 0.008516196447230928
+    },
+    {
+      "dataset": "power",
+      "seed": 42,
+      "method": "vdc",
+      "d": 5,
+      "n_train": 7654,
+      "n_test": 1914,
+      "n_sim": 5000,
+      "n_pairs": 10,
+      "tail_q": 0.05,
+      "fit_s": 0.0720019661821425,
+      "sim_s": 0.016623639035969973,
+      "status": "ok",
+      "tau_rmse": 0.022107192334441708,
+      "lambdaL_mae": 0.049289864158829674,
+      "lambdaU_mae": 0.025478369905956116
+    },
+    {
+      "dataset": "power",
+      "seed": 42,
+      "method": "pyvine_tll",
+      "d": 5,
+      "n_train": 7654,
+      "n_test": 1914,
+      "n_sim": 5000,
+      "n_pairs": 10,
+      "tail_q": 0.05,
+      "fit_s": 0.2863785591907799,
+      "sim_s": 0.05586999421939254,
+      "status": "ok",
+      "tau_rmse": 0.033593792021592433,
+      "lambdaL_mae": 0.026889864158829678,
+      "lambdaU_mae": 0.019698641588296758
+    },
+    {
+      "dataset": "power",
+      "seed": 42,
+      "method": "data_ref",
+      "d": 5,
+      "n_train": 7654,
+      "n_test": 1914,
+      "n_sim": 5000,
+      "n_pairs": 10,
+      "tail_q": 0.05,
+      "fit_s": 0.0,
+      "sim_s": 0.0,
+      "status": "ok",
+      "tau_rmse": 0.013252122923446002,
+      "lambdaL_mae": 0.022840543364681293,
+      "lambdaU_mae": 0.008962173458725183
+    },
+    {
+      "dataset": "sp100",
+      "seed": 7,
+      "method": "vdc",
+      "d": 100,
+      "n_train": 1356,
+      "n_test": 339,
+      "n_sim": 5000,
+      "n_pairs": 200,
+      "tail_q": 0.05,
+      "fit_s": 8.123132979962975,
+      "sim_s": 8.329241594299674,
+      "status": "ok",
+      "tau_rmse": 0.055532391709011156,
+      "lambdaL_mae": 0.08309262536873156,
+      "lambdaU_mae": 0.103385604719764
+    },
+    {
+      "dataset": "sp100",
+      "seed": 7,
+      "method": "pyvine_tll",
+      "d": 100,
+      "n_train": 1356,
+      "n_test": 339,
+      "n_sim": 5000,
+      "n_pairs": 200,
+      "tail_q": 0.05,
+      "fit_s": 8.681046542245895,
+      "sim_s": 0.965105006005615,
+      "status": "ok",
+      "tau_rmse": 0.20086650988222776,
+      "lambdaL_mae": 0.07462625368731562,
+      "lambdaU_mae": 0.1812125663716814
+    },
+    {
+      "dataset": "sp100",
+      "seed": 7,
+      "method": "data_ref",
+      "d": 100,
+      "n_train": 1356,
+      "n_test": 339,
+      "n_sim": 5000,
+      "n_pairs": 200,
+      "tail_q": 0.05,
+      "fit_s": 0.0,
+      "sim_s": 0.0,
+      "status": "ok",
+      "tau_rmse": 0.035835603157983995,
+      "lambdaL_mae": 0.17525557522123894,
+      "lambdaU_mae": 0.09420678466076696
+    },
+    {
+      "dataset": "sp100",
+      "seed": 17,
+      "method": "vdc",
+      "d": 100,
+      "n_train": 1356,
+      "n_test": 339,
+      "n_sim": 5000,
+      "n_pairs": 200,
+      "tail_q": 0.05,
+      "fit_s": 7.564062913879752,
+      "sim_s": 8.256628570146859,
+      "status": "ok",
+      "tau_rmse": 0.055459278777580404,
+      "lambdaL_mae": 0.2040575221238938,
+      "lambdaU_mae": 0.12819356932153395
+    },
+    {
+      "dataset": "sp100",
+      "seed": 17,
+      "method": "pyvine_tll",
+      "d": 100,
+      "n_train": 1356,
+      "n_test": 339,
+      "n_sim": 5000,
+      "n_pairs": 200,
+      "tail_q": 0.05,
+      "fit_s": 8.635517940390855,
+      "sim_s": 0.9615455181337893,
+      "status": "ok",
+      "tau_rmse": 0.19417994589469056,
+      "lambdaL_mae": 0.27949693215339233,
+      "lambdaU_mae": 0.19765174041297937
+    },
+    {
+      "dataset": "sp100",
+      "seed": 17,
+      "method": "data_ref",
+      "d": 100,
+      "n_train": 1356,
+      "n_test": 339,
+      "n_sim": 5000,
+      "n_pairs": 200,
+      "tail_q": 0.05,
+      "fit_s": 0.0,
+      "sim_s": 0.0,
+      "status": "ok",
+      "tau_rmse": 0.03963184312374549,
+      "lambdaL_mae": 0.12856230088495574,
+      "lambdaU_mae": 0.10083911504424779
+    },
+    {
+      "dataset": "sp100",
+      "seed": 42,
+      "method": "vdc",
+      "d": 100,
+      "n_train": 1356,
+      "n_test": 339,
+      "n_sim": 5000,
+      "n_pairs": 200,
+      "tail_q": 0.05,
+      "fit_s": 7.686268025077879,
+      "sim_s": 8.261854400858283,
+      "status": "ok",
+      "tau_rmse": 0.0451534752509869,
+      "lambdaL_mae": 0.1689290265486726,
+      "lambdaU_mae": 0.07523587020648968
+    },
+    {
+      "dataset": "sp100",
+      "seed": 42,
+      "method": "pyvine_tll",
+      "d": 100,
+      "n_train": 1356,
+      "n_test": 339,
+      "n_sim": 5000,
+      "n_pairs": 200,
+      "tail_q": 0.05,
+      "fit_s": 8.568269815761596,
+      "sim_s": 0.939166541211307,
+      "status": "ok",
+      "tau_rmse": 0.17983347863354154,
+      "lambdaL_mae": 0.2599780530973452,
+      "lambdaU_mae": 0.07679061946902654
+    },
+    {
+      "dataset": "sp100",
+      "seed": 42,
+      "method": "data_ref",
+      "d": 100,
+      "n_train": 1356,
+      "n_test": 339,
+      "n_sim": 5000,
+      "n_pairs": 200,
+      "tail_q": 0.05,
+      "fit_s": 0.0,
+      "sim_s": 0.0,
+      "status": "ok",
+      "tau_rmse": 0.04007683364390238,
+      "lambdaL_mae": 0.11998094395280237,
+      "lambdaU_mae": 0.11042825958702064
+    }
+  ],
+  "summary": {
+    "power": {
+      "vdc": {
+        "n_seeds": 3,
+        "status": "ok",
+        "tau_rmse": {
+          "mean": 0.019709409079169245,
+          "sd": 0.005298515059703899
+        },
+        "lambdaL_mae": {
+          "mean": 0.053023197492163,
+          "sd": 0.003448671241700683
+        },
+        "lambdaU_mae": {
+          "mean": 0.02654503657262278,
+          "sd": 0.007259017380701972
+        },
+        "fit_s_mean": 0.200729473028332,
+        "sim_s_mean": 0.016708598627398413
+      },
+      "pyvine_tll": {
+        "n_seeds": 3,
+        "status": "ok",
+        "tau_rmse": {
+          "mean": 0.03644186830351515,
+          "sd": 0.0026028086871745654
+        },
+        "lambdaL_mae": {
+          "mean": 0.027390316962730754,
+          "sd": 0.0028333442707689687
+        },
+        "lambdaU_mae": {
+          "mean": 0.01955179380006966,
+          "sd": 0.0020040392223408185
+        },
+        "fit_s_mean": 0.2921406609627108,
+        "sim_s_mean": 0.057816457003355026
+      },
+      "data_ref": {
+        "n_seeds": 3,
+        "status": "ok",
+        "tau_rmse": {
+          "mean": 0.011319468368743738,
+          "sd": 0.002017982577326405
+        },
+        "lambdaL_mae": {
+          "mean": 0.02080585161964472,
+          "sd": 0.002061311703443202
+        },
+        "lambdaU_mae": {
+          "mean": 0.007513061650992685,
+          "sd": 0.0021353826188085967
+        },
+        "fit_s_mean": 0.0,
+        "sim_s_mean": 0.0
+      }
+    },
+    "sp100": {
+      "vdc": {
+        "n_seeds": 3,
+        "status": "ok",
+        "tau_rmse": {
+          "mean": 0.05204838191252615,
+          "sd": 0.005971276226962655
+        },
+        "lambdaL_mae": {
+          "mean": 0.1520263913470993,
+          "sd": 0.06222861776799211
+        },
+        "lambdaU_mae": {
+          "mean": 0.10227168141592922,
+          "sd": 0.02649641660177862
+        },
+        "fit_s_mean": 7.791154639640202,
+        "sim_s_mean": 8.282574855101606
+      },
+      "pyvine_tll": {
+        "n_seeds": 3,
+        "status": "ok",
+        "tau_rmse": {
+          "mean": 0.1916266448034866,
+          "sd": 0.010746469686544049
+        },
+        "lambdaL_mae": {
+          "mean": 0.20470041297935104,
+          "sd": 0.11306950007207293
+        },
+        "lambdaU_mae": {
+          "mean": 0.15188497541789578,
+          "sd": 0.06555099795061571
+        },
+        "fit_s_mean": 8.628278099466115,
+        "sim_s_mean": 0.9552723551169038
+      },
+      "data_ref": {
+        "n_seeds": 3,
+        "status": "ok",
+        "tau_rmse": {
+          "mean": 0.03851475997521062,
+          "sd": 0.002330861445737673
+        },
+        "lambdaL_mae": {
+          "mean": 0.14126627335299902,
+          "sd": 0.02974667044926218
+        },
+        "lambdaU_mae": {
+          "mean": 0.10182471976401179,
+          "sd": 0.00815552724803768
+        },
+        "fit_s_mean": 0.0,
+        "sim_s_mean": 0.0
+      }
+    }
+  }
+}

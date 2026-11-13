@@ -1,0 +1,340 @@
+{
+  "generated_at": "2026-10-02T19:56:49.996776",
+  "checkpoint": "model_step_190000.pt",
+  "model_type": "denoiser",
+  "settings": {
+    "datasets": [
+      "power",
+      "gas",
+      "hepmass",
+      "miniboone"
+    ],
+    "n_boot": 2000,
+    "alpha": 0.05,
+    "max_train": 5000,
+    "max_test": 50000,
+    "seed": 42,
+    "m_model": 64,
+    "projection_iters": 30,
+    "flow": {
+      "num_layers": 8,
+      "hidden_dim": 128,
+      "hidden_layers": 2,
+      "epochs": 25
+    }
+  },
+  "records": [
+    {
+      "dataset": "power",
+      "d": 6,
+      "n_train": 5000,
+      "n_test": 50000,
+      "methods": [
+        {
+          "method": "ours",
+          "nll_bits_per_dim": -0.1412803948515678,
+          "nll_lo": -0.1431472884953571,
+          "nll_hi": -0.1394564329093889,
+          "fit_s": 0.5588930388912559,
+          "pit_ks": 0.016623019972183944
+        },
+        {
+          "method": "gaussian_copula",
+          "nll_bits_per_dim": -0.06849721602773037,
+          "nll_lo": -0.06992840034759762,
+          "nll_hi": -0.06686102548776869,
+          "fit_s": 0.002090842928737402,
+          "pit_ks": null
+        },
+        {
+          "method": "pyvine_param",
+          "nll_bits_per_dim": -0.10776861828946872,
+          "nll_lo": -0.10971694956591567,
+          "nll_hi": -0.1059175482880635,
+          "fit_s": 10.203322258777916,
+          "pit_ks": 0.02302894105779903
+        },
+        {
+          "method": "pyvine_nonpar",
+          "nll_bits_per_dim": -0.18217283423466527,
+          "nll_lo": -0.1843528622589886,
+          "nll_hi": -0.1799855388971714,
+          "fit_s": 0.9665982997976243,
+          "pit_ks": 0.0170726187877925
+        },
+        {
+          "method": "flow_realnvp",
+          "nll_bits_per_dim": -0.1221124268479316,
+          "nll_lo": -0.12438264963407443,
+          "nll_hi": -0.11985248087322427,
+          "fit_s": 1.056574122980237,
+          "pit_ks": null
+        }
+      ],
+      "paired_diffs": [
+        {
+          "vs": "pyvine_nonpar",
+          "diff_nll_bits_per_dim": 0.0408924393830975,
+          "diff_lo": 0.03982774064675632,
+          "diff_hi": 0.0419562332223712,
+          "p_two_sided": 0.0
+        },
+        {
+          "vs": "pyvine_param",
+          "diff_nll_bits_per_dim": -0.03351177656209907,
+          "diff_lo": -0.03423553896192761,
+          "diff_hi": -0.03279233161348999,
+          "p_two_sided": 0.0
+        },
+        {
+          "vs": "flow_realnvp",
+          "diff_nll_bits_per_dim": -0.019167968003636168,
+          "diff_lo": -0.020671540070408386,
+          "diff_hi": -0.01759466815904145,
+          "p_two_sided": 0.0
+        },
+        {
+          "vs": "gaussian_copula",
+          "diff_nll_bits_per_dim": -0.07278317882383739,
+          "diff_lo": -0.07380630947862887,
+          "diff_hi": -0.07177463843531065,
+          "p_two_sided": 0.0
+        }
+      ]
+    },
+    {
+      "dataset": "gas",
+      "d": 8,
+      "n_train": 5000,
+      "n_test": 50000,
+      "methods": [
+        {
+          "method": "ours",
+          "nll_bits_per_dim": -1.4773351444905236,
+          "nll_lo": -1.481573105350796,
+          "nll_hi": -1.4731622048981785,
+          "fit_s": 0.2131175040267408,
+          "pit_ks": 0.04871426940416167
+        },
+        {
+          "method": "gaussian_copula",
+          "nll_bits_per_dim": -1.2471850224904886,
+          "nll_lo": -1.2694472744921468,
+          "nll_hi": -1.220551079457877,
+          "fit_s": 0.0021874471567571163,
+          "pit_ks": null
+        },
+        {
+          "method": "pyvine_param",
+          "nll_bits_per_dim": -1.403964219699846,
+          "nll_lo": -1.4184909561360917,
+          "nll_hi": -1.38863460904842,
+          "fit_s": 18.71420586388558,
+          "pit_ks": 0.058565836096234836
+        },
+        {
+          "method": "pyvine_nonpar",
+          "nll_bits_per_dim": -1.7050025541363625,
+          "nll_lo": -1.7114515592326065,
+          "nll_hi": -1.6984266681663953,
+          "fit_s": 1.9700267426669598,
+          "pit_ks": 0.04330080531018808
+        },
+        {
+          "method": "flow_realnvp",
+          "nll_bits_per_dim": -1.0991058763824573,
+          "nll_lo": -1.5247504870636022,
+          "nll_hi": -0.5282904077804883,
+          "fit_s": 1.0012115300633013,
+          "pit_ks": null
+        }
+      ],
+      "paired_diffs": [
+        {
+          "vs": "pyvine_nonpar",
+          "diff_nll_bits_per_dim": 0.22766740964583906,
+          "diff_lo": 0.2221978985974959,
+          "diff_hi": 0.23268160177428007,
+          "p_two_sided": 0.0
+        },
+        {
+          "vs": "pyvine_param",
+          "diff_nll_bits_per_dim": -0.07337092479067743,
+          "diff_lo": -0.0890585756353508,
+          "diff_hi": -0.059672923156740186,
+          "p_two_sided": 0.0
+        },
+        {
+          "vs": "flow_realnvp",
+          "diff_nll_bits_per_dim": -0.37822926810806645,
+          "diff_lo": -0.9656191645822849,
+          "diff_hi": 0.07084351567850915,
+          "p_two_sided": 0.125
+        },
+        {
+          "vs": "gaussian_copula",
+          "diff_nll_bits_per_dim": -0.23015012200003526,
+          "diff_lo": -0.2571217984872944,
+          "diff_hi": -0.20912393914163505,
+          "p_two_sided": 0.0
+        }
+      ]
+    },
+    {
+      "dataset": "hepmass",
+      "d": 21,
+      "n_train": 5000,
+      "n_test": 50000,
+      "methods": [
+        {
+          "method": "ours",
+          "nll_bits_per_dim": -0.23719429701136863,
+          "nll_lo": -0.23850034804598855,
+          "nll_hi": -0.23594499945207575,
+          "fit_s": 1.1664598011411726,
+          "pit_ks": 0.020993269456468074
+        },
+        {
+          "method": "gaussian_copula",
+          "nll_bits_per_dim": -0.10393268025045703,
+          "nll_lo": -0.10498447206556905,
+          "nll_hi": -0.10290881539961973,
+          "fit_s": 0.0052357884123921394,
+          "pit_ks": null
+        },
+        {
+          "method": "pyvine_param",
+          "nll_bits_per_dim": -0.16284904283608595,
+          "nll_lo": -0.16405048585421259,
+          "nll_hi": -0.16162694213748693,
+          "fit_s": 125.84328626887873,
+          "pit_ks": 0.02005741480770564
+        },
+        {
+          "method": "pyvine_nonpar",
+          "nll_bits_per_dim": -0.20085209706827511,
+          "nll_lo": -0.20199021927537636,
+          "nll_hi": -0.19974074940842132,
+          "fit_s": 9.658448862377554,
+          "pit_ks": 0.017955765271192834
+        },
+        {
+          "method": "flow_realnvp",
+          "nll_bits_per_dim": 0.2538083809671154,
+          "nll_lo": 0.25228161981239217,
+          "nll_hi": 0.2553446133472181,
+          "fit_s": 0.21649812487885356,
+          "pit_ks": null
+        }
+      ],
+      "paired_diffs": [
+        {
+          "vs": "pyvine_nonpar",
+          "diff_nll_bits_per_dim": -0.03634219994309349,
+          "diff_lo": -0.037204753500144475,
+          "diff_hi": -0.03542650432633425,
+          "p_two_sided": 0.0
+        },
+        {
+          "vs": "pyvine_param",
+          "diff_nll_bits_per_dim": -0.07434525417528265,
+          "diff_lo": -0.07517067139031333,
+          "diff_hi": -0.07352315870434728,
+          "p_two_sided": 0.0
+        },
+        {
+          "vs": "flow_realnvp",
+          "diff_nll_bits_per_dim": -0.491002677978484,
+          "diff_lo": -0.4928178461395061,
+          "diff_hi": -0.48915691954986273,
+          "p_two_sided": 0.0
+        },
+        {
+          "vs": "gaussian_copula",
+          "diff_nll_bits_per_dim": -0.13326161676091158,
+          "diff_lo": -0.13408369819962793,
+          "diff_hi": -0.1324575193170704,
+          "p_two_sided": 0.0
+        }
+      ]
+    },
+    {
+      "dataset": "miniboone",
+      "d": 43,
+      "n_train": 5000,
+      "n_test": 3648,
+      "methods": [
+        {
+          "method": "ours",
+          "nll_bits_per_dim": -0.9689262005244028,
+          "nll_lo": -0.9770925416557898,
+          "nll_hi": -0.9608938494634492,
+          "fit_s": 4.492956094909459,
+          "pit_ks": 0.027352938504647196
+        },
+        {
+          "method": "gaussian_copula",
+          "nll_bits_per_dim": -0.8852715432498384,
+          "nll_lo": -0.8983892257496503,
+          "nll_hi": -0.8706227534343034,
+          "fit_s": 0.010381998959928751,
+          "pit_ks": null
+        },
+        {
+          "method": "pyvine_param",
+          "nll_bits_per_dim": -0.9334237963654873,
+          "nll_lo": -0.9416733119382408,
+          "nll_hi": -0.9255384822579676,
+          "fit_s": 503.0084649599157,
+          "pit_ks": 0.02801604731549261
+        },
+        {
+          "method": "pyvine_nonpar",
+          "nll_bits_per_dim": -0.7443706318705463,
+          "nll_lo": -0.7519960238868209,
+          "nll_hi": -0.7366184945185984,
+          "fit_s": 35.72476576920599,
+          "pit_ks": 0.023684785715831824
+        },
+        {
+          "method": "flow_realnvp",
+          "nll_bits_per_dim": -0.4144858656645747,
+          "nll_lo": -0.4211577375806112,
+          "nll_hi": -0.4077418430795309,
+          "fit_s": 1.0304427919909358,
+          "pit_ks": null
+        }
+      ],
+      "paired_diffs": [
+        {
+          "vs": "pyvine_nonpar",
+          "diff_nll_bits_per_dim": -0.22455556865385667,
+          "diff_lo": -0.22978017001610915,
+          "diff_hi": -0.21956111770583447,
+          "p_two_sided": 0.0
+        },
+        {
+          "vs": "pyvine_param",
+          "diff_nll_bits_per_dim": -0.03550240415891568,
+          "diff_lo": -0.03961370156615239,
+          "diff_hi": -0.03157461238996373,
+          "p_two_sided": 0.0
+        },
+        {
+          "vs": "flow_realnvp",
+          "diff_nll_bits_per_dim": -0.5544403348598282,
+          "diff_lo": -0.5605420339945661,
+          "diff_hi": -0.5478037579603374,
+          "p_two_sided": 0.0
+        },
+        {
+          "vs": "gaussian_copula",
+          "diff_nll_bits_per_dim": -0.08365465727456449,
+          "diff_lo": -0.09600622986775768,
+          "diff_hi": -0.0730236432335571,
+          "p_two_sided": 0.0
+        }
+      ]
+    }
+  ]
+}

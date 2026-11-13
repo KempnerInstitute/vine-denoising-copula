@@ -1,0 +1,40 @@
+{
+  "generated_at": "2026-10-13T15:59:11.700368",
+  "data_root": "datasets",
+  "checkpoint": "model_step_190000.pt",
+  "model_type": "denoiser",
+  "vine_type": "dvine",
+  "method": "exact conditional sampling via triangular Rosenblatt on obs-first permuted D-vine (per-pattern refit)",
+  "e4_json": "approximate.json",
+  "seed": 42,
+  "records": [
+    {
+      "dataset": "power",
+      "d": 5,
+      "n_train": 7654,
+      "n_test": 1914,
+      "n_eval": 500,
+      "missing_frac": 0.2,
+      "n_cond_samples": 64,
+      "n_patterns": 25,
+      "total_refit_s": 1.4898470905609429,
+      "total_sample_s": 0.172752327285707,
+      "total_s": 1.667079309001565,
+      "mean_refit_s_per_pattern": 0.05959388362243771,
+      "prefix_recon_mae_mean": 1.863601621654676e-17,
+      "prefix_recon_mae_max": 4.381333259158756e-17,
+      "rmse_vdc_exact": 6.895124670463472,
+      "rmse_vdc_exact_median_impute": 6.877360459554396,
+      "rmse_vdc_approx": 6.896109993720193,
+      "rmse_mean": 12.030873754921268,
+      "rmse_median": 12.063743998778195,
+      "rmse_knn": 5.742542255437959,
+      "rmse_iterative": 7.285954729042703,
+      "rmse_mean_fresh": 12.030873754921268,
+      "rmse_median_fresh": 12.063743998778195,
+      "best_baseline": "knn",
+      "rmse_best_baseline": 5.742542255437959,
+      "baselines_from_e4_json": true
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "script": "drafts/scripts/fig1_overview_data.py",
+  "vdc_imported_from": "__init__.py",
+  "library_pin": "ebb05de487ccf0da6a741f4bce36e6e162cc4a1f (git archive of vdc/ at tag vdc-camera-ready-package-20261019)",
+  "checkpoint": "model_step_190000.pt",
+  "checkpoint_sha256": "8a1b71ad6d2012ed344b22a743a96e667d32a2ab54ade4444686e375e91f5c0f",
+  "loss_csv": "loss_history.csv",
+  "device": "cpu",
+  "pyvinecopulib": "0.7.5",
+  "torch": "2.9.1+cu128",
+  "numpy": "2.2.6",
+  "out_sha256": "a9ddb3434984241910c88aad3cc321d34404b52d9ab89bf3679ec5f566b5735f",
+  "cx_ise_tll_vdc": [
+    1.3586213634943827,
+    0.011886455844999887
+  ]
+}

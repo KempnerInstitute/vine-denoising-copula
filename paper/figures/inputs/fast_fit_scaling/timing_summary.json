@@ -1,0 +1,274 @@
+{
+  "status": "complete_and_exact",
+  "summary": [
+    {
+      "d": 100,
+      "methods": {
+        "vdc_production": {
+          "mean_seconds": 45.825408594993256,
+          "sample_sd_seconds": 0.09208993261059417,
+          "times_by_seed": {
+            "7": 45.923429374583066,
+            "17": 45.812098355963826,
+            "42": 45.74069805443287
+          },
+          "n_finite_likelihood": 3,
+          "n_likelihood_total": 3,
+          "mean_nll_bits_dim": -0.6020284159049699,
+          "sample_sd_nll_bits_dim": 0.004187458233340553
+        },
+        "vdc_fast": {
+          "mean_seconds": 30.047931752167642,
+          "sample_sd_seconds": 0.013070228258641516,
+          "times_by_seed": {
+            "7": 30.032873227261007,
+            "17": 30.05458838213235,
+            "42": 30.056333647109568
+          },
+          "n_finite_likelihood": 3,
+          "n_likelihood_total": 3,
+          "mean_nll_bits_dim": -0.6020284159049699,
+          "sample_sd_nll_bits_dim": 0.004187458233340553
+        },
+        "tll_8": {
+          "mean_seconds": 202.1866428013891,
+          "sample_sd_seconds": 1.2034989015023076,
+          "times_by_seed": {
+            "7": 203.56849125865847,
+            "17": 201.62331456318498,
+            "42": 201.36812258232385
+          },
+          "n_finite_likelihood": 3,
+          "n_likelihood_total": 3,
+          "mean_nll_bits_dim": -0.6102474249142397,
+          "sample_sd_nll_bits_dim": 0.004682933397384309
+        },
+        "tll_16": {
+          "mean_seconds": 118.96489129246523,
+          "sample_sd_seconds": 0.33580996263491414,
+          "times_by_seed": {
+            "7": 119.25280518829823,
+            "17": 118.59599541407079,
+            "42": 119.04587327502668
+          },
+          "n_finite_likelihood": 3,
+          "n_likelihood_total": 3,
+          "mean_nll_bits_dim": -0.6102474249142397,
+          "sample_sd_nll_bits_dim": 0.004682933397384309
+        }
+      },
+      "comparisons": {
+        "vdc_production": {
+          "ratio_of_mean_times": 1.525076966127209,
+          "mean_saved_seconds": 15.777476842825612,
+          "sample_sd_saved_seconds": 0.10453595220784379,
+          "fraction_time_saved": 0.34429538822594186,
+          "elapsed_time_break_even_fits_9_6h": null
+        },
+        "tll_8": {
+          "ratio_of_mean_times": 6.7288039812192215,
+          "mean_saved_seconds": 172.13871104922146,
+          "sample_sd_saved_seconds": 1.21655909215862,
+          "fraction_time_saved": 0.8513851788830374,
+          "elapsed_time_break_even_fits_9_6h": 200.7683210205861
+        },
+        "tll_16": {
+          "ratio_of_mean_times": 3.9591707101066334,
+          "mean_saved_seconds": 88.91695954029758,
+          "sample_sd_saved_seconds": 0.3450361165027091,
+          "fraction_time_saved": 0.7474218534080167,
+          "elapsed_time_break_even_fits_9_6h": 388.6772577321118
+        }
+      }
+    },
+    {
+      "d": 200,
+      "methods": {
+        "vdc_production": {
+          "mean_seconds": 182.318295577541,
+          "sample_sd_seconds": 0.1634275532850601,
+          "times_by_seed": {
+            "7": 182.14780391938984,
+            "17": 182.47359860502183,
+            "42": 182.3334842082113
+          },
+          "n_finite_likelihood": 3,
+          "n_likelihood_total": 3,
+          "mean_nll_bits_dim": -0.6020281387076473,
+          "sample_sd_nll_bits_dim": 0.0031926270886246493
+        },
+        "vdc_fast": {
+          "mean_seconds": 118.68379791360348,
+          "sample_sd_seconds": 0.07553333685879937,
+          "times_by_seed": {
+            "7": 118.59679421409965,
+            "17": 118.73259619437158,
+            "42": 118.72200333233923
+          },
+          "n_finite_likelihood": 3,
+          "n_likelihood_total": 3,
+          "mean_nll_bits_dim": -0.6020281387076473,
+          "sample_sd_nll_bits_dim": 0.0031926270886246493
+        },
+        "tll_8": {
+          "mean_seconds": 779.6144421184435,
+          "sample_sd_seconds": 2.5866216129111352,
+          "times_by_seed": {
+            "7": 781.0765030495822,
+            "17": 781.1389370337129,
+            "42": 776.6278862720355
+          },
+          "n_finite_likelihood": 3,
+          "n_likelihood_total": 3,
+          "mean_nll_bits_dim": -0.6158139101911363,
+          "sample_sd_nll_bits_dim": 0.003225846484641109
+        },
+        "tll_16": {
+          "mean_seconds": 427.12928058952093,
+          "sample_sd_seconds": 0.4622922781518595,
+          "times_by_seed": {
+            "7": 427.56303688231856,
+            "17": 427.1818570019677,
+            "42": 426.6429478842765
+          },
+          "n_finite_likelihood": 3,
+          "n_likelihood_total": 3,
+          "mean_nll_bits_dim": -0.6158139101911363,
+          "sample_sd_nll_bits_dim": 0.003225846484641109
+        }
+      },
+      "comparisons": {
+        "vdc_production": {
+          "ratio_of_mean_times": 1.5361683631851804,
+          "mean_saved_seconds": 63.63449766393751,
+          "sample_sd_saved_seconds": 0.09706511434158503,
+          "fraction_time_saved": 0.3490296871323778,
+          "elapsed_time_break_even_fits_9_6h": null
+        },
+        "tll_8": {
+          "ratio_of_mean_times": 6.5688363182139495,
+          "mean_saved_seconds": 660.9306442048401,
+          "sample_sd_saved_seconds": 2.61977694643074,
+          "fraction_time_saved": 0.847766034719541,
+          "elapsed_time_break_even_fits_9_6h": 52.289904096637606
+        },
+        "tll_16": {
+          "ratio_of_mean_times": 3.5988844989646522,
+          "mean_saved_seconds": 308.44548267591745,
+          "sample_sd_saved_seconds": 0.5226592998165406,
+          "fraction_time_saved": 0.7221361229326237,
+          "elapsed_time_break_even_fits_9_6h": 112.04573236143668
+        }
+      }
+    },
+    {
+      "d": 500,
+      "methods": {
+        "vdc_production": {
+          "mean_seconds": 1147.219966813922,
+          "sample_sd_seconds": 0.49634269604745107,
+          "times_by_seed": {
+            "7": 1146.927912157029,
+            "17": 1147.7930586924776,
+            "42": 1146.9389295922592
+          },
+          "n_finite_likelihood": 3,
+          "n_likelihood_total": 3,
+          "mean_nll_bits_dim": -0.5748905323984754,
+          "sample_sd_nll_bits_dim": 0.0007179766308241481
+        },
+        "vdc_fast": {
+          "mean_seconds": 748.985739123697,
+          "sample_sd_seconds": 0.473021559943679,
+          "times_by_seed": {
+            "7": 748.4889763370156,
+            "17": 749.0374750327319,
+            "42": 749.4307660013437
+          },
+          "n_finite_likelihood": 3,
+          "n_likelihood_total": 3,
+          "mean_nll_bits_dim": -0.5748905323984754,
+          "sample_sd_nll_bits_dim": 0.0007179766308241481
+        },
+        "tll_8": {
+          "mean_seconds": 4746.15943197875,
+          "sample_sd_seconds": 8.923008039227987,
+          "times_by_seed": {
+            "7": 4744.319737826474,
+            "17": 4755.858898439445,
+            "42": 4738.299659670331
+          },
+          "n_finite_likelihood": 2,
+          "n_likelihood_total": 3,
+          "mean_nll_bits_dim": -0.6142207166723986,
+          "sample_sd_nll_bits_dim": 0.001002933595112256
+        },
+        "tll_16": {
+          "mean_seconds": 2488.910725425929,
+          "sample_sd_seconds": 4.713002650314509,
+          "times_by_seed": {
+            "7": 2492.729832201265,
+            "17": 2490.3587323967367,
+            "42": 2483.643611679785
+          },
+          "n_finite_likelihood": 2,
+          "n_likelihood_total": 3,
+          "mean_nll_bits_dim": -0.6142207166723986,
+          "sample_sd_nll_bits_dim": 0.001002933595112256
+        }
+      },
+      "comparisons": {
+        "vdc_production": {
+          "ratio_of_mean_times": 1.5316980109075955,
+          "mean_saved_seconds": 398.2342276902248,
+          "sample_sd_saved_seconds": 0.6484159705244987,
+          "fraction_time_saved": 0.34712979133043464,
+          "elapsed_time_break_even_fits_9_6h": null
+        },
+        "tll_8": {
+          "ratio_of_mean_times": 6.336782109538816,
+          "mean_saved_seconds": 3997.1736928550526,
+          "sample_sd_saved_seconds": 9.051294354152088,
+          "fraction_time_saved": 0.842191196933426,
+          "elapsed_time_break_even_fits_9_6h": 8.646109140009601
+        },
+        "tll_16": {
+          "ratio_of_mean_times": 3.3230415419363255,
+          "mean_saved_seconds": 1739.9249863022317,
+          "sample_sd_saved_seconds": 5.1577540393203805,
+          "fraction_time_saved": 0.6990708700507839,
+          "elapsed_time_break_even_fits_9_6h": 19.862925282456285
+        }
+      }
+    }
+  ],
+  "uncertainty": "Sample SD across data seeds 7, 17 and 42. One timed fit per method per seed.",
+  "ratio": "Ratio of three-seed mean baseline time to three-seed mean fast VDC time.",
+  "timing": "Complete automatic structure selection and fit; excludes checkpoint loading, warmup, evaluation and one-time pretraining.",
+  "structures": "VDC chooses a D-vine; TLL chooses a regular vine. Matched-structure controls remain separate.",
+  "hardware": {
+    "node": "<host>",
+    "cpu": "AMD EPYC 9454 48-Core Processor",
+    "gpu": "NVIDIA H100 80GB HBM3",
+    "allocated_cpu_cores": 16,
+    "vdc_cpu_threads": 16,
+    "tll_thread_curves": [
+      8,
+      16
+    ]
+  },
+  "missing_likelihoods": [
+    {
+      "d": 500,
+      "seed": 7,
+      "method": "tll_16",
+      "value": "inf"
+    },
+    {
+      "d": 500,
+      "seed": 7,
+      "method": "tll_8",
+      "value": "inf"
+    }
+  ]
+}

@@ -1,0 +1,209 @@
+{
+  "e26": {
+    "cases": [
+      {
+        "summary": {
+          "name": "BB6(theta=2.0, delta=1.5)",
+          "tau_true": 0.5700439554367519,
+          "mi_true_mc": 0.5389727890911946,
+          "mi_grid_center_truth": 0.5557681994283594,
+          "vdc_ise_cellavg": 0.03567531151453559,
+          "tll_center_ise_cellavg": 0.05990512848172961,
+          "tll_cellavg_ise_cellavg": 0.05867669742785319,
+          "vdc_mi_err_mc": 0.010313894901199086,
+          "tll_mi_err_mc": 0.045872303079325105,
+          "vdc_tau_err_exact": 0.009326669589038642,
+          "tll_tau_err_exact": 0.009138580203508476,
+          "vdc_nll_lib": -0.5165272591252923,
+          "tll_nll_native": -0.5186029419017549,
+          "saved_vdc_ise_x4096": 0.1774634131000313,
+          "saved_tll_ise_x4096": 0.3258140658024999
+        }
+      },
+      {
+        "summary": {
+          "name": "BB6(theta=3.0, delta=2.0)",
+          "tau_true": 0.7589812491168441,
+          "mi_true_mc": 1.0794010891477812,
+          "mi_grid_center_truth": 1.1738362993347806,
+          "vdc_ise_cellavg": 0.12528915906124732,
+          "tll_center_ise_cellavg": 0.3563605897158195,
+          "tll_cellavg_ise_cellavg": 0.23948594598600048,
+          "vdc_mi_err_mc": 0.02042229832749635,
+          "tll_mi_err_mc": 0.11552806495272668,
+          "vdc_tau_err_exact": 0.007252786640730702,
+          "tll_tau_err_exact": 0.017752309811480422,
+          "vdc_nll_lib": -1.0445100499571813,
+          "tll_nll_native": -1.0417638183863802,
+          "saved_vdc_ise_x4096": 3.0250878388446796,
+          "saved_tll_ise_x4096": 2.7056782191147524
+        }
+      },
+      {
+        "summary": {
+          "name": "BB8(theta=3.0, delta=0.8)",
+          "tau_true": 0.3473188844972429,
+          "mi_true_mc": 0.15641213496257847,
+          "mi_grid_center_truth": 0.15562705455875814,
+          "vdc_ise_cellavg": 0.01942740328228376,
+          "tll_center_ise_cellavg": 0.012558927895122968,
+          "tll_cellavg_ise_cellavg": 0.011459259967017762,
+          "vdc_mi_err_mc": 0.015729221444611335,
+          "tll_mi_err_mc": 0.007873520295574282,
+          "vdc_tau_err_exact": 0.017530199565244042,
+          "tll_tau_err_exact": 0.008573767901406959,
+          "vdc_nll_lib": -0.1365309839438334,
+          "tll_nll_native": -0.1378189916836173,
+          "saved_vdc_ise_x4096": 0.01942565637202898,
+          "saved_tll_ise_x4096": 0.01257178690982224
+        }
+      },
+      {
+        "summary": {
+          "name": "BB8(theta=5.0, delta=0.6)",
+          "tau_true": 0.38280677404654434,
+          "mi_true_mc": 0.18144762109170912,
+          "mi_grid_center_truth": 0.18078283826492297,
+          "vdc_ise_cellavg": 0.00985233696472011,
+          "tll_center_ise_cellavg": 0.011654987344830364,
+          "tll_cellavg_ise_cellavg": 0.010775190277561535,
+          "vdc_mi_err_mc": 0.016264073705103133,
+          "tll_mi_err_mc": 0.009069784774895553,
+          "vdc_tau_err_exact": 0.014687550946143027,
+          "tll_tau_err_exact": 0.010582027077437217,
+          "vdc_nll_lib": -0.15999774957403515,
+          "tll_nll_native": -0.15993408168506065,
+          "saved_vdc_ise_x4096": 0.009845107289784827,
+          "saved_tll_ise_x4096": 0.011663534402239805
+        }
+      },
+      {
+        "summary": {
+          "name": "Tawn(theta=2.5, psi1=0.7, psi2=1.0)",
+          "tau_true": 0.46176736833852006,
+          "mi_true_mc": 0.35884371440099916,
+          "mi_grid_center_truth": 0.35930483347935704,
+          "vdc_ise_cellavg": 0.07900274371172246,
+          "tll_center_ise_cellavg": 0.05679298297375679,
+          "tll_cellavg_ise_cellavg": 0.050704195759890824,
+          "vdc_mi_err_mc": 0.019626561758167183,
+          "tll_mi_err_mc": 0.04680660324054792,
+          "vdc_tau_err_exact": 0.014339791020916611,
+          "tll_tau_err_exact": 0.01446860050078469,
+          "vdc_nll_lib": -0.31179885134359847,
+          "tll_nll_native": -0.3351908740684662,
+          "saved_vdc_ise_x4096": 0.08949318381798761,
+          "saved_tll_ise_x4096": 0.11614802581749185
+        }
+      },
+      {
+        "summary": {
+          "name": "Plackett(theta=5.0)",
+          "tau_true": 0.3454990663620321,
+          "mi_true_mc": 0.14566387310777712,
+          "mi_grid_center_truth": 0.1444314178165424,
+          "plackett_sampler_rosenblatt_ks": 0.00532765369134125,
+          "p": 0.6193966493750056,
+          "plackett_sampler_ks_u": 0.007549730988104186,
+          "plackett_sampler_ks_v": 0.0070532091180851575,
+          "vdc_ise_cellavg": 0.0024000057936714165,
+          "tll_center_ise_cellavg": 0.011634294725278292,
+          "tll_cellavg_ise_cellavg": 0.01060451774142114,
+          "vdc_mi_err_mc": 0.007905774191298435,
+          "tll_mi_err_mc": 0.013710411207570133,
+          "vdc_tau_err_exact": 0.007671338280886619,
+          "tll_tau_err_exact": 0.018730822666783276,
+          "vdc_nll_lib": -0.1355512629486925,
+          "tll_nll_native": -0.13139726157810006,
+          "saved_vdc_ise_x4096": 0.0023958559407391373,
+          "saved_tll_ise_x4096": 0.011645272328737822
+        }
+      },
+      {
+        "summary": {
+          "name": "Plackett(theta=20.0)",
+          "tau_true": 0.5916568873146508,
+          "mi_true_mc": 0.49526609724518894,
+          "mi_grid_center_truth": 0.49398771787227713,
+          "plackett_sampler_rosenblatt_ks": 0.005327653746852401,
+          "p": 0.6193966361780281,
+          "plackett_sampler_ks_u": 0.007549730988104186,
+          "plackett_sampler_ks_v": 0.008444993079826157,
+          "vdc_ise_cellavg": 0.03033397753258099,
+          "tll_center_ise_cellavg": 0.0318783082087472,
+          "tll_cellavg_ise_cellavg": 0.03204284531759741,
+          "vdc_mi_err_mc": 0.038095551950222184,
+          "tll_mi_err_mc": 0.052835175088929674,
+          "vdc_tau_err_exact": 0.021203320523206726,
+          "tll_tau_err_exact": 0.025925294034973973,
+          "vdc_nll_lib": -0.4769495296768412,
+          "tll_nll_native": -0.4650608749333711,
+          "saved_vdc_ise_x4096": 0.03096150196930353,
+          "saved_tll_ise_x4096": 0.03234488121852164
+        }
+      },
+      {
+        "summary": {
+          "name": "BB6-90(theta=2.0, delta=1.5)",
+          "tau_true": -0.5700439554367519,
+          "mi_true_mc": 0.5378494299389992,
+          "mi_grid_center_truth": 0.5557681994283598,
+          "vdc_ise_cellavg": 0.03269657469764825,
+          "tll_center_ise_cellavg": 0.05901163796201819,
+          "tll_cellavg_ise_cellavg": 0.06174301953645156,
+          "vdc_mi_err_mc": 0.011503581242633324,
+          "tll_mi_err_mc": 0.05094657766857127,
+          "vdc_tau_err_exact": 0.008047640797581135,
+          "tll_tau_err_exact": 0.014803737211894763,
+          "vdc_nll_lib": -0.5279445089191035,
+          "tll_nll_native": -0.5220449617982276,
+          "saved_vdc_ise_x4096": 0.17602897585595653,
+          "saved_tll_ise_x4096": 0.3007503901650889
+        }
+      },
+      {
+        "summary": {
+          "name": "BB8-90(theta=3.0, delta=0.8)",
+          "tau_true": -0.3473188844972429,
+          "mi_true_mc": 0.15507843091549187,
+          "mi_grid_center_truth": 0.15562705455875842,
+          "vdc_ise_cellavg": 0.01300883238595745,
+          "tll_center_ise_cellavg": 0.015261735809617538,
+          "tll_cellavg_ise_cellavg": 0.013953297421963514,
+          "vdc_mi_err_mc": 0.01064648421455818,
+          "tll_mi_err_mc": 0.013249231549715459,
+          "vdc_tau_err_exact": 0.011855729749875218,
+          "tll_tau_err_exact": 0.0150502585422612,
+          "vdc_nll_lib": -0.15715579171779956,
+          "tll_nll_native": -0.15485054421796524,
+          "saved_vdc_ise_x4096": 0.012986726367144463,
+          "saved_tll_ise_x4096": 0.01528318074518504
+        }
+      }
+    ],
+    "means": {
+      "tau_true": 0.28230126057539906,
+      "mi_true_mc": 0.4054372422113022,
+      "mi_grid_center_truth": 0.4194592905269018,
+      "vdc_ise_cellavg": 0.03863181610492971,
+      "tll_center_ise_cellavg": 0.06833984367965783,
+      "tll_cellavg_ise_cellavg": 0.05438277438175083,
+      "vdc_mi_err_mc": 0.0167230490816988,
+      "tll_mi_err_mc": 0.039543519095317343,
+      "vdc_tau_err_exact": 0.012435003012624745,
+      "tll_tau_err_exact": 0.015002821994503443,
+      "vdc_nll_lib": -0.38521844302293085,
+      "tll_nll_native": -0.3851849278058826,
+      "saved_vdc_ise_x4096": 0.39374313995085064,
+      "saved_tll_ise_x4096": 0.3924332618338155
+    }
+  },
+  "checkpoint": "model_step_190000.pt",
+  "device": "cuda",
+  "extracted_from": {
+    "file": "e31_e26_check.json",
+    "bytes": 1153279,
+    "sha256": "9bf91f5dcd83e9f81e3803c2fad071f771e15bcf4dc09672cb35c6bc46720d98",
+    "dropped": "per-replicate records, helper checks and the separate e31 section"
+  }
+}

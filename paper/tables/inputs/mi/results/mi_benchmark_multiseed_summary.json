@@ -1,0 +1,99 @@
+{
+  "generated_at": "2026-02-08T13:42:54.664804",
+  "seeds": [
+    "123",
+    "42",
+    "456"
+  ],
+  "methods": {
+    "dcd": {
+      "n_seeds": 3,
+      "mae_mean": 0.011378286907981877,
+      "mae_std": 0.0032384241057316476,
+      "time_mean_s": 0.35513704867291923,
+      "time_std_s": 0.015192166092865564,
+      "files": [
+        "results/mi_multiseed/mi_dcd_seed123.json",
+        "results/mi_multiseed/mi_dcd_seed42.json",
+        "results/mi_multiseed/mi_dcd_seed456.json"
+      ],
+      "source": "multi_seed"
+    },
+    "gaussian": {
+      "n_seeds": 3,
+      "mae_mean": 0.061071670309981785,
+      "mae_std": 0.0021761251802498694,
+      "time_mean_s": 0.0002980826819246566,
+      "time_std_s": 6.179959075615542e-05,
+      "files": [
+        "results/mi_multiseed/mi_gaussian_seed123.json",
+        "results/mi_multiseed/mi_gaussian_seed42.json",
+        "results/mi_multiseed/mi_gaussian_seed456.json"
+      ],
+      "source": "multi_seed"
+    },
+    "ksg": {
+      "n_seeds": 3,
+      "mae_mean": 0.023206188712218453,
+      "mae_std": 0.0019655902481763255,
+      "time_mean_s": 0.09696588873932206,
+      "time_std_s": 0.0025508338399506674,
+      "files": [
+        "results/mi_multiseed/mi_ksg_seed123.json",
+        "results/mi_multiseed/mi_ksg_seed42.json",
+        "results/mi_multiseed/mi_ksg_seed456.json"
+      ],
+      "source": "multi_seed"
+    },
+    "infonce": {
+      "n_seeds": 1,
+      "mae_mean": 0.023466705197890677,
+      "mae_std": 0.0,
+      "time_mean_s": 4.504700563110721,
+      "time_std_s": 0.0,
+      "files": [
+        "results/mi_infonce.json"
+      ],
+      "source": "single_seed_fallback"
+    },
+    "mine": {
+      "n_seeds": 1,
+      "mae_mean": 0.021446056663986864,
+      "mae_std": 0.0,
+      "time_mean_s": 2.817384282217568,
+      "time_std_s": 0.0,
+      "files": [
+        "results/mi_mine.json"
+      ],
+      "source": "single_seed_fallback"
+    },
+    "nwj": {
+      "n_seeds": 1,
+      "mae_mean": 0.023846995499395823,
+      "mae_std": 0.0,
+      "time_mean_s": 3.4989532915771835,
+      "time_std_s": 0.0,
+      "files": [
+        "results/mi_nwj.json"
+      ],
+      "source": "single_seed_fallback"
+    },
+    "minde": {
+      "n_seeds": 1,
+      "mae_mean": 0.4153845740301089,
+      "mae_std": 0.0,
+      "time_mean_s": 5.077228029982911,
+      "time_std_s": 0.0,
+      "files": [
+        "results/mi_minde.json"
+      ],
+      "source": "single_seed_fallback"
+    }
+  },
+  "notes": [
+    "infonce: fallback to single-seed result",
+    "mine: fallback to single-seed result",
+    "nwj: fallback to single-seed result",
+    "minde: fallback to single-seed result"
+  ]
+}

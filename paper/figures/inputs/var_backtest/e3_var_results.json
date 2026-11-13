@@ -1,0 +1,143 @@
+{
+  "generated_at": "2026-10-13T16:17:36.625120",
+  "merged_inputs": [
+    "var.json",
+    "var.json",
+    "var.json",
+    "var.json"
+  ],
+  "protocol": {
+    "checkpoint": "model_step_190000.pt",
+    "model_type": "denoiser",
+    "data_root": "datasets",
+    "window": 252,
+    "refit_every": 5,
+    "n_sim": 5000,
+    "seed": 42,
+    "vectorized_inverse": true
+  },
+  "coverage_verified_days": 1442,
+  "data_root": "datasets",
+  "checkpoint": "model_step_190000.pt",
+  "checkpoints": [
+    "model_step_190000.pt"
+  ],
+  "model_type": "denoiser",
+  "window": 252,
+  "refit_every": 5,
+  "n_sim": 5000,
+  "n_refits": 289,
+  "mean_fit_s": 5.556564165910893,
+  "rows": [
+    {
+      "method": "VDC (Ours)",
+      "alpha": 0.01,
+      "n": 1442,
+      "violations": 27,
+      "kupiec_p": 0.002977666006126589,
+      "christoffersen_p": 0.012909172425052517
+    },
+    {
+      "method": "Historical",
+      "alpha": 0.01,
+      "n": 1442,
+      "violations": 21,
+      "kupiec_p": 0.10300170473572456,
+      "christoffersen_p": 0.03576812439113786
+    },
+    {
+      "method": "Gaussian",
+      "alpha": 0.01,
+      "n": 1442,
+      "violations": 28,
+      "kupiec_p": 0.001458325278313577,
+      "christoffersen_p": 0.016123591730480946
+    },
+    {
+      "method": "VDC (Ours)",
+      "alpha": 0.05,
+      "n": 1442,
+      "violations": 78,
+      "kupiec_p": 0.48144284622729616,
+      "christoffersen_p": 0.002960565784285607
+    },
+    {
+      "method": "Historical",
+      "alpha": 0.05,
+      "n": 1442,
+      "violations": 63,
+      "kupiec_p": 0.2615598358324739,
+      "christoffersen_p": 0.07292960602720688
+    },
+    {
+      "method": "Gaussian",
+      "alpha": 0.05,
+      "n": 1442,
+      "violations": 68,
+      "kupiec_p": 0.6171056205268078,
+      "christoffersen_p": 0.016225126325673078
+    }
+  ],
+  "records": [
+    {
+      "method": "VDC (Ours)",
+      "alpha": 0.01,
+      "violation_rate": 0.01872399445214979,
+      "pvalue": 0.002977666006126589,
+      "kupiec_p": 0.002977666006126589,
+      "christoffersen_p": 0.012909172425052517,
+      "n": 1442,
+      "violations": 27
+    },
+    {
+      "method": "Historical",
+      "alpha": 0.01,
+      "violation_rate": 0.014563106796116505,
+      "pvalue": 0.10300170473572456,
+      "kupiec_p": 0.10300170473572456,
+      "christoffersen_p": 0.03576812439113786,
+      "n": 1442,
+      "violations": 21
+    },
+    {
+      "method": "Gaussian",
+      "alpha": 0.01,
+      "violation_rate": 0.019417475728155338,
+      "pvalue": 0.001458325278313577,
+      "kupiec_p": 0.001458325278313577,
+      "christoffersen_p": 0.016123591730480946,
+      "n": 1442,
+      "violations": 28
+    },
+    {
+      "method": "VDC (Ours)",
+      "alpha": 0.05,
+      "violation_rate": 0.05409153952843273,
+      "pvalue": 0.48144284622729616,
+      "kupiec_p": 0.48144284622729616,
+      "christoffersen_p": 0.002960565784285607,
+      "n": 1442,
+      "violations": 78
+    },
+    {
+      "method": "Historical",
+      "alpha": 0.05,
+      "violation_rate": 0.043689320388349516,
+      "pvalue": 0.2615598358324739,
+      "kupiec_p": 0.2615598358324739,
+      "christoffersen_p": 0.07292960602720688,
+      "n": 1442,
+      "violations": 63
+    },
+    {
+      "method": "Gaussian",
+      "alpha": 0.05,
+      "violation_rate": 0.047156726768377254,
+      "pvalue": 0.6171056205268078,
+      "kupiec_p": 0.6171056205268078,
+      "christoffersen_p": 0.016225126325673078,
+      "n": 1442,
+      "violations": 68
+    }
+  ]
+}

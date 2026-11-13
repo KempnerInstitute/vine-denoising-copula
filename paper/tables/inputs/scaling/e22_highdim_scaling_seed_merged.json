@@ -1,0 +1,572 @@
+{
+  "records": [
+    {
+      "method": "VDC",
+      "d": 100,
+      "n_seeds": 3,
+      "seeds": [
+        null,
+        null,
+        null
+      ],
+      "nll_bits_per_dim": -0.6020318227752095,
+      "nll_bits_per_dim_std": 0.0034288907364585196,
+      "fit_s": 44.10242262199366,
+      "fit_s_std": 0.053681877258863316,
+      "eval_s": 4.4171601093063755,
+      "eval_s_std": 0.02657394439038415,
+      "status": "ok",
+      "per_seed_records": [
+        {
+          "method": "VDC",
+          "fit_s": 44.10728812799789,
+          "eval_s": 4.379805149976164,
+          "nll_bits_per_dim": -0.602731162715957,
+          "status": "ok",
+          "d": 100
+        },
+        {
+          "method": "VDC",
+          "fit_s": 44.03437842900166,
+          "eval_s": 4.4322714929585345,
+          "nll_bits_per_dim": -0.5975265384989463,
+          "status": "ok",
+          "d": 100
+        },
+        {
+          "method": "VDC",
+          "fit_s": 44.16560130898142,
+          "eval_s": 4.439403684984427,
+          "nll_bits_per_dim": -0.6058377671107252,
+          "status": "ok",
+          "d": 100
+        }
+      ]
+    },
+    {
+      "method": "flow_realnvp",
+      "d": 100,
+      "n_seeds": 3,
+      "seeds": [
+        null,
+        null,
+        null
+      ],
+      "nll_bits_per_dim": -0.45598281939553015,
+      "nll_bits_per_dim_std": 0.0018239893954466475,
+      "fit_s": 10.564076288661454,
+      "fit_s_std": 0.8247759352536936,
+      "eval_s": NaN,
+      "eval_s_std": NaN,
+      "status": "ok",
+      "per_seed_records": [
+        {
+          "method": "flow_realnvp",
+          "fit_s": 10.868966133974027,
+          "nll_bits_per_dim": -0.45567997686086614,
+          "status": "ok",
+          "d": 100
+        },
+        {
+          "method": "flow_realnvp",
+          "fit_s": 11.386651700013317,
+          "nll_bits_per_dim": -0.4539157680415635,
+          "status": "ok",
+          "d": 100
+        },
+        {
+          "method": "flow_realnvp",
+          "fit_s": 9.436611031997018,
+          "nll_bits_per_dim": -0.4583527132841607,
+          "status": "ok",
+          "d": 100
+        }
+      ]
+    },
+    {
+      "method": "gaussian_copula",
+      "d": 100,
+      "n_seeds": 3,
+      "seeds": [
+        null,
+        null,
+        null
+      ],
+      "nll_bits_per_dim": -0.4596789180608333,
+      "nll_bits_per_dim_std": 0.0022265733822299004,
+      "fit_s": 0.08392923899615805,
+      "fit_s_std": 0.000862408139443953,
+      "eval_s": 0.07984071966105451,
+      "eval_s_std": 0.015996784706367607,
+      "status": "ok",
+      "per_seed_records": [
+        {
+          "method": "gaussian_copula",
+          "fit_s": 0.08375001896638423,
+          "eval_s": 0.07921085698762909,
+          "nll_bits_per_dim": -0.460222100590501,
+          "status": "ok",
+          "d": 100
+        },
+        {
+          "method": "gaussian_copula",
+          "fit_s": 0.08297408500220627,
+          "eval_s": 0.060571265988983214,
+          "nll_bits_per_dim": -0.45672122216395694,
+          "status": "ok",
+          "d": 100
+        },
+        {
+          "method": "gaussian_copula",
+          "fit_s": 0.08506361301988363,
+          "eval_s": 0.09974003600655124,
+          "nll_bits_per_dim": -0.4620934314280418,
+          "status": "ok",
+          "d": 100
+        }
+      ]
+    },
+    {
+      "method": "pyvine_tll",
+      "d": 100,
+      "n_seeds": 3,
+      "seeds": [
+        null,
+        null,
+        null
+      ],
+      "nll_bits_per_dim": -0.6102474249142396,
+      "nll_bits_per_dim_std": 0.0038235991076767013,
+      "fit_s": 179.60180813398134,
+      "fit_s_std": 0.8017144691170734,
+      "eval_s": 0.7088908299920149,
+      "eval_s_std": 0.000983797197929512,
+      "status": "ok",
+      "per_seed_records": [
+        {
+          "method": "pyvine_tll",
+          "fit_s": 179.2398460819968,
+          "eval_s": 0.7098487970069982,
+          "nll_bits_per_dim": -0.6110071457836023,
+          "status": "ok",
+          "d": 100
+        },
+        {
+          "method": "pyvine_tll",
+          "fit_s": 178.85227492597187,
+          "eval_s": 0.7092856369563378,
+          "nll_bits_per_dim": -0.6052310805364359,
+          "status": "ok",
+          "d": 100
+        },
+        {
+          "method": "pyvine_tll",
+          "fit_s": 180.71330339397537,
+          "eval_s": 0.7075380560127087,
+          "nll_bits_per_dim": -0.6145040484226804,
+          "status": "ok",
+          "d": 100
+        }
+      ]
+    },
+    {
+      "method": "VDC",
+      "d": 200,
+      "n_seeds": 3,
+      "seeds": [
+        null,
+        null,
+        null
+      ],
+      "nll_bits_per_dim": -0.6020279827627177,
+      "nll_bits_per_dim_std": 0.0026087429024680762,
+      "fit_s": 172.80113348766463,
+      "fit_s_std": 0.30158291967668943,
+      "eval_s": 18.11693809365776,
+      "eval_s_std": 0.06518950665758433,
+      "status": "ok",
+      "per_seed_records": [
+        {
+          "method": "VDC",
+          "fit_s": 172.38095918198815,
+          "eval_s": 18.026100066956133,
+          "nll_bits_per_dim": -0.6049830053644789,
+          "status": "ok",
+          "d": 200
+        },
+        {
+          "method": "VDC",
+          "fit_s": 173.07461268099723,
+          "eval_s": 18.175989690993447,
+          "nll_bits_per_dim": -0.598637570428308,
+          "status": "ok",
+          "d": 200
+        },
+        {
+          "method": "VDC",
+          "fit_s": 172.9478286000085,
+          "eval_s": 18.148724523023702,
+          "nll_bits_per_dim": -0.6024633724953662,
+          "status": "ok",
+          "d": 200
+        }
+      ]
+    },
+    {
+      "method": "flow_realnvp",
+      "d": 200,
+      "n_seeds": 3,
+      "seeds": [
+        null,
+        null,
+        null
+      ],
+      "nll_bits_per_dim": -0.4159089250308954,
+      "nll_bits_per_dim_std": 0.0025477132120250256,
+      "fit_s": 2.756997718999628,
+      "fit_s_std": 0.016179368151242473,
+      "eval_s": NaN,
+      "eval_s_std": NaN,
+      "status": "ok",
+      "per_seed_records": [
+        {
+          "method": "flow_realnvp",
+          "fit_s": 2.774251999973785,
+          "nll_bits_per_dim": -0.41623776492902215,
+          "status": "ok",
+          "d": 200
+        },
+        {
+          "method": "flow_realnvp",
+          "fit_s": 2.7613850040361285,
+          "nll_bits_per_dim": -0.41263722940092756,
+          "status": "ok",
+          "d": 200
+        },
+        {
+          "method": "flow_realnvp",
+          "fit_s": 2.7353561529889703,
+          "nll_bits_per_dim": -0.4188517807627365,
+          "status": "ok",
+          "d": 200
+        }
+      ]
+    },
+    {
+      "method": "gaussian_copula",
+      "d": 200,
+      "n_seeds": 3,
+      "seeds": [
+        null,
+        null,
+        null
+      ],
+      "nll_bits_per_dim": -0.4614893192555114,
+      "nll_bits_per_dim_std": 0.0018966606364358087,
+      "fit_s": 0.14905571064446121,
+      "fit_s_std": 0.0011163855937638032,
+      "eval_s": 0.03503994065492103,
+      "eval_s_std": 0.001027917145395961,
+      "status": "ok",
+      "per_seed_records": [
+        {
+          "method": "gaussian_copula",
+          "fit_s": 0.14796564396237954,
+          "eval_s": 0.035644448013044894,
+          "nll_bits_per_dim": -0.46363724865043804,
+          "status": "ok",
+          "d": 200
+        },
+        {
+          "method": "gaussian_copula",
+          "fit_s": 0.14861165796173736,
+          "eval_s": 0.03588260995456949,
+          "nll_bits_per_dim": -0.4590240307853355,
+          "status": "ok",
+          "d": 200
+        },
+        {
+          "method": "gaussian_copula",
+          "fit_s": 0.15058983000926673,
+          "eval_s": 0.03359276399714872,
+          "nll_bits_per_dim": -0.46180667833076067,
+          "status": "ok",
+          "d": 200
+        }
+      ]
+    },
+    {
+      "method": "pyvine_tll",
+      "d": 200,
+      "n_seeds": 3,
+      "seeds": [
+        null,
+        null,
+        null
+      ],
+      "nll_bits_per_dim": -0.6158139101911361,
+      "nll_bits_per_dim_std": 0.002633892625307142,
+      "fit_s": 693.1435749919814,
+      "fit_s_std": 1.4396679761662547,
+      "eval_s": 2.217679165361915,
+      "eval_s_std": 0.0017196717015974716,
+      "status": "ok",
+      "per_seed_records": [
+        {
+          "method": "pyvine_tll",
+          "fit_s": 691.971471568977,
+          "eval_s": 2.2200499800383113,
+          "nll_bits_per_dim": -0.6188270685475951,
+          "status": "ok",
+          "d": 200
+        },
+        {
+          "method": "pyvine_tll",
+          "fit_s": 692.2878930260194,
+          "eval_s": 2.2169631560100242,
+          "nll_bits_per_dim": -0.612410822884359,
+          "status": "ok",
+          "d": 200
+        },
+        {
+          "method": "pyvine_tll",
+          "fit_s": 695.1713603809476,
+          "eval_s": 2.2160243600374088,
+          "nll_bits_per_dim": -0.6162038391414542,
+          "status": "ok",
+          "d": 200
+        }
+      ]
+    },
+    {
+      "method": "VDC",
+      "d": 500,
+      "n_seeds": 3,
+      "n_seeds_finite_nll": 3,
+      "n_seeds_finite_fit": 3,
+      "seeds": [
+        17,
+        42,
+        7
+      ],
+      "nll_bits_per_dim": -0.5748944756304014,
+      "nll_bits_per_dim_std": 0.0005814861658680239,
+      "fit_s": 1081.6190373253387,
+      "fit_s_std": 0.22610075893004147,
+      "eval_s": 117.34270787066392,
+      "eval_s_std": 0.25392312650322224,
+      "status": "ok",
+      "per_seed_records": [
+        {
+          "method": "VDC",
+          "fit_s": 1081.8456024010084,
+          "eval_s": 117.09793493401958,
+          "nll_bits_per_dim": -0.5740770793024673,
+          "status": "ok",
+          "d": 500
+        },
+        {
+          "method": "VDC",
+          "fit_s": 1081.310348724015,
+          "eval_s": 117.69264672498684,
+          "nll_bits_per_dim": -0.5753811909332148,
+          "status": "ok",
+          "d": 500
+        },
+        {
+          "method": "VDC",
+          "fit_s": 1081.701160850993,
+          "eval_s": 117.23754195298534,
+          "nll_bits_per_dim": -0.575225156655522,
+          "status": "ok",
+          "d": 500
+        }
+      ],
+      "patched_from_d500_rerun": true,
+      "pyvine_timeout_budget_s": 21600
+    },
+    {
+      "method": "flow_realnvp",
+      "d": 500,
+      "n_seeds": 3,
+      "n_seeds_finite_nll": 3,
+      "n_seeds_finite_fit": 3,
+      "seeds": [
+        17,
+        42,
+        7
+      ],
+      "nll_bits_per_dim": -0.3560783648593364,
+      "nll_bits_per_dim_std": 0.0026620511092174076,
+      "fit_s": 16.842593744649395,
+      "fit_s_std": 4.374528013411163,
+      "eval_s": NaN,
+      "eval_s_std": NaN,
+      "status": "ok",
+      "per_seed_records": [
+        {
+          "method": "flow_realnvp",
+          "fit_s": 11.37196443398716,
+          "nll_bits_per_dim": -0.3532879860729521,
+          "status": "ok",
+          "d": 500
+        },
+        {
+          "method": "flow_realnvp",
+          "fit_s": 22.07968860998517,
+          "nll_bits_per_dim": -0.359662187121125,
+          "status": "ok",
+          "d": 500
+        },
+        {
+          "method": "flow_realnvp",
+          "fit_s": 17.07612818997586,
+          "nll_bits_per_dim": -0.35528492138393214,
+          "status": "ok",
+          "d": 500
+        }
+      ],
+      "patched_from_d500_rerun": true,
+      "pyvine_timeout_budget_s": 21600
+    },
+    {
+      "method": "gaussian_copula",
+      "d": 500,
+      "n_seeds": 3,
+      "n_seeds_finite_nll": 3,
+      "n_seeds_finite_fit": 3,
+      "seeds": [
+        17,
+        42,
+        7
+      ],
+      "nll_bits_per_dim": -0.45564067172241957,
+      "nll_bits_per_dim_std": 0.0010009210386363184,
+      "fit_s": 0.3993083509655359,
+      "fit_s_std": 0.0061235969735595735,
+      "eval_s": 0.12126371435200174,
+      "eval_s_std": 0.01653394638725253,
+      "status": "ok",
+      "per_seed_records": [
+        {
+          "method": "gaussian_copula",
+          "fit_s": 0.4018116089864634,
+          "eval_s": 0.1356447820435278,
+          "nll_bits_per_dim": -0.45441599586419673,
+          "status": "ok",
+          "d": 500
+        },
+        {
+          "method": "gaussian_copula",
+          "fit_s": 0.4052364109666087,
+          "eval_s": 0.13004020100925118,
+          "nll_bits_per_dim": -0.4568677381851878,
+          "status": "ok",
+          "d": 500
+        },
+        {
+          "method": "gaussian_copula",
+          "fit_s": 0.3908770329435356,
+          "eval_s": 0.09810616000322625,
+          "nll_bits_per_dim": -0.45563828111787413,
+          "status": "ok",
+          "d": 500
+        }
+      ],
+      "patched_from_d500_rerun": true,
+      "pyvine_timeout_budget_s": 21600
+    },
+    {
+      "method": "pyvine_tll",
+      "d": 500,
+      "n_seeds": 3,
+      "n_seeds_finite_nll": 2,
+      "n_seeds_finite_fit": 3,
+      "seeds": [
+        17,
+        42,
+        7
+      ],
+      "nll_bits_per_dim": -0.6142207166723985,
+      "nll_bits_per_dim_std": 0.000709181146183846,
+      "fit_s": 2177.5884027079833,
+      "fit_s_std": 4.384040735907141,
+      "eval_s": 12.369279764650855,
+      "eval_s_std": 0.008659230502739763,
+      "status": "ok",
+      "per_seed_records": [
+        {
+          "method": "pyvine_tll",
+          "fit_s": 2182.9127499859896,
+          "eval_s": 12.38139328797115,
+          "nll_bits_per_dim": -0.6135115355262146,
+          "status": "ok",
+          "d": 500
+        },
+        {
+          "method": "pyvine_tll",
+          "fit_s": 2172.175190299982,
+          "eval_s": 12.361667263961863,
+          "nll_bits_per_dim": -0.6149298978185823,
+          "status": "ok",
+          "d": 500
+        },
+        {
+          "method": "pyvine_tll",
+          "fit_s": 2177.6772678379784,
+          "eval_s": 12.364778742019553,
+          "nll_bits_per_dim": -Infinity,
+          "status": "ok",
+          "d": 500
+        }
+      ],
+      "patched_from_d500_rerun": true,
+      "pyvine_timeout_budget_s": 21600
+    }
+  ],
+  "merged_seeds": [
+    17,
+    42,
+    7
+  ],
+  "n_seeds": 3,
+  "source_files": [
+    "e22_highdim_scaling_seed17.json",
+    "e22_highdim_scaling_seed42.json",
+    "e22_highdim_scaling_seed7.json"
+  ],
+  "settings_first_seed": {
+    "dims": [
+      100,
+      200,
+      500
+    ],
+    "n_train": 20000,
+    "n_test": 5000,
+    "theta": 2.0,
+    "seed": 17,
+    "device": "cuda",
+    "checkpoint": "model_step_190000.pt",
+    "output_base": [
+      "vine_diffusion_copula"
+    ],
+    "m_grid": 64,
+    "num_threads": 8,
+    "pyvine_timeout_s": 2400,
+    "include_realnvp": true,
+    "include_gaussian": true,
+    "realnvp_batch_size": 2048,
+    "realnvp_eval_batch_size": 4096,
+    "out_json": "e22_highdim_scaling.json",
+    "out_md": "e22_highdim_scaling_summary.md",
+    "out_tex": "tab_highdim_scaling.tex"
+  },
+  "d500_rerun": {
+    "seeds": [
+      17,
+      42,
+      7
+    ],
+    "pyvine_timeout_budget_s": 21600
+  }
+}

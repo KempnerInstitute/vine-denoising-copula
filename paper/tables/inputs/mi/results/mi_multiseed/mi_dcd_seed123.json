@@ -1,0 +1,118 @@
+{
+  "generated_at": "2026-02-08T13:41:02.455943",
+  "estimator": "dcd",
+  "n_samples": 5000,
+  "m_true": 256,
+  "seed": 123,
+  "records": [
+    {
+      "name": "Independence",
+      "family": "independence",
+      "rotation": 0,
+      "n_samples": 5000,
+      "mi_true": -2.3841856489070778e-07,
+      "mi_est": 0.00012255393817083729,
+      "mi_err": 0.000122792356735728,
+      "time_s": 0.39657644799444824
+    },
+    {
+      "name": "Gaussian(ρ=0.7)",
+      "family": "gaussian",
+      "rotation": 0,
+      "n_samples": 5000,
+      "mi_true": 0.33507031202316284,
+      "mi_est": 0.32534664839735045,
+      "mi_err": 0.009723663625812395,
+      "time_s": 0.3772608319995925
+    },
+    {
+      "name": "Gaussian(ρ=-0.7)",
+      "family": "gaussian",
+      "rotation": 0,
+      "n_samples": 5000,
+      "mi_true": 0.33507031202316284,
+      "mi_est": 0.3326603067443733,
+      "mi_err": 0.00241000527878954,
+      "time_s": 0.388301044004038
+    },
+    {
+      "name": "Student-t(ρ=0.7, df=5)",
+      "family": "student",
+      "rotation": 0,
+      "n_samples": 5000,
+      "mi_true": 0.3517412841320038,
+      "mi_est": 0.3505219545463333,
+      "mi_err": 0.0012193295856705033,
+      "time_s": 0.3727228210773319
+    },
+    {
+      "name": "Clayton(θ=3.0)",
+      "family": "clayton",
+      "rotation": 0,
+      "n_samples": 5000,
+      "mi_true": 0.6345614194869995,
+      "mi_est": 0.6383707109576708,
+      "mi_err": 0.0038092914706713277,
+      "time_s": 0.3617470799945295
+    },
+    {
+      "name": "Clayton(θ=3.0, rot=90)",
+      "family": "clayton",
+      "rotation": 90,
+      "n_samples": 5000,
+      "mi_true": 0.6345614194869995,
+      "mi_est": 0.6471755140536708,
+      "mi_err": 0.012614094566671286,
+      "time_s": 0.3668753430247307
+    },
+    {
+      "name": "Gumbel(θ=2.5)",
+      "family": "gumbel",
+      "rotation": 0,
+      "n_samples": 5000,
+      "mi_true": 0.5600858926773071,
+      "mi_est": 0.5602812636073309,
+      "mi_err": 0.00019537093002375272,
+      "time_s": 0.3636642340570688
+    },
+    {
+      "name": "Joe(θ=3.0)",
+      "family": "joe",
+      "rotation": 0,
+      "n_samples": 5000,
+      "mi_true": 0.4752417504787445,
+      "mi_est": 0.4358470013052117,
+      "mi_err": 0.039394749173532806,
+      "time_s": 0.3557595410384238
+    },
+    {
+      "name": "Frank(θ=5.0)",
+      "family": "frank",
+      "rotation": 0,
+      "n_samples": 5000,
+      "mi_true": 0.2579459547996521,
+      "mi_est": 0.2530402673646012,
+      "mi_err": 0.004905687435050876,
+      "time_s": 0.40463478106539696
+    }
+  ],
+  "mean_abs_err": 0.008266109380328691,
+  "mean_time_s": 0.3763935693617289,
+  "source": {
+    "minde_repo": null,
+    "minde_url": "https://github.com/MustaphaBounoua/minde",
+    "mist_repo": null,
+    "mist_url": "https://github.com/gritsai/mist",
+    "dcd_checkpoint": "model_step_190000.pt",
+    "dcd_model_type": "denoiser",
+    "dcd_grid_size": 64,
+    "dcd_projection_iters": 30,
+    "dcd_diffusion_steps": 8,
+    "dcd_diffusion_cfg_scale": 1.0,
+    "dcd_diffusion_ensemble": 1,
+    "dcd_diffusion_ensemble_mode": "geometric",
+    "dcd_diffusion_smooth_sigma": 0.0,
+    "dcd_pred_noise_clip": 1.0,
+    "dcd_seed_base": 5
+  }
+}

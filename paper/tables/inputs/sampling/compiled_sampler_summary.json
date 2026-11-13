@@ -1,0 +1,189 @@
+{
+  "status": "complete",
+  "source": "results.json",
+  "source_sha256": "bca39a0b6ae07266ece283ead1bcb5429e2fa373ba3e91b539cea31d74bbfab6",
+  "library_commit": "d233d46c5a3fbb6b47c5755caa050ba1decde823",
+  "paper_commit": "fdebc272e62c262abcccc2dc202d39d4fe262a09",
+  "checkpoint": {
+    "path": "model_step_190000.pt",
+    "sha256": "8a1b71ad6d2012ed344b22a743a96e667d32a2ab54ade4444686e375e91f5c0f"
+  },
+  "archive": "qualification_v1",
+  "archive_manifest_sha256": "7a969407f9b76ec185499de809fa7120e5beee6d2a79bee95a8461e0abe99182",
+  "archived_files": 16,
+  "archived_bytes": 38480373,
+  "host": "<host>",
+  "gpu": "NVIDIA H100 80GB HBM3",
+  "compiler": "g++ (GCC) 8.5.0 20210514 (Red Hat 8.5.0-29)\nCopyright (C) 2018 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+  "build_seconds": 0.3668214650824666,
+  "identical_coordinates": 1575000,
+  "all_six_paper_quality_rows_reproduced_exactly": true,
+  "all_six_likelihood_and_pit_checks_unchanged": true,
+  "timing_summary": "Mean across three fitted seeds of each seed's median over three timing repetitions. RNG included; compilation and packing separate.",
+  "methods_and_threads": [
+    [
+      "numpy",
+      1
+    ],
+    [
+      "native",
+      1
+    ],
+    [
+      "native",
+      4
+    ],
+    [
+      "native",
+      8
+    ],
+    [
+      "tll",
+      1
+    ],
+    [
+      "tll",
+      4
+    ],
+    [
+      "tll",
+      8
+    ]
+  ],
+  "datasets": {
+    "power": {
+      "timings_seconds": {
+        "numpy_1": {
+          "seed_medians": [
+            0.016815735958516598,
+            0.016808816231787205,
+            0.016814247239381075
+          ],
+          "mean": 0.016812933143228292
+        },
+        "native_1": {
+          "seed_medians": [
+            0.005572598893195391,
+            0.005551079288125038,
+            0.005523998755961657
+          ],
+          "mean": 0.005549225645760695
+        },
+        "native_4": {
+          "seed_medians": [
+            0.0016549928113818169,
+            0.001633624080568552,
+            0.0015889937058091164
+          ],
+          "mean": 0.0016258701992531617
+        },
+        "native_8": {
+          "seed_medians": [
+            0.000990936066955328,
+            0.001038585789501667,
+            0.001029775943607092
+          ],
+          "mean": 0.0010197659333546956
+        },
+        "tll_1": {
+          "seed_medians": [
+            0.3244116948917508,
+            0.31924710515886545,
+            0.31940539414063096
+          ],
+          "mean": 0.3210213980637491
+        },
+        "tll_4": {
+          "seed_medians": [
+            0.08270988799631596,
+            0.08156689209863544,
+            0.08298610616475344
+          ],
+          "mean": 0.08242096208656828
+        },
+        "tll_8": {
+          "seed_medians": [
+            0.05567287001758814,
+            0.05601940909400582,
+            0.05135192582383752
+          ],
+          "mean": 0.05434806831181049
+        }
+      },
+      "packing_seconds_mean": 0.001007873099297285,
+      "snapshot_mebibytes": 0.625,
+      "native_eight_thread_seconds_including_packing": 0.0020276390326519804,
+      "speedup_vs_numpy": 16.487051188226356,
+      "speedup_vs_tll_eight_threads": 53.294649815397506,
+      "speedup_vs_tll_eight_threads_including_packing": 26.803621076838226,
+      "same_one_thread_speedup_vs_numpy": 3.029780047973442
+    },
+    "sp100": {
+      "timings_seconds": {
+        "numpy_1": {
+          "seed_medians": [
+            8.34398132469505,
+            8.349097106605768,
+            8.363435794133693
+          ],
+          "mean": 8.35217140847817
+        },
+        "native_1": {
+          "seed_medians": [
+            4.892834041733295,
+            4.882293818984181,
+            4.869287648238242
+          ],
+          "mean": 4.881471836318572
+        },
+        "native_4": {
+          "seed_medians": [
+            1.1603930741548538,
+            1.1578477346338332,
+            1.1593843176960945
+          ],
+          "mean": 1.1592083754949272
+        },
+        "native_8": {
+          "seed_medians": [
+            0.530924507882446,
+            0.531081628985703,
+            0.5299182129092515
+          ],
+          "mean": 0.5306414499258002
+        },
+        "tll_1": {
+          "seed_medians": [
+            6.849547585006803,
+            6.731958779040724,
+            6.77852170728147
+          ],
+          "mean": 6.786676023776333
+        },
+        "tll_4": {
+          "seed_medians": [
+            1.7749658771790564,
+            1.730621058959514,
+            1.7624431811273098
+          ],
+          "mean": 1.7560100390886266
+        },
+        "tll_8": {
+          "seed_medians": [
+            0.9251968623138964,
+            0.9134415369480848,
+            0.9316526888869703
+          ],
+          "mean": 0.9234303627163172
+        }
+      },
+      "packing_seconds_mean": 0.184086045405517,
+      "snapshot_mebibytes": 309.375,
+      "native_eight_thread_seconds_including_packing": 0.7147274953313172,
+      "speedup_vs_numpy": 15.739764410876795,
+      "speedup_vs_tll_eight_threads": 1.740215286320812,
+      "speedup_vs_tll_eight_threads_including_packing": 1.292003412137173,
+      "same_one_thread_speedup_vs_numpy": 1.710994488657559
+    }
+  }
+}
