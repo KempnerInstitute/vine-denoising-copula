@@ -12,6 +12,7 @@ import numpy as np
 from vdc.pretrained import (
     DEFAULT_PRETRAINED_MODEL_ID,
     estimate_pair_density_from_samples,
+    linear_grid_settings_for,
     list_pretrained_models,
     load_pretrained_model,
     resolve_pretrained_checkpoint,
@@ -54,6 +55,8 @@ def _build_parser() -> argparse.ArgumentParser:
     resolve_parser.add_argument("--repo-id", type=str, default=None)
     resolve_parser.add_argument("--revision", type=str, default=None)
     resolve_parser.add_argument("--force-download", action="store_true")
+    resolve_parser.add_argument("--checkpoint-path", type=Path, default=None,
+                                help="Verify and use a local copy of the model's checkpoint.")
     resolve_parser.add_argument(
         "--no-local",
         action="store_true",
@@ -71,8 +74,11 @@ def _build_parser() -> argparse.ArgumentParser:
     pair_parser.add_argument("--model-id", default=DEFAULT_PRETRAINED_MODEL_ID)
     pair_parser.add_argument("--device", default="cpu")
     pair_parser.add_argument("--repo-id", type=str, default=None)
+    pair_parser.add_argument("--checkpoint-path", type=Path, default=None,
+                             help="Verify and use a local copy of the model's checkpoint.")
     pair_parser.add_argument("--m", type=int, default=None)
-    pair_parser.add_argument("--projection-iters", type=int, default=50)
+    pair_parser.add_argument("--projection-iters", type=int, default=None,
+                             help="Projection iterations (default: 50, or the linear-grid model's value).")
     pair_parser.add_argument("--diffusion-steps", type=int, default=None)
     pair_parser.add_argument("--cfg-scale", type=float, default=1.0)
     pair_parser.set_defaults(func=_cmd_estimate_pair)
@@ -87,6 +93,8 @@ def _build_parser() -> argparse.ArgumentParser:
     vine_parser.add_argument("--model-id", default=DEFAULT_PRETRAINED_MODEL_ID)
     vine_parser.add_argument("--device", default="cpu")
     vine_parser.add_argument("--repo-id", type=str, default=None)
+    vine_parser.add_argument("--checkpoint-path", type=Path, default=None,
+                             help="Verify and use a local copy of the model's checkpoint.")
     vine_parser.add_argument("--vine-type", choices=["dvine", "cvine", "rvine"], default="dvine")
     vine_parser.add_argument("--truncation-level", type=int, default=None)
     vine_parser.add_argument("--quiet", action="store_true")
@@ -109,6 +117,7 @@ def _cmd_resolve_model(args: argparse.Namespace) -> int:
         prefer_local=not args.no_local,
         repo_id=args.repo_id,
         revision=args.revision,
+        checkpoint_path=args.checkpoint_path,
     )
     print(ckpt)
     return 0
@@ -119,7 +128,8 @@ def _cmd_estimate_pair(args: argparse.Namespace) -> int:
     if pair_data.ndim != 2 or pair_data.shape[1] != 2:
         raise SystemExit(f"Expected input with shape (n, 2), found {pair_data.shape}.")
 
-    bundle = load_pretrained_model(args.model_id, device=args.device, repo_id=args.repo_id)
+    bundle = load_pretrained_model(args.model_id, device=args.device, repo_id=args.repo_id,
+                                   checkpoint_path=args.checkpoint_path)
     density = estimate_pair_density_from_samples(
         bundle,
         pair_data,
@@ -156,14 +166,19 @@ def _cmd_fit_vine(args: argparse.Namespace) -> int:
     if U.ndim != 2:
         raise SystemExit(f"Expected a 2D input array with shape (n, d), found {U.shape}.")
 
-    bundle = load_pretrained_model(args.model_id, device=args.device, repo_id=args.repo_id)
-    vine = VineCopulaModel(
-        vine_type=args.vine_type,
-        truncation_level=args.truncation_level,
-        m=int(bundle.config.get("data", {}).get("m", 64)),
-        device=str(bundle.device),
-        batch_edges=(bundle.diffusion is None),
-    )
+    bundle = load_pretrained_model(args.model_id, device=args.device, repo_id=args.repo_id,
+                                   checkpoint_path=args.checkpoint_path)
+    if linear_grid_settings_for(bundle) is not None:
+        vine = VineCopulaModel.from_pretrained(
+            bundle, vine_type=args.vine_type, truncation_level=args.truncation_level)
+    else:
+        vine = VineCopulaModel(
+            vine_type=args.vine_type,
+            truncation_level=args.truncation_level,
+            m=int(bundle.config.get("data", {}).get("m", 64)),
+            device=str(bundle.device),
+            batch_edges=(bundle.diffusion is None),
+        )
     vine.fit(U, bundle.model, diffusion=bundle.diffusion, verbose=not args.quiet)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     vine.save(args.output)

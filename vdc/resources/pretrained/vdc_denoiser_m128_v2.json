@@ -1,0 +1,78 @@
+{
+  "manifest_version": "1",
+  "model_id": "vdc-denoiser-m128-v2",
+  "display_name": "VDC-128 linear-grid denoiser (exploratory retraining)",
+  "version": "2.0.0",
+  "status": "unpublished",
+  "paper_tag": "neurips2026_appendix_exploratory_retraining",
+  "model_type": "denoiser",
+  "method_tag": "linear_grid_likelihood_finetune",
+  "description": "128-cell linear-grid pair-copula estimator, fine-tuned for 8,000 steps from a 60,000-step pilot trained from scratch on corrected synthetic data. Evaluated only in the NeurIPS 2026 paper's appendix on exploratory retraining. Inputs use latent uniforms with probability 0.75 and rank pseudo-observations otherwise.",
+  "role": "primary configuration",
+  "selection_rule": "configuration and training seed fixed before the appendix evaluations (first fine-tuning seed)",
+  "checkpoint_step": 8000,
+  "checkpoint_filename": "vdc-denoiser-m128-v2.pt",
+  "grid_size": 128,
+  "parameters": 132953729,
+  "sha256": "f0a753d50b3cfb089e6d7dec999cfe741c6342c188454ec83183a9b3514d4653",
+  "frozen_on": "2026-10-11",
+  "sources": {
+    "huggingface": {
+      "repo_id": null,
+      "proposed_repo_id": "hsafaai/vdc-denoiser-m128-v2",
+      "revision": null,
+      "filename": "vdc-denoiser-m128-v2.pt"
+    }
+  },
+  "inference": {
+    "pair_estimator": "linear_grid",
+    "grid_size": 128,
+    "grid_spacing": "uniform",
+    "projection_iters": 30,
+    "log_density_clamp": 15.0,
+    "copula_projection_solver": "hybrid",
+    "conditional_clip_eps": 1e-12,
+    "forward_batch_size": 16,
+    "edge_batch_size": 64,
+    "precision": "float32 network with TF32 disabled; float64 copula projection",
+    "vine": "VineCopulaModel.from_pretrained: batched D-vine with greedy |tau| order"
+  },
+  "training": {
+    "pretraining_config": "configs/train/linear_grid_pilot.yaml",
+    "data_config": "configs/train/linear_grid_cache.yaml",
+    "finetuning_config": "configs/train/linear_grid_vdc128_v2.yaml",
+    "pilot_sha256": "6e48f8c65012f4170ee9003c4aca28600abdb602ef624e47c3c3f92c0f5ace20",
+    "finetuning_seed": 202610091,
+    "finetuning_steps": 8000,
+    "latent_input_probability": 0.75,
+    "objective": "negative log likelihood of independent target points under the projected bilinear density",
+    "device": "one NVIDIA H100 80GB (fine-tuning); one NVIDIA H200 (pilot)",
+    "software": {
+      "torch": "2.9.1+cu128",
+      "numpy": "2.2.6",
+      "scipy": "1.15.3",
+      "pyvinecopulib": "0.7.5"
+    }
+  },
+  "evaluation": {
+    "table1_cases": "nine bivariate cases x five seeds, n_train=2000, 20,000 test points per fit",
+    "table1_mean_heldout_kl_nats": 0.003110932784101482,
+    "table1_original_model_mean_heldout_kl_nats": 0.0061112181236989685,
+    "table1_fits_better_than_original": "41/45",
+    "warmed_batch_ms_per_edge_h100": 18.87437091726396,
+    "details": "docs/IMPROVED_ESTIMATORS.md"
+  },
+  "intended_use": [
+    "bivariate copula density estimation with consistent conditional distributions",
+    "vine copula fitting, likelihood, Rosenblatt transforms and sampling",
+    "reproducing the NeurIPS 2026 appendix on exploratory retraining"
+  ],
+  "limitations": [
+    "exploratory estimator trained after the NeurIPS 2026 review; the paper's main results use vdc-denoiser-m64-v1",
+    "model development also used copula families from the paper's out-of-distribution suite, so it has no clean out-of-distribution evaluation",
+    "the random S&P100 split overlaps model-development data (272 of 339 test days); only the chronological split is held out",
+    "one pilot initialization and one fine-tuning seed; replicates changed the chronological S&P100 comparison",
+    "continuous marginals and the simplifying assumption for vine copulas",
+    "floating-point identity is established for the recorded device types and software versions only"
+  ]
+}

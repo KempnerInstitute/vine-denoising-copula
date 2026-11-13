@@ -25,8 +25,17 @@ from .vine_types import (
 from .recursion import VineRecursion, VinePairCopula
 from ..models.unet_grid import GridUNet
 from ..models.hfunc import HFuncLookup
+from ..models.linear_grid_copula import LinearGridCopula
+from ..models.linear_grid_estimator import (
+    LINEAR_GRID_ESTIMATOR,
+    FixedBatchForward,
+    estimate_linear_grid_densities,
+    grid_geometry,
+)
 from ..models.projection import copula_project
 from ..inference.density import sample_density_grid, scatter_to_hist, scatter_to_hist_batch_gpu
+
+LEGACY_ESTIMATOR = "legacy"
 
 
 class VineCopulaModel:
@@ -72,6 +81,10 @@ class VineCopulaModel:
         gpu_histogram: bool = True,
         hfunc_vectorized_inverse: bool = False,
         fast_fit: bool = False,
+        pair_estimator: str = LEGACY_ESTIMATOR,
+        copula_projection_solver: str = "ipfp",
+        conditional_clip_eps: float = 1e-6,
+        forward_batch_size: Optional[int] = None,
     ):
         """
         Initialize vine copula model.
@@ -98,6 +111,26 @@ class VineCopulaModel:
             fast_fit: Reuse D-vine structure correlations, vectorize monotone table
                 construction, and transfer predicted grids in bulk. Opt-in; network
                 precision, batch sizes, and density calculations are unchanged.
+            pair_estimator: ``"legacy"`` (default) uses the original histogram,
+                cell-mass projection and ``HFuncLookup`` tables. ``"linear_grid"``
+                uses the inference of the linear-grid models (VDC-64/VDC-128):
+                count histograms on uniform cells, probit node coordinates,
+                projection with integrated basis weights and
+                ``LinearGridCopula`` pair copulas whose PDF, h and inverse-h
+                functions are consistent. Requires a single-pass network
+                (``diffusion=None``); ``hfunc_use_spline`` is ignored.
+            copula_projection_solver: Float64 marginal projection of each
+                linear-grid pair copula: ``"ipfp"`` or ``"hybrid"`` (Newton
+                completion when IPFP has not converged). Linear grid only.
+            conditional_clip_eps: Interior clipping of pair inputs and
+                conditional pseudo-observations. The default 1e-6 preserves
+                historical results; the linear-grid models were evaluated with 1e-12.
+            forward_batch_size: Linear grid only. Run the network on exactly this
+                many edges at a time, padding the last batch (16 in the
+                evaluations); ``None`` passes each outer edge batch directly.
+
+        ``VineCopulaModel.from_pretrained(bundle)`` applies a registered
+        model's evaluated settings.
         """
         self.vine_type = vine_type.lower()
         self.order = order
@@ -114,19 +147,78 @@ class VineCopulaModel:
         self.gpu_histogram = bool(gpu_histogram)
         self.hfunc_vectorized_inverse = bool(hfunc_vectorized_inverse)
         self.fast_fit = bool(fast_fit)
-        
+        self.pair_estimator = str(pair_estimator)
+        self.copula_projection_solver = str(copula_projection_solver)
+        self.conditional_clip_eps = float(conditional_clip_eps)
+        self.forward_batch_size = None if forward_batch_size is None else int(forward_batch_size)
+        self.normalization_diagnostics: List[Tuple[float, int]] = []
+
         self.structure: Optional[VineStructure] = None
         self.vine: Optional[VineRecursion] = None
         self.fitted = False
-        
+
         if self.vine_type not in ['rvine', 'dvine', 'cvine']:
             raise ValueError(f"vine_type must be 'rvine', 'dvine', or 'cvine', got {vine_type}")
-    
+        if self.pair_estimator not in (LEGACY_ESTIMATOR, LINEAR_GRID_ESTIMATOR):
+            raise ValueError(f"pair_estimator must be 'legacy' or 'linear_grid', got {pair_estimator}")
+        if self.copula_projection_solver not in ("ipfp", "hybrid"):
+            raise ValueError("copula_projection_solver must be 'ipfp' or 'hybrid'")
+        if not 0 < self.conditional_clip_eps < .5:
+            raise ValueError("conditional_clip_eps must lie in (0, .5)")
+        if self.forward_batch_size is not None and self.forward_batch_size < 1:
+            raise ValueError("forward_batch_size must be positive or None")
+        if self.pair_estimator == LEGACY_ESTIMATOR:
+            if self.copula_projection_solver != "ipfp" or self.forward_batch_size is not None:
+                raise ValueError("copula_projection_solver and forward_batch_size apply to pair_estimator='linear_grid'")
+            self._linear_grid_nodes = None
+        else:
+            if self.hfunc_vectorized_inverse:
+                raise ValueError("hfunc_vectorized_inverse applies to legacy lookup tables only")
+            self._linear_grid_nodes = grid_geometry(self.m, "uniform")[1]
+
+    @classmethod
+    def from_pretrained(cls, bundle, vine_type: str = 'dvine', **overrides) -> 'VineCopulaModel':
+        """Construct a vine with the inference settings recorded for ``bundle``.
+
+        Linear-grid models (``vdc-denoiser-m64-v2``, ``vdc-denoiser-m128-v2``)
+        receive their evaluated estimator, grid, projection, clipping and batch
+        settings; other models receive their grid size and the defaults. The
+        device is taken from the bundle. Keyword arguments override any setting.
+        Fit with ``model.fit(U, diffusion_model=bundle.model)``.
+        """
+        from ..pretrained import linear_grid_settings_for
+        settings = linear_grid_settings_for(bundle)
+        if settings is not None:
+            options: Dict[str, Any] = settings.vine_options()
+        else:
+            options = dict(m=int(bundle.config.get("data", {}).get("m", 64)))
+        options["device"] = str(bundle.device)
+        options.update(overrides)
+        return cls(vine_type=vine_type, **options)
+
     def _make_hfunc(self, density_grid):
-        """Construct the legacy lookup with the selected inverse execution path."""
+        """Construct the pair copula for a fitted grid.
+
+        Legacy: ``HFuncLookup`` with the selected inverse execution path.
+        Linear grid: ``LinearGridCopula`` re-projected in float64.
+        """
+        if self.pair_estimator == LINEAR_GRID_ESTIMATOR:
+            copula = LinearGridCopula(density_grid, self._linear_grid_nodes,
+                                      solver=self.copula_projection_solver)
+            self.normalization_diagnostics.append((copula.marginal_error, copula.projection_iterations))
+            return copula
         return HFuncLookup(density_grid, use_spline=self.hfunc_use_spline,
                            vectorized_inverse=self.hfunc_vectorized_inverse,
                            vectorized_tables=self.fast_fit)
+
+    def _linear_grid_forward(self, model: torch.nn.Module) -> torch.nn.Module:
+        if self.forward_batch_size is None:
+            return model
+        return FixedBatchForward(model, self.forward_batch_size)
+
+    def _check_estimator_inputs(self, diffusion) -> None:
+        if self.pair_estimator == LINEAR_GRID_ESTIMATOR and diffusion is not None:
+            raise ValueError("pair_estimator='linear_grid' requires a single-pass network (diffusion=None)")
 
     def fit(
         self,
@@ -145,6 +237,8 @@ class VineCopulaModel:
             verbose: Show progress
         """
         n, d = U.shape
+        self._check_estimator_inputs(diffusion)
+        self.normalization_diagnostics = []
 
         # R-vines require structure selection that depends on conditional pseudo-observations.
         # The standalone `build_rvine_structure()` helper is intentionally simplified and does
@@ -188,8 +282,8 @@ class VineCopulaModel:
         if verbose:
             print(f"\nStep 2: Fitting pair copulas with diffusion model...")
         
-        self.vine = VineRecursion(self.structure, vine_type=self.vine_type)
-        
+        self.vine = VineRecursion(self.structure, vine_type=self.vine_type, clip_eps=self.conditional_clip_eps)
+
         diffusion_model.eval()
         diffusion_model.to(self.device)
         # Only meaningful for diffusion_unet (2-channel input = [noisy_log_density, log_histogram]).
@@ -234,7 +328,7 @@ class VineCopulaModel:
                             ) from e
 
                     pair_data = np.column_stack([u_data, v_data])
-                    pair_data = np.clip(pair_data, 1e-6, 1.0 - 1e-6)
+                    pair_data = np.clip(pair_data, self.conditional_clip_eps, 1.0 - self.conditional_clip_eps)
                     edges.append(edge)
                     pair_data_list.append(pair_data)
 
@@ -273,7 +367,7 @@ class VineCopulaModel:
                             ) from e
                     
                     pair_data = np.column_stack([u_data, v_data])
-                    pair_data = np.clip(pair_data, 1e-6, 1.0 - 1e-6)
+                    pair_data = np.clip(pair_data, self.conditional_clip_eps, 1.0 - self.conditional_clip_eps)
                     
                     density_grid = self._estimate_pair_density_from_samples(
                         model=diffusion_model,
@@ -317,6 +411,11 @@ class VineCopulaModel:
 
         This is used for scaling benchmarks and fast vine fitting.
         """
+        if self.pair_estimator == LINEAR_GRID_ESTIMATOR:
+            return estimate_linear_grid_densities(
+                self._linear_grid_forward(model), pair_data_list, grid_size=self.m,
+                device=self.device, edge_batch_size=max(1, int(self.edge_batch_size)),
+                projection_iters=int(self.projection_iters))
         if not pair_data_list:
             return []
 
@@ -459,7 +558,7 @@ class VineCopulaModel:
 
         # Initialize empty structure and recursion (we'll append trees as we go).
         self.structure = VineStructure(d=d, trees=[], order=None)
-        self.vine = VineRecursion(self.structure, vine_type="rvine")
+        self.vine = VineRecursion(self.structure, vine_type="rvine", clip_eps=self.conditional_clip_eps)
 
         diffusion_model.eval()
         diffusion_model.to(self.device)
@@ -505,7 +604,7 @@ class VineCopulaModel:
         for edge in tree1_edges:
             i, j, cond = edge
             pair_data = np.column_stack([U[:, i], U[:, j]])
-            pair_data = np.clip(pair_data, 1e-6, 1.0 - 1e-6)
+            pair_data = np.clip(pair_data, self.conditional_clip_eps, 1.0 - self.conditional_clip_eps)
 
             density_grid = self._estimate_pair_density_from_samples(
                 model=diffusion_model,
@@ -615,7 +714,7 @@ class VineCopulaModel:
                     ) from e
 
                 pair_data = np.column_stack([u_data, v_data])
-                pair_data = np.clip(pair_data, 1e-6, 1.0 - 1e-6)
+                pair_data = np.clip(pair_data, self.conditional_clip_eps, 1.0 - self.conditional_clip_eps)
 
                 density_grid = self._estimate_pair_density_from_samples(
                     model=diffusion_model,
@@ -663,7 +762,11 @@ class VineCopulaModel:
 
         - If `diffusion` is provided, uses iterative reverse diffusion (DDIM-style).
         - If `diffusion` is None, uses a single forward pass histogram->density (for denoiser/CNNs).
+        - With ``pair_estimator='linear_grid'``, uses the batched linear-grid estimator for one edge.
         """
+        if self.pair_estimator == LINEAR_GRID_ESTIMATOR:
+            self._check_estimator_inputs(diffusion)
+            return self._estimate_pair_densities_from_samples_batched(model=model, pair_data_list=[pair_data])[0]
         if diffusion is not None:
             transform_to_probit_space = bool(getattr(model, "vdc_transform_to_probit_space", False))
             return sample_density_grid(
@@ -962,6 +1065,12 @@ class VineCopulaModel:
             'device': self.device,
             'hfunc_vectorized_inverse': self.hfunc_vectorized_inverse,
             'fast_fit': self.fast_fit,
+            'pair_estimator': self.pair_estimator,
+            'copula_projection_solver': self.copula_projection_solver,
+            'conditional_clip_eps': self.conditional_clip_eps,
+            'forward_batch_size': self.forward_batch_size,
+            'projection_iters': self.projection_iters,
+            'edge_batch_size': self.edge_batch_size,
             'structure': self.structure,
             'vine': self.vine,
             'fitted': self.fitted,
@@ -1000,6 +1109,11 @@ class VineCopulaModel:
             device=state['device'],
             hfunc_vectorized_inverse=state.get('hfunc_vectorized_inverse', False),
             fast_fit=state.get('fast_fit', False),
+            pair_estimator=state.get('pair_estimator', LEGACY_ESTIMATOR),
+            copula_projection_solver=state.get('copula_projection_solver', 'ipfp'),
+            conditional_clip_eps=state.get('conditional_clip_eps', 1e-6),
+            forward_batch_size=state.get('forward_batch_size'),
+            **{key: state[key] for key in ('projection_iters', 'edge_batch_size') if key in state},
         )
         
         model.structure = state['structure']
