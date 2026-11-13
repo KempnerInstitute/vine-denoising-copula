@@ -45,7 +45,20 @@ jobs:
             tests/test_pretrained.py \
             tests/test_ipfp_log.py \
             tests/test_probit_transform.py \
-            tests/test_hfunc_independence_accuracy.py
+            tests/test_hfunc_independence_accuracy.py \
+            vdc/models/linear_grid_copula.py \
+            vdc/models/linear_grid_estimator.py \
+            vdc/data/continuous_mixtures.py \
+            vdc/train/linear_grid_pretraining.py \
+            vdc/train/linear_grid_training.py \
+            scripts/train_linear_grid_estimator.py \
+            tests/test_continuous_mixtures.py \
+            tests/test_linear_grid_copula.py \
+            tests/test_linear_grid_estimator.py \
+            tests/test_linear_grid_pretraining.py \
+            tests/test_linear_grid_training.py \
+            tests/test_pretrained_linear_grid.py \
+            tests/test_vine_linear_grid.py
 
   tests:
     runs-on: ubuntu-latest
