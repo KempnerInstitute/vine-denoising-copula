@@ -1,0 +1,25 @@
+# Fine-tuning recipe of vdc-denoiser-m64-v2 (VDC-64): 64-cell uniform grid,
+# latent uniforms for half of the inputs and rank pseudo-observations for the rest.
+# Run after linear_grid_cache.yaml:
+#   python scripts/train_linear_grid_estimator.py configs/train/linear_grid_vdc64_v2.yaml
+# The released checkpoint is the step-8000 EMA (SHA-256
+# 73097772a18eb4b02fb0608b4bfa87c0205b71667d97af6a39483fd44d0df0fc, one H100).
+stage: finetune
+output_dir: runs/linear_grid/vdc_denoiser_m64_v2
+initial_checkpoint: runs/linear_grid/pilot/pilot_ema_step60000.pt
+# Pilot used for the released model; set initial_sha256=null for another pilot.
+initial_sha256: 6e48f8c65012f4170ee9003c4aca28600abdb602ef624e47c3c3f92c0f5ace20
+cache_dir: runs/linear_grid/cache_202610091
+grid_size: 64
+latent_probability: 0.5
+base_channels: 128
+steps: 8000
+batch_size: 128
+microbatch: 32
+workers: 2
+seed: 202610091
+sizes: [50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000]
+save_every: 8000
+save_steps: [1000, 3000, 6000]
+log_every: 50
+device: cuda

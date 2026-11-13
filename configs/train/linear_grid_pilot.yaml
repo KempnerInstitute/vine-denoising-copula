@@ -1,0 +1,24 @@
+# Pretraining from random weights (the "pilot") that initializes the
+# linear-grid models vdc-denoiser-m64-v2 and vdc-denoiser-m128-v2.
+# Run: python scripts/train_linear_grid_estimator.py configs/train/linear_grid_pilot.yaml
+# The released models started from the step-60000 EMA weights of this recipe
+# (SHA-256 6e48f8c65012f4170ee9003c4aca28600abdb602ef624e47c3c3f92c0f5ace20,
+# trained on one H200 with PyTorch 2.9.1). A rerun on other hardware or
+# software is a new pilot, not a bitwise copy.
+stage: pretrain
+output_dir: runs/linear_grid/pilot
+# Target bank: built on first use from bank_seed (default: seed) and reused.
+bank_path: runs/linear_grid/bank_200k_seed42.npy
+bank_size: 200000
+# SHA-256 of the bank used for the released pilot (pyvinecopulib 0.7.5,
+# NumPy 2.2.6); set bank_sha256=null to accept a bank built elsewhere.
+bank_sha256: 84ffc20ad9b6d06ed07774783ec2db71b3951580b1cdbc748bb25805fa5a5d44
+steps: 60000
+batch_size: 128
+lr: 2.0e-4
+warmup: 2000
+ema: 0.9995
+save_every: 10000
+base_channels: 128
+seed: 42
+device: cuda

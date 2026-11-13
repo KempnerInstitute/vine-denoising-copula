@@ -1,0 +1,15 @@
+# Fine-tuning data shared by vdc-denoiser-m64-v2 and vdc-denoiser-m128-v2:
+# 8,000 optimizer steps of 128 fresh continuous-mixture populations, stored as
+# lossless uint16 histogram counts for 64- and 128-cell grids (rank and latent
+# inputs) plus 512 target points per population. About 11 GB; contents do not
+# depend on the number of worker processes.
+# Run: python scripts/train_linear_grid_estimator.py configs/train/linear_grid_cache.yaml
+stage: cache
+output_dir: runs/linear_grid/cache_202610091
+seed: 202610091
+steps: 8000
+batch_size: 128
+sizes: [50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000]
+grid_sizes: [64, 128]
+latent_histograms: true
+workers: 24
