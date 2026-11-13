@@ -122,7 +122,8 @@ def test_fixed_batch_forward_pads_and_preserves_order():
         FixedBatchForward(network, 0)
 
 
-def test_results_do_not_depend_on_grouping_with_fixed_forward_batch():
+def test_grouping_does_not_change_cpu_results_of_a_small_network():
+    # On GPUs, results can differ at float32 rounding level with the grouping.
     network = tiny_network()
     settings = LinearGridSettings(grid_size=16, forward_batch_size=4, edge_batch_size=3)
     estimator = LinearGridEstimator(network, settings, "cpu")

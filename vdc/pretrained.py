@@ -299,9 +299,10 @@ def estimate_pair_copulas_from_samples(
     """Estimate continuous pair copulas for several ``(n, 2)`` samples at once.
 
     Linear-grid models only. Returns ``LinearGridCopula`` objects (``pdf``,
-    ``h_u_given_v``, ``h_v_given_u`` and inverses) built exactly as in the
-    models' evaluation; batching does not change any single result for a
-    fixed device and ``forward_batch_size``. Points must lie in [0, 1].
+    ``h_u_given_v``, ``h_v_given_u`` and inverses) built as in the models'
+    evaluation. Points must lie in [0, 1]. On GPUs a pair's result can depend
+    on the other pairs in the call at the level of float32 rounding; pass the
+    same list to reproduce a recorded evaluation exactly.
     """
     from vdc.models.linear_grid_estimator import LinearGridEstimator
 

@@ -20,7 +20,10 @@ batches of exactly 16 edges (``forward_batch_size``; shorter batches are
 padded) and outer edge batches of 64. :func:`estimate_linear_grid_densities`
 disables TF32 and cuDNN benchmarking while it runs the network and restores
 the previous settings afterwards. Floating-point identity is established only
-for the recorded device type and software versions (see
+for the recorded device type and software versions, and for the same grouping
+of pairs per call: on GPUs, a pair's 64-cell grid estimated alone differed
+from the same pair estimated with others by up to about 1e-6 (relative), so
+recorded evaluations are reproduced by passing the same list of pairs (see
 ``docs/IMPROVED_ESTIMATORS.md``).
 """
 from __future__ import annotations
@@ -86,12 +89,13 @@ def bilinear_density_torch(d: torch.Tensor, nodes: torch.Tensor, uv: torch.Tenso
 
 
 class FixedBatchForward(torch.nn.Module):
-    """Run a network with one physical batch shape, independent of grouping.
+    """Run a network with one physical batch shape.
 
     Inputs are split into chunks of ``batch_size``; a short final chunk is
     padded by repeating its first row and the padding outputs are discarded.
-    This fixes the execution shape. It does not establish invariance across
-    devices, precision settings or different physical batch sizes.
+    This fixes the execution shape of the network. It does not establish
+    invariance across devices, precision settings, physical batch sizes or
+    the grouping of pairs in one call.
     """
 
     def __init__(self, model: torch.nn.Module, batch_size: int = 16):
@@ -248,8 +252,8 @@ class LinearGridEstimator:
 
     ``estimate_grids`` returns float32 node-value grids; ``copulas`` returns
     :class:`LinearGridCopula` objects with consistent PDF and conditional
-    functions. Results for one pair do not depend on the other pairs in the
-    call when ``forward_batch_size`` is set (checked for the recorded devices).
+    functions. A pair's result can depend on the other pairs in the same call
+    at the level of float32 rounding (observed on GPUs for the 64-cell model).
     """
 
     def __init__(self, model: torch.nn.Module, settings: LinearGridSettings, device=None):
