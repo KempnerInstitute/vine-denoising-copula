@@ -3,7 +3,7 @@
 
 Inputs (mi/): results/mi_benchmark_multiseed_summary.json lists, per estimator, the saved per-case
 result files (three seeds for VDC, KSG and the Gaussian baseline; one seed for the neural estimators),
-all written by the library's scripts/mi_estimation.py. The Joe(theta=3) case is dropped because its
+all written by paper/experiments/mi_estimation.py. The Joe(theta=3) case is dropped because its
 samples came from a defective sampler while it was scored against the analytic Joe MI; the table
 reports the mean absolute MI error over the remaining eight cases and the mean time per case
 (mean +- standard deviation over seeds where there are several).

@@ -53,13 +53,13 @@ whose samples predate the fix). Its Pearson correlation between removed share an
 ## Figure 1 data (optional)
 
 `fig1_overview_data.npz` holds outputs of the released checkpoint (densities, histograms and samples) and the
-downsampled training-loss history. To recompute the model outputs, install the separate VDC library checkout and download the
-checkpoint (`python "$VDC_LIBRARY_ROOT/scripts/download_pretrained.py" --model-id vdc-denoiser-m64-v1`, sha256
+downsampled training-loss history. To recompute the model outputs, download the checkpoint from the repository root
+(`python scripts/download_pretrained.py --model-id vdc-denoiser-m64-v1`, sha256
 `8a1b71ad6d2012ed344b22a743a96e667d32a2ab54ade4444686e375e91f5c0f`), then run
 
 ```bash
-python scripts/fig1_overview_data.py --lib "$VDC_LIBRARY_ROOT" --checkpoint /path/to/model.pt \
-    --loss-npz inputs/fig1_overview/fig1_overview_data.npz --out /path/to/new/fig1_overview_data.npz
+python paper/figures/scripts/fig1_overview_data.py --lib . --checkpoint /path/to/model.pt \
+    --loss-npz paper/figures/inputs/fig1_overview/fig1_overview_data.npz --out /path/to/new/fig1_overview_data.npz
 ```
 
 The training log is not distributed; `--loss-npz` copies the loss arrays from the saved file.

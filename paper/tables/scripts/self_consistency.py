@@ -5,8 +5,8 @@ tab_dpi_tolerance and tab_additivity_learned.
 Inputs (self_consistency/):
   mi_self_consistency.json           original protocol (60 DPI trials per estimator) and
   mi_self_consistency_scaleup.json   scaled protocol (480 DPI trials: 160 base datasets at three
-                                     noise levels), both written by the library's
-                                     scripts/mi_self_consistency_tests_v2.py
+                                     noise levels), both written by
+                                     paper/experiments/mi_self_consistency_tests_v2.py
   e35_additivity_learned.json        additivity error with the oracle block structure, a learned
                                      (Dissmann) structure and KSG on identical data (120 trials)
 A DPI trial is a violation when the MI estimated after the noisy (garbling) channel exceeds the MI

@@ -51,7 +51,7 @@ checkpoints of the corruption comparison (not released; their sha256 values are 
 | `ipfp_iterations.py` | `tab_ipfp_iter_ablation` | `ipfp/ipfp_iter_ablation.json` |
 | `raw_composition.py` | `tab_raw_composition` | `sp100/e37_raw_composition.json` |
 | `threads.py` | `tab_pyvine_threads` | `threads/*.json`, `scaling/e22_highdim_scaling_seed_merged.json` |
-| `corruption.py` | `tab_corruption_variants`, `tab_corruption_edges` | `corruption/corruption_variants_results.json` (output of `projects/neurips2026/runners/corruption_variants.py` in the public VDC repository) |
+| `corruption.py` | `tab_corruption_variants`, `tab_corruption_edges` | `corruption/corruption_variants_results.json` (output of `../runners/corruption_variants.py`) |
 | `replicates.py` | `tab_bivariate_replicates` | `bivariate/e31_bivariate_replicates.json` |
 | `neural_copula.py` | `tab_neural_copula` | `bivariate/e8_neural_copula_results_seed{0,1,2}.json` |
 
