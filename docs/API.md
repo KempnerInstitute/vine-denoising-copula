@@ -15,10 +15,12 @@ density = estimate_pair_density_from_samples(bundle, pair_data)
 
 | Function | Arguments and result |
 |---|---|
-| `load_pretrained_model` | `model_id="vdc-denoiser-m64-v1"`, keyword arguments `device=None`, `cache_dir=None`, `force_download=False`, `prefer_local=True`, `repo_id=None`, `revision=None`; returns a `LoadedPretrainedModel`. |
+| `load_pretrained_model` | `model_id="vdc-denoiser-m64-v1"`, keyword arguments `device=None`, `cache_dir=None`, `force_download=False`, `prefer_local=True`, `repo_id=None`, `revision=None`, `checkpoint_path=None` (a local copy, checked against the manifest's SHA-256); returns a `LoadedPretrainedModel`. |
 | `load_checkpoint_bundle` | A trusted `checkpoint_path`, keyword `device=None`; loads a local unified-trainer checkpoint. |
 | `resolve_pretrained_checkpoint` | The same model/download options, without `device`; returns a verified checkpoint `Path`. |
-| `estimate_pair_density_from_samples` | `bundle`, an `(n, 2)` array, keywords `m=None`, `diffusion_steps=None`, `cfg_scale=1.0`, `projection_iters=50`; returns an `(m, m)` density grid. |
+| `estimate_pair_density_from_samples` | `bundle`, an `(n, 2)` array, keywords `m=None`, `diffusion_steps=None`, `cfg_scale=1.0`, `projection_iters=None` (50 for `vdc-denoiser-m64-v1`; the recorded setting for linear-grid models); returns an `(m, m)` density grid (node values for linear-grid models). |
+| `estimate_pair_copula_from_samples` | `bundle` of a linear-grid model (`vdc-denoiser-m64-v2`, `vdc-denoiser-m128-v2`) and an `(n, 2)` array; returns a `LinearGridCopula` with `pdf`, `h_u_given_v`, `h_v_given_u` and their exact inverses. |
+| `estimate_pair_copulas_from_samples` | The batched form for a list of `(n, 2)` arrays. |
 | `list_pretrained_models()` | Returns the packaged model manifests. |
 | `load_pretrained_manifest(model_id)` | Returns one packaged manifest. |
 
@@ -33,6 +35,12 @@ probabilities: on a uniform grid, the mass is `density.sum() / m**2`.
 Projection corrects grid marginals to finite numerical tolerance.
 
 ## VineCopulaModel
+
+`VineCopulaModel.from_pretrained(bundle, vine_type="dvine", **overrides)` builds a vine with the
+inference settings recorded for a loaded model: for linear-grid models it selects
+`pair_estimator="linear_grid"`, the grid size, projection solver, conditional clipping and batch
+size used in the paper's evaluation; for other models it sets the model's grid size and the
+bundle's device and keeps the defaults. Keyword arguments override any setting.
 
 ```python
 from vdc import VineCopulaModel

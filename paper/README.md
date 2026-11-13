@@ -491,8 +491,9 @@ release was qualified against the earlier camera-ready runtime. Generation pins 
 saved outputs identify the original runs and are not overwritten. No new checkpoint is used.
 Release 0.2.7 changed only training-data generation in `vdc.data` and the legacy grid trainer;
 among the paper's runners this affects only the Joe case of the MI benchmark (now sampled
-correctly), which the paper excludes. Check the release notes of later versions for numerical
-changes. For the qualified runtime, check out tag `v0.2.6` and pass that checkout as `--library`
+correctly), which the paper excludes. Release 0.3.0 adds the opt-in linear-grid estimators and reorganizes
+files; for `vdc-denoiser-m64-v1` its outputs are bitwise identical to 0.2.7. Check the release
+notes of later versions for numerical changes. For the qualified runtime, check out tag `v0.2.6` and pass that checkout as `--library`
 and `$VDC_LIBRARY_ROOT`.
 
 The runners were relocated from the qualified paper workflows with their numerical parameters and

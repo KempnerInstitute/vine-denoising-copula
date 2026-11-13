@@ -3,8 +3,12 @@
 Published versions are immutable. The NeurIPS 2026 paper pins v0.2.6;
 its checkpoints and reproduction archives remain available.
 
-## Unreleased
+## v0.3.0 — 2026-11-12
 
+- Rewrite the README and the documentation landing page with the method overview, results
+  figures, pretrained-model table, training commands and reproduction guide.
+- Keep maintained entry points in `scripts/`; move the GridUNet workflow scripts to
+  `scripts/legacy/` and remove the two deprecated demo shims (use `examples/`).
 - Gather all NeurIPS 2026 reproduction material in `paper/`: the experiment runners and
   reference outputs (formerly `projects/neurips2026/`), the figure and table generators with
   their saved inputs (formerly distributed only as a release archive) and the ablation training
