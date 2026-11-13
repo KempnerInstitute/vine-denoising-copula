@@ -7,9 +7,9 @@ each adjacent pair, summed. It regenerates the seed-42 samples of the Figure 3(b
 run's own generator and trial seeds, seed 42 + 10000 d + 1000 t) and records every trial, next to the
 VDC and full chain-rule KSG values of the reference run.
 
-Usage: ksg_tree1.py LIBRARY_ROOT REFERENCE_JSON OUTPUT_JSON
+Usage: python paper/run.py runners/tc_tree1_control.py LIBRARY_ROOT REFERENCE_JSON OUTPUT_JSON
   LIBRARY_ROOT    checkout of the vdc library to import (its commit is recorded)
-  REFERENCE_JSON  paper_outputs/tc_benchmark_neural_full.json, an earlier seed-42 run whose datasets and
+  REFERENCE_JSON  paper/reference/tc_benchmark_neural_full.json, an earlier seed-42 run whose datasets and
                   VDC and KSG estimates equal those of seed 42 in the Figure 3(b) sweep
 """
 import hashlib
@@ -24,6 +24,9 @@ from datetime import datetime, timezone
 
 import numpy as np
 
+if len(sys.argv) != 4 or sys.argv[1] in ("-h", "--help"):
+    print(__doc__)
+    sys.exit(0 if sys.argv[1:2] in (["-h"], ["--help"]) else 2)
 lib, ref_path, out_path = sys.argv[1:4]
 sys.path.insert(0, lib)
 import scipy  # noqa: E402
