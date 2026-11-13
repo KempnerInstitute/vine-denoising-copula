@@ -79,7 +79,7 @@ caches like `vdc-denoiser-m64-v1`. A file placed at
 is also found and verified. `estimate_pair_copulas_from_samples` estimates many
 pairs in one call. On GPUs, a pair's estimate can depend on the other pairs in
 the same call at the level of float32 rounding: for the 64-cell model, pairs
-estimated one at a time differed from the batched estimates by up to 1.2e-6
+estimated one at a time differed from the batched estimates by up to 1.4e-6
 (relative) on both A100 and H100, while the 128-cell estimates were identical.
 To reproduce a recorded evaluation exactly, pass the same pairs in the same
 order (vine fits group the edges of each tree as in the evaluation). On the
