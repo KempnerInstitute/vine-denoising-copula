@@ -4,6 +4,7 @@ The public API is centered on:
 
 - ``load_pretrained_model`` for loading the published checkpoint
 - ``estimate_pair_density_from_samples`` for bivariate copula estimation
+- ``estimate_pair_copula_from_samples`` for linear-grid pair copulas
 - ``VineCopulaModel`` for fitting and querying explicit vine models
 """
 
@@ -16,6 +17,8 @@ __all__ = [
     "LoadedPretrainedModel",
     "DEFAULT_PRETRAINED_MODEL_ID",
     "estimate_pair_density_from_samples",
+    "estimate_pair_copula_from_samples",
+    "estimate_pair_copulas_from_samples",
     "list_pretrained_models",
     "load_checkpoint_bundle",
     "load_pretrained_manifest",
@@ -49,6 +52,12 @@ def __getattr__(name: str):
     elif name == "estimate_pair_density_from_samples":
         from vdc.pretrained import estimate_pair_density_from_samples
         return estimate_pair_density_from_samples
+    elif name == "estimate_pair_copula_from_samples":
+        from vdc.pretrained import estimate_pair_copula_from_samples
+        return estimate_pair_copula_from_samples
+    elif name == "estimate_pair_copulas_from_samples":
+        from vdc.pretrained import estimate_pair_copulas_from_samples
+        return estimate_pair_copulas_from_samples
     elif name == "list_pretrained_models":
         from vdc.pretrained import list_pretrained_models
         return list_pretrained_models

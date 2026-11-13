@@ -62,16 +62,23 @@ class VineRecursion:
     - Forward/inverse Rosenblatt transforms for sampling
     """
     
-    def __init__(self, structure: VineStructure, vine_type: Optional[str] = None):
+    def __init__(self, structure: VineStructure, vine_type: Optional[str] = None, clip_eps: float = 1e-6):
         """
         Args:
             structure: VineStructure defining the vine
+            vine_type: 'dvine', 'cvine' or 'rvine'
+            clip_eps: Interior clipping of (conditional) pseudo-observations,
+                to [clip_eps, 1 - clip_eps]. The default 1e-6 preserves
+                historical results; other values are opt-in.
         """
         self.structure = structure
         self.vine_type = (vine_type or "unknown").lower()
         self.pair_copulas: List[List[VinePairCopula]] = []  # [tree_level][edge_idx]
         self.d = structure.d
-        
+        if not 0 < clip_eps < .5:
+            raise ValueError("clip_eps must lie in (0, .5)")
+        self.clip_eps = float(clip_eps)
+
         # Fast lookup: (unordered_pair, conditioning_set) -> copula
         self._copula_lookup: Dict[Tuple[FrozenSet[int], FrozenSet[int]], VinePairCopula] = {}
     
@@ -130,8 +137,9 @@ class VineRecursion:
             return None
         raise KeyError(f"Missing pair-copula for ({i},{j}|{sorted(cond)})")
 
-    @staticmethod
-    def _clip01(x: np.ndarray, eps: float = 1e-6) -> np.ndarray:
+    def _clip01(self, x: np.ndarray, eps: Optional[float] = None) -> np.ndarray:
+        # getattr keeps historical pickled recursion objects readable.
+        eps = getattr(self, "clip_eps", 1e-6) if eps is None else eps
         return np.clip(x, eps, 1.0 - eps)
 
     def _traverse_logpdf(

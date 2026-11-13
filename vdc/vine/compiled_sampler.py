@@ -37,6 +37,8 @@ class CompiledDVineSampler:
     def __init__(self, vine, kernel, *, max_table_bytes=512*1024**2):
         if type(vine) is not VineRecursion or vine.vine_type!='dvine':
             raise ValueError('Only the unmodified legacy D-vine recursion is supported')
+        if getattr(vine,'clip_eps',1e-6)!=1e-6:
+            raise ValueError('The compiled kernel uses the default conditional clipping of 1e-6')
         self.d=vine.d
         if self.d<2 or vine.structure.order is None:
             raise ValueError('A D-vine with an explicit order and at least two variables is required')
@@ -162,6 +164,8 @@ class PreparedVineSampler:
             # Reject obviously expensive snapshots before building a kernel or allocating tables.
             first=next((c.hfunc for level in vine.pair_copulas for c in level),None)
             if first is None: raise ValueError('No fitted h-function tables')
+            if not isinstance(first,HFuncLookup):
+                raise ValueError('Compiled sampling supports only legacy HFuncLookup tables')
             required=vine.d*(vine.d-1)//2*2*first.m_u*first.m_v*8
             if max_table_bytes is not None and required>max_table_bytes:
                 raise MemoryError(f'Packed tables require {required} bytes; limit is {max_table_bytes}')
