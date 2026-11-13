@@ -6,7 +6,7 @@ so it must not depend on ad-hoc script modules that may be missing in some check
 
 It provides:
 - `DiffusionCopulaModel.from_checkpoint`: load a `GridUNet` + `CopulaAwareDiffusion`
-  from a training checkpoint produced by `scripts/train.py` / `scripts/train_unified.py`.
+  from a training checkpoint produced by `scripts/train_unified.py` (or `scripts/legacy/train.py`).
 - `estimate_density_from_samples`: estimate a bivariate copula density grid from
   pseudo-observations in [0,1]^2 via the shared reverse diffusion routine
   `vdc.inference.density.sample_density_grid`.

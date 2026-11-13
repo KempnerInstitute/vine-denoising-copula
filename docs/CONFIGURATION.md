@@ -105,5 +105,5 @@ saving and training diagnostics. `checkpoint_dir` is a top-level key. Use
 The unified command seeds dataset workers from `42 + distributed rank`; record
 worker count, source revision, full configuration and environment alongside a
 run. Exact historical training replay requires the original generator revision.
-The older `scripts/train.py` is a separate training frontend; do not assume its
+The older `scripts/legacy/train.py` is a separate training frontend; do not assume its
 checkpoints or defaults are interchangeable with `scripts/train_unified.py`.

@@ -9,16 +9,16 @@ Evaluates the trained model on:
 
 Usage:
     # Full evaluation
-    python scripts/evaluate.py --checkpoint path/to/model.pt
+    python scripts/legacy/evaluate.py --checkpoint path/to/model.pt
     
     # Quick evaluation (fewer copulas/dimensions)
-    python scripts/evaluate.py --checkpoint path/to/model.pt --quick
+    python scripts/legacy/evaluate.py --checkpoint path/to/model.pt --quick
     
     # Bivariate only
-    python scripts/evaluate.py --checkpoint path/to/model.pt --mode bivariate
+    python scripts/legacy/evaluate.py --checkpoint path/to/model.pt --mode bivariate
     
     # High-dimensional only
-    python scripts/evaluate.py --checkpoint path/to/model.pt --mode vine --dimensions 3 5 10
+    python scripts/legacy/evaluate.py --checkpoint path/to/model.pt --mode vine --dimensions 3 5 10
 """
 
 import argparse
@@ -39,7 +39,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
 from vdc.models.unet_grid import GridUNet

@@ -7,20 +7,20 @@ It wraps the unified trainer with a clean interface.
 
 Usage:
     # Train with default config
-    python scripts/train.py --config configs/train/default.yaml
+    python scripts/legacy/train.py --config configs/train/default.yaml
     
     # Train with custom model type
-    python scripts/train.py --config configs/train/default.yaml --model-type diffusion_unet
+    python scripts/legacy/train.py --config configs/train/default.yaml --model-type diffusion_unet
     
     # Override specific values
-    python scripts/train.py --config configs/train/default.yaml \
+    python scripts/legacy/train.py --config configs/train/default.yaml \
         training.learning_rate=0.0001 model.base_channels=128
 
     # Resume from checkpoint
-    python scripts/train.py --config configs/train/default.yaml --resume checkpoints/model_step_50000.pt
+    python scripts/legacy/train.py --config configs/train/default.yaml --resume checkpoints/model_step_50000.pt
     
     # Multi-GPU training with torchrun
-    torchrun --nproc_per_node=4 scripts/train.py --config configs/train/default.yaml
+    torchrun --nproc_per_node=4 scripts/legacy/train.py --config configs/train/default.yaml
 """
 
 import argparse
@@ -31,7 +31,7 @@ from pathlib import Path
 from datetime import datetime
 
 # Add project root to path
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
 from vdc.config import Config, get_run_dir, save_run_config
@@ -44,16 +44,16 @@ def main():
         epilog="""
 Examples:
   # Basic training
-  python scripts/train.py --config configs/train/default.yaml
+  python scripts/legacy/train.py --config configs/train/default.yaml
   
   # With specific model type
-  python scripts/train.py --config configs/train/default.yaml --model-type diffusion_unet
+  python scripts/legacy/train.py --config configs/train/default.yaml --model-type diffusion_unet
   
   # Multi-GPU with torchrun
-  torchrun --nproc_per_node=4 scripts/train.py --config configs/train/default.yaml
+  torchrun --nproc_per_node=4 scripts/legacy/train.py --config configs/train/default.yaml
   
   # Resume training
-  python scripts/train.py --config configs/train/default.yaml --resume checkpoints/model.pt
+  python scripts/legacy/train.py --config configs/train/default.yaml --resume checkpoints/model.pt
         """
     )
     parser.add_argument(

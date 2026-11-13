@@ -9,13 +9,13 @@ Supports:
 
 Usage:
     # Estimate density for bivariate data
-    python scripts/infer.py density --checkpoint path/to/model.pt --data samples.npy
+    python scripts/legacy/infer.py density --checkpoint path/to/model.pt --data samples.npy
     
     # Generate samples from fitted vine
-    python scripts/infer.py sample --checkpoint path/to/model.pt --n-samples 1000
+    python scripts/legacy/infer.py sample --checkpoint path/to/model.pt --n-samples 1000
     
     # Visualize model outputs
-    python scripts/infer.py visualize --checkpoint path/to/model.pt
+    python scripts/legacy/infer.py visualize --checkpoint path/to/model.pt
 """
 
 import argparse
@@ -32,7 +32,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
 from vdc.models.unet_grid import GridUNet
