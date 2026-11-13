@@ -9,6 +9,21 @@
       "sha256": "397f97f77c28bbc57f1fd636d9fe239016ed3c46c4399c22713082f93992b5c4",
       "source_sha256": "397f97f77c28bbc57f1fd636d9fe239016ed3c46c4399c22713082f93992b5c4"
     },
+    "retrained/sp100_chronological.json": {
+      "sha256": "c89ce19e5dc4e90aabc4a4660056d23fad162b2a9d50209b9ab979ac5811583d",
+      "source_sha256": "1a554a6880c874f2cb8a511603ac448539d53f645b123e592b85fc591071dc57",
+      "note": "compact record built from the appendix evaluation record and its per-row arrays; values unchanged, arrays as SHA-256 digests"
+    },
+    "retrained/table_a40_bivariate.json": {
+      "sha256": "3e35a78f6e31167dd4440548bc2d3d6f2c06b23cf6bab6fbbf1b8d330d81a78f",
+      "source_sha256": "5a1b94767d562bff2b1ab12dd37883e8ab183b0441e51e11d2ab47e7c41e9ae1",
+      "note": "compact record built from the appendix evaluation record and its per-row arrays; values unchanged, arrays as SHA-256 digests"
+    },
+    "retrained/table_a41_uci.json": {
+      "sha256": "57fd3cc8f3db309ce826d4bf28f5e87dfee759fabd48222892f63bb49f48bfa6",
+      "source_sha256": "a2c9880c373803d42cf70d479643a35ff4ee087039ea2a4a9e1705c74bf45fbf",
+      "note": "compact record built from the appendix evaluation record and its per-row arrays; values unchanged, arrays as SHA-256 digests"
+    },
     "table1/table1_v2.json": {
       "sha256": "0a1e6306a9a13a02f8cd0cdee693cf588585f8d7680757828e0a37ccbd44667e",
       "source_sha256": "0a1e6306a9a13a02f8cd0cdee693cf588585f8d7680757828e0a37ccbd44667e"
