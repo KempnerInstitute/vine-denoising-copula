@@ -13,8 +13,9 @@ Reproduction works at two levels:
   `figures/make_figures.sh` and `tables/make_tables.sh` regenerate all ten figures and the
   25 generated tables from compact saved experiment outputs. Nothing is refitted.
 - **Rerun of experiments** (GPU, public data): the runners in `runners/` and `experiments/`
-  recompute the experiments with the released checkpoint and, where the protocol allows,
-  check the result against the paper's records.
+  recompute the experiments with the released checkpoint (for Tables A40 and A41, the two
+  retrained checkpoints) and, where the protocol allows, check the result against the paper's
+  records.
 
 The [inventory](#inventory) maps every figure and table of the paper to its generator, saved
 inputs and runner. [Scope and limitations](#scope-and-limitations) lists what cannot be rerun
@@ -66,8 +67,9 @@ export CKPT=/path/to/vdc-denoiser-m64-v1.pt
 sha256sum "$CKPT"   # 8a1b71ad6d2012ed344b22a743a96e667d32a2ab54ade4444686e375e91f5c0f
 ```
 
-Every runner in `runners/` that loads the model checks this hash (`run_uci_maf.py` accepts
-another model only with `--expected-checkpoint-sha256 any`); the benchmarks in `experiments/`
+Every runner in `runners/` that loads the released model checks this hash (`run_uci_maf.py`
+accepts another model only with `--expected-checkpoint-sha256 any`); the retrained-estimator
+runner loads its two models through the library, which checks theirs. The benchmarks in `experiments/`
 load the checkpoint they are given, so check its hash first. The runners that take
 `--expected-module-root` stop unless `vdc` is imported from that directory (the repository root
 for an editable install, `site-packages` for a wheel).
@@ -187,8 +189,8 @@ made to them by hand.
 | A37 | No-projection ablation | full run | — |
 | A38 | UCI sensitivity to IPFP iterations | `uci.py`: `uci/ipfp_sensitivity_5k.json` | — |
 | A39 | IPFP iteration ablation | `ipfp_iterations.py`: `ipfp/ipfp_iter_ablation.json` | [projection timing](#projection-iteration-timing) |
-| A40 | Retrained estimators, bivariate suite | not from this folder: exploratory retrained checkpoints ([documentation](../docs/)) | — |
-| A41 | Retrained estimators, UCI | as A40 | — |
+| A40 | Retrained estimators, bivariate suite | no generator; values in `reference/retrained/table_a40_bivariate.json` | [retrained estimators](#retrained-estimators): VDC-64 and VDC-128 rows, from the two retrained checkpoints |
+| A41 | Retrained estimators, UCI | no generator; values in `reference/retrained/table_a41_uci.json` | [retrained estimators](#retrained-estimators): VDC-64 and VDC-128 columns (MAF splits) |
 
 ## Experiment runners
 
@@ -206,6 +208,7 @@ made to them by hand.
 | `runners/corruption_variants.py` | Tables A3, A4 | simulated, MAF splits | one GPU (paper: about 7 min on one A100) |
 | `runners/ipfp_iterations.py` | Table A39 | simulated | one CUDA GPU (paper: H100) |
 | `runners/sampling_quality.py` | Table A33 | CCPP; S&P100 returns optional | one GPU, 8 CPU threads |
+| `runners/retrained_estimators.py` | Tables A40, A41; chronological S&P100 comparison of the retrained estimators | simulated, MAF splits; S&P100 returns optional | one GPU, 4 CPU threads, the two retrained checkpoints (paper: H100) |
 
 Run them on allocated compute resources, with a GPU for full-size runs. Hardware, thread
 counts, seeds, precision, structures and truncation are explicit in each command and recorded in
@@ -464,6 +467,64 @@ the exact historical scores. The separately reported compiled-sampler timings re
 hardware and include table packing; see [the sampler guide](../docs/compiled_sampler.md) and its
 identity tests.
 
+### Retrained estimators
+
+Table A40, Table A41 and the chronological S&P100 comparison of the appendix "Exploratory
+retraining on corrected data" evaluate two separate checkpoints, `vdc-denoiser-m64-v2` (VDC-64)
+and `vdc-denoiser-m128-v2` (VDC-128), with the library's opt-in linear-grid estimator (release
+0.3.0 or later; [documentation](../docs/IMPROVED_ESTIMATORS.md)). Until the checkpoints are
+published, pass local copies; the library checks them against the SHA-256 in its manifests:
+
+```bash
+python paper/run.py --library "$VDC_LIBRARY_ROOT" runners/retrained_estimators.py \
+  --checkpoint vdc-denoiser-m64-v2=/path/to/vdc-denoiser-m64-v2.pt \
+  --checkpoint vdc-denoiser-m128-v2=/path/to/vdc-denoiser-m128-v2.pt \
+  --data-root /path/to/data --expected-module-root "$VDC_LIBRARY_ROOT" \
+  --device cuda --output /path/to/new-retrained-run
+```
+
+By default the runner recomputes Table A40 (the nine Table 1 cases with five sample seeds,
+2,000 training and 20,000 test observations per fit, all 45 fits estimated in one call) and
+Table A41 (greedy D-vines on the MAF splits at 5,000 and 50,000 training rows: NLL, PIT-KS over
+all test rows and 5,000 generated rows). `--parts table_a40 table_a41 sp100 --returns
+/path/to/sp100_returns.npy` adds the chronological S&P100 split (15 projection iterations). With
+`--original-logpdf` set to the `arrays.npz` written by `runners/reproduce_sp100_likelihood.py`, it
+also computes paired differences from the original model with the appendix's moving-block
+bootstrap; these use that refit of the original model, not the paper's historical per-day
+values, so they replicate the protocol rather than the reported intervals.
+
+The evaluated settings are applied through `VineCopulaModel.from_pretrained`: float32 with TF32
+disabled, network batches of 16 edges, outer batches of 64 edges and four CPU threads. The
+runner compares every value with `reference/retrained/`, which holds the appendix's values and
+the SHA-256 digests of its per-row arrays, and exits with status 1 if a value is outside its
+tolerance: 1e-6 nats per fit and 1e-7 for the mean KL (Table A40), 2e-4 bits/dim for the UCI
+NLL, 1e-3 bits/dim for the S&P100 NLL and 5e-4 for PIT-KS. It writes
+`tab_retrained_bivariate.tex` and `tab_retrained_uci.tex` in the paper's layout and reports
+whether they equal the paper's tables. The rows of the original model, TLL and parametric
+selection are the paper's records (`reference/table1/table1_v2.json` and Tables A5 and A6), not
+recomputed.
+
+On one H100 80GB, the appendix's device type, with the pinned numerical environment, a run of
+all three parts passed all 232 checks and reproduced all 94 per-row arrays of the appendix
+bitwise (`--require-bitwise`): the Table A40 grids and test log densities and, for each of the
+16 UCI fits and both S&P100 fits, the test log densities, PITs, simulation uniforms, generated
+rows and their round trips. Both written tables equal the paper's. Mean held-out KL was
+0.0054080 nats for VDC-64 and 0.0031109 for VDC-128 (11.5% and 49.1% below the original
+model's 0.0061112); chronological S&P100 NLL was -0.41833 and -0.41876 bits/dim. With the
+original model's arrays from `reproduce_sp100_likelihood.py` on the same GPU, which reproduced
+the historical -0.41848794 exactly, the paired differences and all moving-block intervals agreed
+with the paper's to within 4e-17. The three parts took about 6 minutes, and the original-model
+replay about 2 minutes more. Timings are recorded, not compared: S&P100 fits took 16.0 s and
+81.5 s, against 16.0 s and 81.0 s in the paper.
+
+Other devices give floating-point differences, which grow with vine depth: on an A100 40GB,
+per-row log densities of the 100-dimensional S&P100 vine differed by up to about 1 nat. On a CPU,
+Table A40 and the POWER 5,000-row setting passed every check, within 3.5e-8 nats per fit and
+1.6e-6 bits/dim, and the Table A40 output equals the paper's table. With the same library code
+on the A100, the largest differences in the reported values were 4.4e-8 nats per fit,
+3.5e-5 bits/dim in UCI NLL, 8.8e-5 in PIT-KS and 2.3e-4 bits/dim in S&P100 NLL; the counts of
+fits below the original model did not change.
+
 ## Training configurations
 
 The released checkpoint carries its own training configuration; evaluation never needs a YAML
@@ -488,7 +549,9 @@ is not a bitwise reconstruction of that run; use the released checkpoint for eva
 The runners were qualified with library release v0.2.6, whose `vdc` runtime is identical to
 v0.2.3 (commit 9b2d33ca610b63282b9bdc493dcad607522d313b) except for its version string; that
 release was qualified against the earlier camera-ready runtime. Generation pins recorded inside
-saved outputs identify the original runs and are not overwritten. No new checkpoint is used.
+saved outputs identify the original runs and are not overwritten. Apart from the
+retrained-estimator runner, which needs release 0.3.0 or later and the two retrained
+checkpoints, the runners use only the released checkpoint.
 Release 0.2.7 changed only training-data generation in `vdc.data` and the legacy grid trainer;
 among the paper's runners this affects only the Joe case of the MI benchmark (now sampled
 correctly), which the paper excludes. Release 0.3.0 adds the opt-in linear-grid estimators and reorganizes
@@ -511,9 +574,10 @@ The paper is not completely reproducible from a fresh download:
   outputs, and the saved outputs behind Tables A23–A24 are included, but every S&P100 rerun needs
   the paper's matrix; a rebuilt matrix gives a protocol replay, not the reported values.
 - **Checkpoints.** The alternative corruption checkpoints (Tables A3–A4) and the DDIM ablation
-  checkpoints (Table A36) are not released, and the exploratory retrained estimators of
-  Tables A40–A41 are separate models (see the [documentation](../docs/)). None of these results
-  may be attributed to the released checkpoint.
+  checkpoints (Table A36) are not released. The exploratory retrained estimators of
+  Tables A40–A41 are separate models whose weights are not yet published; their runner needs
+  local copies ([retrained estimators](#retrained-estimators)). None of these results may be
+  attributed to the released checkpoint.
 - **Training.** The deployed model's training source is only partially pinned, so the public
   checkpoint permits evaluation without claiming an exact retraining replay.
 - **Partial runners.** The Table 1 runner covers the held-out likelihoods of VDC, TLL and
