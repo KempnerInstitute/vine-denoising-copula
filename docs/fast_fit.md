@@ -17,9 +17,10 @@ vine.fit(training_uniforms, diffusion_model=pretrained_model, verbose=False)
 ```
 
 Supply data already transformed to uniform marginals, and a loaded original
-VDC checkpoint. The NeurIPS project gives the checkpoint hash, loading recipe,
-precision settings and a complete timing runner. Edges within a tree are
-processed in batches of up to 256 in this configuration. Successive trees still
+VDC checkpoint. The [paper reproduction guide](../paper/README.md) gives the
+checkpoint hash, loading recipe, precision settings and a complete timing
+runner. Edges within a tree are processed in batches of up to 256 in this
+configuration. Successive trees still
 depend on the conditional inputs produced by earlier trees.
 
 On the paper's Clayton benchmark at n=20,000 and d=100/200/500, the option

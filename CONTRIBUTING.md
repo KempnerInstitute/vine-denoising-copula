@@ -21,12 +21,17 @@ in unit tests; use a separate integration check for the released model.
 - `vdc/`: reusable models, data utilities, training and inference.
 - `scripts/`: software entry points and model/data tools.
 - `examples/`: small programs using the public API.
-- `projects/neurips2026/`: portable paper protocols and reference outputs.
 - `docs/`: user and maintainer documentation.
+- `paper/`: everything paper-specific: experiment runners, figure and table
+  generators with their compact saved inputs, reference outputs and the
+  ablation training configurations of the NeurIPS 2026 paper.
 
-Keep manuscript builds, figure-production scripts, cluster launchers and internal
-research notes outside this repository. Do not commit credentials, personal
-storage paths, scheduler accounts, raw datasets or model weights.
+Keep paper material in `paper/`; it imports `vdc` and is not installed with the
+package. Saved inputs there are immutable: their hashes are recorded in
+`MANIFEST.json` files and checked by the figure scripts. Keep manuscript
+builds, cluster launchers and internal research notes outside this repository.
+Do not commit credentials, personal storage paths, scheduler accounts, raw
+datasets or model weights.
 
 ## Numerical changes
 

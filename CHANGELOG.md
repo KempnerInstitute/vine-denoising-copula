@@ -3,6 +3,15 @@
 Published versions are immutable. The NeurIPS 2026 paper pins v0.2.6;
 its checkpoints and reproduction archives remain available.
 
+## Unreleased
+
+- Gather all NeurIPS 2026 reproduction material in `paper/`: the experiment runners and
+  reference outputs (formerly `projects/neurips2026/`), the figure and table generators with
+  their saved inputs (formerly distributed only as a release archive) and the ablation training
+  configurations (formerly in `configs/train/`). Saved outputs, runner defaults and numerical
+  behavior are unchanged; [`paper/README.md`](paper/README.md) maps every figure and table to
+  its script, inputs and runner.
+
 ## v0.2.7 — 2026-11-12
 
 - Correct Joe/BB1/BB7 training samples and BB density targets; test against analytic CDFs.

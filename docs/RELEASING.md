@@ -8,7 +8,9 @@
 3. Run the complete test suite, build a wheel and sdist, and test imports and
    command-line entry points from the installed wheel.
 4. Run the pretrained example with the public model and verify its hash.
-5. Build the documentation and check local links.
+5. Build the documentation and check local links. When `paper/` changed,
+   regenerate its figures and tables as described in
+   [its guide](../paper/README.md) and confirm that they still match the paper.
 6. Inspect the public tree and archives for credentials, private paths, internal
    notes, datasets and checkpoints. Update `PUBLIC_RELEASE_FILES.json` when the
    curated source contents change.
@@ -19,8 +21,9 @@ Create a new version tag after verification. Pushing a `v*` tag runs the
 release workflow: it verifies the package version, tests the code, builds the
 wheel and source distribution, and publishes the packages and checksums to
 GitHub Releases. Never move a historical tag or replace a
-checkpoint under an existing model ID. The paper's source and figure archives
-retain their generation pins even when later software versions are published.
+checkpoint under an existing model ID. The paper's saved outputs in `paper/`
+and the figure archives attached to releases v0.2.4 to v0.2.6 retain their
+generation pins even when later software versions are published.
 
 ## Publish a model
 

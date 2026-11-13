@@ -21,4 +21,5 @@ python examples/train_custom_copula.py --output results/custom.yaml
 ```
 
 These are software demonstrations, not reproductions of the paper's reported
-benchmarks. Fixed protocols and reference outputs live in `projects/neurips2026/`.
+benchmarks. Fixed protocols and reference outputs live in
+[`paper/`](../paper/README.md).

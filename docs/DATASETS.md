@@ -64,5 +64,5 @@ replace an existing output whose arrays differ unless `--force` is given.
 ## S&P100 returns
 
 The S&P100 experiments read `<data root>/finance/sp100_returns.npy` (daily returns of 100 stocks,
-shape `(T, 100)`). The price data are not redistributed; [the paper symbol list](https://github.com/KempnerInstitute/vine-denoising-copula/tree/main/projects/neurips2026/data/sp100_symbols.json)
+shape `(T, 100)`). The price data are not redistributed; [the paper symbol list](../paper/data/sp100_symbols.json)
 lists the symbols and date range used in the paper.

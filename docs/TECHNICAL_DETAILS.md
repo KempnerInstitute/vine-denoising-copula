@@ -50,7 +50,7 @@ differs from nonnegative population conditional mutual information.
 - Fast fitting and compiled sampling have qualified settings, described in their
   [fitting](fast_fit.md) and [sampling](compiled_sampler.md) guides.
 - Paper experiments use explicit model hashes and software pins in the
-  [NeurIPS project](../projects/neurips2026/README.md), not unspecified current defaults.
+  [paper reproduction guide](../paper/README.md), not unspecified current defaults.
 
 Probit-coordinate and transformed-density training options are experimental.
 They should not be interpreted as proof that a checkpoint supports nonuniform

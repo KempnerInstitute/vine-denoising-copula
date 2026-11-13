@@ -13,6 +13,8 @@ retraining. The `data/`, `model/` and `inference/` fragments also serve older
 configuration frontends and cannot all be passed directly to the unified trainer.
 
 Paper reproduction uses the source pins and protocol-specific settings in
-[`projects/neurips2026`](../projects/neurips2026/), not whichever configuration
-happens to be present on `main`. Pretrained inference restores the model's
-embedded configuration and does not require these YAML files.
+[`paper/`](../paper/), not whichever configuration happens to be present on
+`main`. The training configurations of the paper's corruption and probit
+ablations are kept with it in [`paper/configs/`](../paper/configs/). Pretrained
+inference restores the model's embedded configuration and does not require
+these YAML files.

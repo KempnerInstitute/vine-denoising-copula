@@ -113,5 +113,5 @@ sampler handles are not serialized; prepare a new handle after loading.
 - Evaluate conditional predictions for the intended task; good joint likelihood
   alone does not establish imputation or tail-risk calibration.
 
-For benchmark protocols, use the [NeurIPS project](../projects/neurips2026/README.md).
+For benchmark protocols, use the [paper reproduction guide](../paper/README.md).
 Its fixed settings and release pins should not be inferred from library defaults.

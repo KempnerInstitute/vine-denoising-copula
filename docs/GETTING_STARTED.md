@@ -60,8 +60,7 @@ checkpoint can be supplied with `--checkpoint /path/to/model.pt`.
 - [API reference](API.md): supported signatures and defaults.
 - [Training configuration](CONFIGURATION.md): train a separate model.
 - [Pretrained models](MODEL_RELEASES.md): caching, hashes and artifact versions.
-- [NeurIPS reproduction](../projects/neurips2026/README.md): fixed experimental protocols.
+- [Reproducing the paper](../paper/README.md): figure and table generators,
+  saved outputs and fixed experimental protocols of the NeurIPS 2026 paper.
 
-The paper's plotting scripts and saved figure inputs are distributed in its
-versioned release archive, linked from the NeurIPS project. They are separate
-from the library and portable experiment runners.
+The paper material in `paper/` imports the library but is not installed with it.

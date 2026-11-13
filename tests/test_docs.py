@@ -30,7 +30,9 @@ def test_site_links_resolve_relative_to_source(source, url, expected):
 
 def test_user_documentation_has_no_missing_local_targets():
     paths = [ROOT / name for name in ["README.md", "CHANGELOG.md", "CONTRIBUTING.md",
-                                     "examples/README.md", "configs/README.md"]]
+                                     "examples/README.md", "configs/README.md",
+                                     "paper/README.md", "paper/figures/README.md",
+                                     "paper/tables/README.md"]]
     paths += list((ROOT / "docs").glob("*.md"))
     missing = []
     for path in paths:
