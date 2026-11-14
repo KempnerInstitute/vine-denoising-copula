@@ -15,7 +15,9 @@ inference from optional training and baseline dependencies.
 - The probability-mass histogram is named `scatter_to_mass_hist`; its old name
   remains an alias. Unit tests and a public diagnostic distinguish it from the
   density histogram required by pretrained inference (GitHub issue #8).
-- Python 3.10 or later is required. CI covers Python 3.10–3.13 and checks a
+- Python 3.11 or later is required so current patched dependencies are available.
+  The package requires `filelock>=4.2.1`, including when an older version was
+  installed from the PyTorch CPU index. CI covers Python 3.11–3.13 and checks a
   minimal installed wheel on Linux, macOS and Windows. Release checks exercise
   all three published checkpoints, small vines, persistence and NumPy sampling
   fallback outside the source checkout.

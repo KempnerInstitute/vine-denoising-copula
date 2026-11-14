@@ -2,7 +2,7 @@
 
 ## Install
 
-Use Python 3.10 or later and an isolated environment:
+Use Python 3.11 or later and an isolated environment:
 
 ```bash
 python -m venv .venv

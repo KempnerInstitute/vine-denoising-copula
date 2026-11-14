@@ -62,7 +62,7 @@ See the paper and [the reproduction guide](https://github.com/KempnerInstitute/v
 python -m pip install vine-denoising-copula
 ```
 
-Python 3.10 or later with PyTorch 2 is required. A GPU is optional. The base
+Python 3.11 or later with PyTorch 2 is required. A GPU is optional. The base
 install supports pretrained pair densities, vine fitting, likelihoods and
 sampling without pyvinecopulib or plotting/training packages. Optional features:
 

@@ -8,7 +8,7 @@ its checkpoints and reproduction archives remain available.
 - Separate pretrained model construction from the training engine. The base
   install no longer requires pyvinecopulib, Matplotlib, HDF5, Hydra or
   scikit-learn; use `[train]`, `[baselines]`, `[viz]` and `[data]` as needed.
-- Require Python 3.10 or later and test Python 3.10–3.13.
+- Require Python 3.11 or later and test Python 3.11–3.13.
 - Add installed-model checks and TestPyPI/PyPI Trusted Publishing. Model
   weights, constructor calculations and inference defaults are unchanged.
 

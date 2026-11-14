@@ -71,7 +71,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.10", "3.11", "3.12", "3.13"]
+        python: ["3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -140,7 +140,10 @@ jobs:
           key: ${{ runner.os }}-released-models-${{ hashFiles('vdc/resources/pretrained/*.json') }}
       - name: Exercise installed inference without training dependencies
         working-directory: ${{ runner.temp }}
-        run: python -I "$GITHUB_WORKSPACE/scripts/check_installation.py" --require-minimal --output "$GITHUB_WORKSPACE/installed-model.json"
+        run: |
+          model_flags=()
+          if [[ "$RUNNER_OS" == Linux ]]; then model_flags+=(--all-models); fi
+          python -I "$GITHUB_WORKSPACE/scripts/check_installation.py" --require-minimal "${model_flags[@]}" --output "$GITHUB_WORKSPACE/installed-model.json"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
