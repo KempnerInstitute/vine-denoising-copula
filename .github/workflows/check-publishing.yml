@@ -1,0 +1,46 @@
+name: Check publishing identity
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['release/**']
+    paths: ['.github/workflows/check-publishing.yml']
+
+permissions: {}
+
+jobs:
+  inspect-issuer:
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      id-token: write
+    steps:
+      - name: Show non-secret publisher identity fields
+        run: |
+          python3 - <<'PYTHON'
+          import base64
+          import json
+          import os
+          import urllib.parse
+          import urllib.request
+
+          # Inspect claims for diagnostics only. Never log or save the token,
+          # and never use these unverified values to grant access.
+          endpoint = os.environ['ACTIONS_ID_TOKEN_REQUEST_URL']
+          separator = '&' if '?' in endpoint else '?'
+          request = urllib.request.Request(
+              endpoint + separator + urllib.parse.urlencode({'audience': 'pypi'}),
+              headers={'Authorization': 'Bearer ' + os.environ['ACTIONS_ID_TOKEN_REQUEST_TOKEN']},
+          )
+          with urllib.request.urlopen(request, timeout=30) as response:
+              token = json.load(response)['value']
+          payload = token.split('.')[1]
+          claims = json.loads(base64.urlsafe_b64decode(payload + '=' * (-len(payload) % 4)))
+          fields = ('iss', 'aud', 'repository', 'environment')
+          identity = {field: claims.get(field) for field in fields}
+          identity['standard_github_issuer'] = claims.get('iss') == 'https://token.actions.githubusercontent.com'
+          print(json.dumps(identity, indent=2))
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write('Publisher identity (non-secret diagnostic fields):\n\n```json\n')
+              summary.write(json.dumps(identity, indent=2) + '\n```\n')
+          PYTHON
