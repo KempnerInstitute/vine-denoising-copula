@@ -1,0 +1,80 @@
+name: Verify publishing tokens
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: An existing version published on both indexes
+        required: true
+        default: '0.4.0'
+        type: string
+  push:
+    branches: [main]
+    paths: ['.github/workflows/verify-publishing-tokens.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  authenticate:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - index: testpypi
+            upload_url: https://test.pypi.org/legacy/
+          - index: pypi
+            upload_url: https://upload.pypi.org/legacy/
+    environment: ${{ matrix.index }}
+    env:
+      RELEASE_VERSION: ${{ inputs.version || '0.4.0' }}
+      PACKAGE_INDEX: ${{ matrix.index }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download the existing release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PYTHON'
+          import os, re
+          if not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', os.environ['RELEASE_VERSION']):
+              raise SystemExit('Use an existing stable release, such as 0.4.0')
+          PYTHON
+          gh release download "v$RELEASE_VERSION" --repo "$GITHUB_REPOSITORY" --dir dist \
+            --pattern "vine_denoising_copula-$RELEASE_VERSION-py3-none-any.whl" \
+            --pattern "vine_denoising_copula-$RELEASE_VERSION.tar.gz"
+      - name: Require identical files already on the index
+        run: |
+          python scripts/verify_index_release.py --index "$PACKAGE_INDEX" \
+            --version "$RELEASE_VERSION" --dist-dir dist --output-dir published
+      - name: Install the upload client
+        run: python -m pip install 'twine>=6,<7'
+      - name: Authenticate with the existing identical wheel
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+          TWINE_REPOSITORY_URL: ${{ matrix.upload_url }}
+          PYTHON_KEYRING_BACKEND: keyring.backends.null.Keyring
+        run: |
+          if [ -z "$TWINE_PASSWORD" ]; then
+            echo '::error::The environment PYPI_API_TOKEN secret is missing.'
+            exit 1
+          fi
+          # Do not use --skip-existing: its public existence check can bypass authentication.
+          # Warehouse authenticates and checks project permissions before accepting an
+          # identical duplicate as a no-op. No package is built or modified here.
+          python -m twine upload --non-interactive --disable-progress-bar published/*.whl
+      - name: Verify the release is unchanged
+        run: |
+          python scripts/verify_index_release.py --index "$PACKAGE_INDEX" \
+            --version "$RELEASE_VERSION" --dist-dir dist --output-dir verified
+          printf 'Verified %s upload credentials for version %s; published file hashes are unchanged.\n' \
+            "$PACKAGE_INDEX" "$RELEASE_VERSION" >> "$GITHUB_STEP_SUMMARY"

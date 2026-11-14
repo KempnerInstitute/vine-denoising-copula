@@ -56,10 +56,20 @@ Never put tokens in source files, command lines, logs or issue comments.
 
 Use a token scoped to this project when it already exists. The first upload
 requires an account-scoped token because there is no project to select yet;
-after that upload, revoke it and replace the environment secret with a token
+after that upload, replace the environment secret with a token
 scoped to `vine-denoising-copula`. This is done separately on the two indexes.
 When a token secret is present, the workflow uses it and disables OIDC-based
 attestations. When it is absent, the workflow uses Trusted Publishing.
+
+After replacing tokens, run **Verify publishing tokens** from GitHub Actions
+on `main`, selecting a version already published on both indexes. It checks
+the public file hashes, makes an authenticated upload of the identical wheel,
+and checks the hashes again. Warehouse accepts an identical duplicate without
+changing the release. Both environment jobs must pass before revoking the old
+tokens. The check also runs when its workflow is updated on `main`.
+
+Do not use the recovery workflow's `skip-existing` result to validate a token:
+Twine can skip an existing file before authenticating.
 
 ## Publish
 
