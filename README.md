@@ -6,6 +6,7 @@
 
 [![CI](https://github.com/KempnerInstitute/vine-denoising-copula/actions/workflows/ci.yml/badge.svg)](https://github.com/KempnerInstitute/vine-denoising-copula/actions/workflows/ci.yml)
 [![Docs](https://img.shields.io/badge/docs-online-blue)](https://kempnerinstitute.github.io/vine-denoising-copula/)
+[![PyPI](https://img.shields.io/pypi/v/vine-denoising-copula)](https://pypi.org/project/vine-denoising-copula/)
 [![Paper](https://img.shields.io/badge/NeurIPS-2026-8c1515)](https://arxiv.org/abs/2604.20568)
 [![Model](https://img.shields.io/badge/%F0%9F%A4%97%20model-vdc--denoiser--m64--v1-yellow)](https://huggingface.co/hsafaai/vdc-denoiser-m64-v1)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)

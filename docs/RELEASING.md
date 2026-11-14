@@ -15,61 +15,54 @@
    notes, datasets and checkpoints. Update `PUBLIC_RELEASE_FILES.json` when the
    curated source contents change.
 
-## Configure PyPI once
+## Maintainer publishing credentials
 
-Use accounts with two-factor authentication on PyPI and TestPyPI (separate
-accounts). In each account's **Publishing** page, register a pending GitHub
-Trusted Publisher:
+The project is published on [PyPI](https://pypi.org/project/vine-denoising-copula/)
+and [TestPyPI](https://test.pypi.org/project/vine-denoising-copula/). Publishing
+currently uses project-scoped API tokens. Users need no account or token to
+install the package.
 
-| Field | PyPI | TestPyPI |
+Use separate PyPI and TestPyPI accounts with two-factor authentication. Store
+each token in the matching GitHub environment; restrict environment access
+and release-tag creation to maintainers.
+
+| Token source | GitHub environment | Environment secret |
 |---|---|---|
-| Project | `vine-denoising-copula` | `vine-denoising-copula` |
-| Owner | `KempnerInstitute` | `KempnerInstitute` |
-| Repository | `vine-denoising-copula` | `vine-denoising-copula` |
-| Workflow filename | `release.yml` | `release.yml` |
-| Environment | `pypi` | `testpypi` |
+| [PyPI account settings](https://pypi.org/manage/account/) | `pypi` | `PYPI_API_TOKEN` |
+| [TestPyPI account settings](https://test.pypi.org/manage/account/) | `testpypi` | `PYPI_API_TOKEN` |
 
-Configure the matching GitHub environments and restrict release-tag creation
-and environment access to maintainers. The workflow requests short-lived OIDC
-credentials only in the publishing jobs; no permanent PyPI upload token is
-needed. The first successful upload creates the project. A pending publisher
-does not reserve its name.
+### Rotate tokens
 
-- [PyPI publishing settings](https://pypi.org/manage/account/publishing/)
-- [TestPyPI publishing settings](https://test.pypi.org/manage/account/publishing/)
-- [Trusted Publishing documentation](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/)
+1. Create a replacement token scoped to `vine-denoising-copula` on each index.
+2. Replace `PYPI_API_TOKEN` directly in the corresponding GitHub environment.
+3. Run [**Verify publishing tokens**](https://github.com/KempnerInstitute/vine-denoising-copula/actions/workflows/verify-publishing-tokens.yml)
+   on `main`, selecting a version already published on both indexes.
+4. Once both environment jobs pass, revoke the old tokens in the two accounts.
 
-### GitHub Enterprise issuer compatibility
-
-PyPI may reject an enterprise's customized OIDC issuer with `invalid-payload:
-unknown trusted publishing issuer`. This happens before publisher matching;
-recreating a pending publisher does not resolve it. The **Check publishing
-identity** workflow reports only the issuer, audience, repository and environment,
-never the authentication token. See
-[PyPI's issuer compatibility issue](https://github.com/pypi/warehouse/issues/17700).
-
-Where Trusted Publishing is unavailable, the release workflow also supports
-PyPI API tokens. Add an environment secret named `PYPI_API_TOKEN` in each
-GitHub environment: the TestPyPI token in `testpypi`, and the production PyPI
-token in `pypi`. Enter values directly in GitHub's environment settings.
 Never put tokens in source files, command lines, logs or issue comments.
-
-Use a token scoped to this project when it already exists. The first upload
-requires an account-scoped token because there is no project to select yet;
-after that upload, replace the environment secret with a token
-scoped to `vine-denoising-copula`. This is done separately on the two indexes.
-When a token secret is present, the workflow uses it and disables OIDC-based
-attestations. When it is absent, the workflow uses Trusted Publishing.
-
-After replacing tokens, run **Verify publishing tokens** from GitHub Actions
-on `main`, selecting a version already published on both indexes. It checks
+The verification workflow checks
 the public file hashes, makes an authenticated upload of the identical wheel,
 and checks the hashes again. Warehouse accepts an identical duplicate without
-changing the release. Both environment jobs must pass before revoking the old
-tokens. The check also runs when its workflow is updated on `main`.
+changing the release. The check also runs when its workflow is updated on `main`.
 
 Do not use the recovery workflow's `skip-existing` result to validate a token:
 Twine can skip an existing file before authenticating.
+
+### Trusted Publishing option
+
+The release workflow also supports Trusted Publishing when the GitHub OIDC
+issuer is accepted by the package index. Configure the publisher for owner
+`KempnerInstitute`, repository `vine-denoising-copula`, workflow `release.yml`
+and environment `pypi` or `testpypi`, respectively. See the
+[PyPI documentation](https://docs.pypi.org/trusted-publishers/adding-a-publisher/).
+When `PYPI_API_TOKEN` is present, the workflow uses it and disables OIDC-based
+attestations; otherwise it attempts Trusted Publishing.
+
+An unsupported enterprise issuer produces `invalid-payload: unknown trusted
+publishing issuer`; recreating a publisher does not resolve it. The **Check
+publishing identity** workflow reports non-secret identity fields for diagnosis.
+This repository uses API tokens because of that issuer restriction. See
+[PyPI's issuer compatibility issue](https://github.com/pypi/warehouse/issues/17700).
 
 ## Publish
 
@@ -88,7 +81,7 @@ Only after this succeeds does it publish the same files to PyPI, whose published
 hashes are checked as the final step. Publication status must be verified on
 both indexes; a GitHub release alone does not mean the PyPI upload succeeded.
 
-If account configuration blocks publishing, fix the Trusted Publisher and
+If account configuration blocks publishing, fix the token or publisher setup and
 rerun **failed jobs**, preserving the successful build's artifacts. Do not
 rebuild or replace the same version. Workflow artifacts are retained for 30
 days. A new build dispatched manually must target its matching version tag.

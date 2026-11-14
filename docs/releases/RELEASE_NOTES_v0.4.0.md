@@ -1,7 +1,12 @@
 # VDC 0.4.0
 
-This release prepares standard PyPI installation and separates pretrained
-inference from optional training and baseline dependencies.
+VDC is now available on [PyPI](https://pypi.org/project/vine-denoising-copula/0.4.0/).
+This release separates pretrained inference from optional training and baseline
+dependencies:
+
+```bash
+python -m pip install vine-denoising-copula
+```
 
 - The base package supports pair-density estimation, vine fitting, likelihoods
   and sampling without pyvinecopulib, Matplotlib, HDF5, Hydra or scikit-learn.
@@ -23,8 +28,9 @@ inference from optional training and baseline dependencies.
   fallback outside the source checkout.
 - GitHub Actions builds packages once, publishes them to TestPyPI, downloads
   and verifies their hashes, runs inference from the downloaded wheel, then
-  publishes the same distributions to PyPI using Trusted Publishing. GitHub
-  Releases retains the distributions and their checksums.
+  publishes the same distributions to PyPI. GitHub Releases retains the
+  distributions and their checksums. Maintainer authentication and token
+  rotation are described in the [release guide](../RELEASING.md).
 
 Install this project as `vine-denoising-copula`; the PyPI project named `vdc`
 is unrelated and uses the same import namespace. Keep them in separate virtual

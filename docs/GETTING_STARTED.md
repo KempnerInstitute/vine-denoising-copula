@@ -2,7 +2,9 @@
 
 ## Install
 
-Use Python 3.11 or later and an isolated environment:
+Install the published package from [PyPI](https://pypi.org/project/vine-denoising-copula/)
+using Python 3.11 or later and an isolated environment. No PyPI account or token
+is needed to install or use VDC:
 
 ```bash
 python -m venv .venv

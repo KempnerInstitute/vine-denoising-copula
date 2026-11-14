@@ -9,8 +9,9 @@ its checkpoints and reproduction archives remain available.
   install no longer requires pyvinecopulib, Matplotlib, HDF5, Hydra or
   scikit-learn; use `[train]`, `[baselines]`, `[viz]` and `[data]` as needed.
 - Require Python 3.11 or later and test Python 3.11–3.13.
-- Add installed-model checks and TestPyPI/PyPI Trusted Publishing. Model
-  weights, constructor calculations and inference defaults are unchanged.
+- Publish to [PyPI](https://pypi.org/project/vine-denoising-copula/0.4.0/) with
+  installed-model checks and TestPyPI verification. Model weights, constructor
+  calculations and inference defaults are unchanged.
 
 
 - Name the probability-mass histogram `vdc.data.hist.scatter_to_mass_hist`
