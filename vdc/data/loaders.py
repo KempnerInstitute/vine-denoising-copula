@@ -8,7 +8,7 @@ import numpy as np
 import h5py
 from pathlib import Path
 from typing import Optional, Dict, Any, List
-from vdc.data.hist import scatter_to_hist
+from vdc.data.hist import scatter_to_mass_hist
 
 
 class CopulaPairs(Dataset):
@@ -88,7 +88,7 @@ class CopulaPairs(Dataset):
             for idx in range(len(self.file_paths)):
                 with h5py.File(self.file_paths[idx], 'r') as f:
                     points = f['points'][:]
-                hist = scatter_to_hist(points, self.m, self.reflect, self.smooth_sigma)
+                hist = scatter_to_mass_hist(points, self.m, self.reflect, self.smooth_sigma)
                 self.histograms[idx] = hist
                 
                 if (idx + 1) % 1000 == 0:
@@ -130,7 +130,7 @@ class CopulaPairs(Dataset):
         if self.precompute_histograms:
             hist = self.histograms[idx]
         else:
-            hist = scatter_to_hist(points, self.m, self.reflect, self.smooth_sigma)
+            hist = scatter_to_mass_hist(points, self.m, self.reflect, self.smooth_sigma)
         
         # Convert to tensors
         hist_tensor = torch.from_numpy(hist).unsqueeze(0).float()  # (1, m, m)

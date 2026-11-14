@@ -17,7 +17,7 @@ from typing import Optional, Dict, Any, Iterator
 from functools import lru_cache
 import random
 
-from vdc.data.hist import scatter_to_hist
+from vdc.data.hist import scatter_to_mass_hist
 
 
 class StreamingCopulaDataset(IterableDataset):
@@ -203,7 +203,7 @@ class StreamingCopulaDataset(IterableDataset):
                 points, log_pdf_grid = self._augment_sample(points, log_pdf_grid)
             
             # Compute histogram
-            hist = scatter_to_hist(points, self.m, self.reflect, self.smooth_sigma)
+            hist = scatter_to_mass_hist(points, self.m, self.reflect, self.smooth_sigma)
             
             # Convert to tensors
             hist_tensor = torch.from_numpy(hist).unsqueeze(0).float()  # (1, m, m)

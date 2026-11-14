@@ -1,0 +1,2908 @@
+{
+  "torch": "2.9.1+cu128",
+  "pyvinecopulib": "0.7.5",
+  "numpy": "2.2.6",
+  "device": "cpu",
+  "threads": 4,
+  "rows": [
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 500,
+      "method": "tll",
+      "iae": 0.07613975914879115
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 500,
+      "method": "v1",
+      "iae": 0.019499063445509338
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 500,
+      "method": "v1_shim",
+      "iae": 0.6409445483676809
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 500,
+      "method": "v2_m64",
+      "iae": 0.030384095319522988
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 500,
+      "method": "v2_m128",
+      "iae": 0.03841594930677254
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 2000,
+      "method": "tll",
+      "iae": 0.0423679614435942
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 2000,
+      "method": "v1",
+      "iae": 0.013325079076007287
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 2000,
+      "method": "v1_shim",
+      "iae": 0.7085012855757917
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 2000,
+      "method": "v2_m64",
+      "iae": 0.012732013151046466
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 2000,
+      "method": "v2_m128",
+      "iae": 0.018223615266120173
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 10000,
+      "method": "tll",
+      "iae": 0.03046860076497583
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 10000,
+      "method": "v1",
+      "iae": 0.01217042751772438
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 10000,
+      "method": "v1_shim",
+      "iae": 0.7736297954925074
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 10000,
+      "method": "v2_m64",
+      "iae": 0.010669160653441685
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 10000,
+      "method": "v2_m128",
+      "iae": 0.012871382550448777
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 500,
+      "method": "tll",
+      "iae": 0.12933637234773993
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 500,
+      "method": "v1",
+      "iae": 0.053028355360113064
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 500,
+      "method": "v1_shim",
+      "iae": 0.6584227670972598
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 500,
+      "method": "v2_m64",
+      "iae": 0.043041426856182965
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 500,
+      "method": "v2_m128",
+      "iae": 0.040016874139607375
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 2000,
+      "method": "tll",
+      "iae": 0.052056030283794075
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 2000,
+      "method": "v1",
+      "iae": 0.00995523719458629
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 2000,
+      "method": "v1_shim",
+      "iae": 0.7206787511558533
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 2000,
+      "method": "v2_m64",
+      "iae": 0.013616939355536874
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 2000,
+      "method": "v2_m128",
+      "iae": 0.009998230704663033
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 10000,
+      "method": "tll",
+      "iae": 0.029616860357782354
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 10000,
+      "method": "v1",
+      "iae": 0.01161026969423937
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 10000,
+      "method": "v1_shim",
+      "iae": 0.7462402904848022
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 10000,
+      "method": "v2_m64",
+      "iae": 0.007917703112070759
+    },
+    {
+      "seed": 42,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 10000,
+      "method": "v2_m128",
+      "iae": 0.009360465128772802
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 500,
+      "method": "tll",
+      "iae": 0.09297857861553728
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 500,
+      "method": "v1",
+      "iae": 0.016215731388419138
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 500,
+      "method": "v1_shim",
+      "iae": 0.7352344123562216
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 500,
+      "method": "v2_m64",
+      "iae": 0.0437037573692929
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 500,
+      "method": "v2_m128",
+      "iae": 0.045074049874054604
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 2000,
+      "method": "tll",
+      "iae": 0.0977722500292838
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 2000,
+      "method": "v1",
+      "iae": 0.023189578161505464
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 2000,
+      "method": "v1_shim",
+      "iae": 0.7839518971985598
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 2000,
+      "method": "v2_m64",
+      "iae": 0.01811109815467332
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 2000,
+      "method": "v2_m128",
+      "iae": 0.02066422000046017
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 10000,
+      "method": "tll",
+      "iae": 0.05523125325671733
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 10000,
+      "method": "v1",
+      "iae": 0.016823115120066137
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 10000,
+      "method": "v1_shim",
+      "iae": 0.7624821006152972
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 10000,
+      "method": "v2_m64",
+      "iae": 0.011749234248192684
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 10000,
+      "method": "v2_m128",
+      "iae": 0.0145385846738897
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 500,
+      "method": "tll",
+      "iae": 0.1941405914823541
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 500,
+      "method": "v1",
+      "iae": 0.040177430590996786
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 500,
+      "method": "v1_shim",
+      "iae": 0.9186865491171944
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 500,
+      "method": "v2_m64",
+      "iae": 0.06347166619754752
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 500,
+      "method": "v2_m128",
+      "iae": 0.05765525888601586
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 2000,
+      "method": "tll",
+      "iae": 0.17404062315326582
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 2000,
+      "method": "v1",
+      "iae": 0.020408193664329492
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 2000,
+      "method": "v1_shim",
+      "iae": 0.9638304467768191
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 2000,
+      "method": "v2_m64",
+      "iae": 0.03357220618847077
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 2000,
+      "method": "v2_m128",
+      "iae": 0.02826022546983645
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 10000,
+      "method": "tll",
+      "iae": 0.11216589261104512
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 10000,
+      "method": "v1",
+      "iae": 0.019139897619777302
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 10000,
+      "method": "v1_shim",
+      "iae": 0.9174642936064898
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 10000,
+      "method": "v2_m64",
+      "iae": 0.01715726038661102
+    },
+    {
+      "seed": 42,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 10000,
+      "method": "v2_m128",
+      "iae": 0.013866035098497577
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 500,
+      "method": "tll",
+      "iae": 0.11663217139877922
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 500,
+      "method": "v1",
+      "iae": 0.04797477137860214
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 500,
+      "method": "v1_shim",
+      "iae": 0.6491532479887163
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 500,
+      "method": "v2_m64",
+      "iae": 0.06428815779023424
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 500,
+      "method": "v2_m128",
+      "iae": 0.06426789728090442
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 2000,
+      "method": "tll",
+      "iae": 0.048562939128479
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 2000,
+      "method": "v1",
+      "iae": 0.00904675554618086
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 2000,
+      "method": "v1_shim",
+      "iae": 0.7216564441042003
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 2000,
+      "method": "v2_m64",
+      "iae": 0.009199122358948543
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 2000,
+      "method": "v2_m128",
+      "iae": 0.014954337368650445
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 10000,
+      "method": "tll",
+      "iae": 0.03209064638354214
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 10000,
+      "method": "v1",
+      "iae": 0.009876331357762964
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 10000,
+      "method": "v1_shim",
+      "iae": 0.7710095054252357
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 10000,
+      "method": "v2_m64",
+      "iae": 0.008163774084318322
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 10000,
+      "method": "v2_m128",
+      "iae": 0.011748495596873978
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 500,
+      "method": "tll",
+      "iae": 0.08644090456712754
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 500,
+      "method": "v1",
+      "iae": 0.015034294206478057
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 500,
+      "method": "v1_shim",
+      "iae": 0.6565270474548739
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 500,
+      "method": "v2_m64",
+      "iae": 0.02111396384752624
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 500,
+      "method": "v2_m128",
+      "iae": 0.019514710985543367
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 2000,
+      "method": "tll",
+      "iae": 0.040900661177264944
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 2000,
+      "method": "v1",
+      "iae": 0.014334403765286302
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 2000,
+      "method": "v1_shim",
+      "iae": 0.7155626511680825
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 2000,
+      "method": "v2_m64",
+      "iae": 0.02793321308542994
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 2000,
+      "method": "v2_m128",
+      "iae": 0.023107851567458856
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 10000,
+      "method": "tll",
+      "iae": 0.03158007689260108
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 10000,
+      "method": "v1",
+      "iae": 0.010500280545203985
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 10000,
+      "method": "v1_shim",
+      "iae": 0.7464263004774342
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 10000,
+      "method": "v2_m64",
+      "iae": 0.013442404767197297
+    },
+    {
+      "seed": 43,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 10000,
+      "method": "v2_m128",
+      "iae": 0.012658320775522243
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 500,
+      "method": "tll",
+      "iae": 0.1807627491112393
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 500,
+      "method": "v1",
+      "iae": 0.04718480938619457
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 500,
+      "method": "v1_shim",
+      "iae": 0.7218425723570187
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 500,
+      "method": "v2_m64",
+      "iae": 0.0376005628707679
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 500,
+      "method": "v2_m128",
+      "iae": 0.040917740335210964
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 2000,
+      "method": "tll",
+      "iae": 0.12273231755309609
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 2000,
+      "method": "v1",
+      "iae": 0.041932946033454384
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 2000,
+      "method": "v1_shim",
+      "iae": 0.7938755289382791
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 2000,
+      "method": "v2_m64",
+      "iae": 0.0393278746816499
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 2000,
+      "method": "v2_m128",
+      "iae": 0.03887335738110415
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 10000,
+      "method": "tll",
+      "iae": 0.04832751118755894
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 10000,
+      "method": "v1",
+      "iae": 0.02092894465901758
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 10000,
+      "method": "v1_shim",
+      "iae": 0.7462858650493017
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 10000,
+      "method": "v2_m64",
+      "iae": 0.00733507746571078
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 10000,
+      "method": "v2_m128",
+      "iae": 0.007119218677970278
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 500,
+      "method": "tll",
+      "iae": 0.2415035070313268
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 500,
+      "method": "v1",
+      "iae": 0.020095019379423023
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 500,
+      "method": "v1_shim",
+      "iae": 0.9239236118453086
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 500,
+      "method": "v2_m64",
+      "iae": 0.025227736081031255
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 500,
+      "method": "v2_m128",
+      "iae": 0.02413415690925722
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 2000,
+      "method": "tll",
+      "iae": 0.15930833327635913
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 2000,
+      "method": "v1",
+      "iae": 0.021477644859644533
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 2000,
+      "method": "v1_shim",
+      "iae": 0.9463966582211535
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 2000,
+      "method": "v2_m64",
+      "iae": 0.021265947358816435
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 2000,
+      "method": "v2_m128",
+      "iae": 0.02265359899381077
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 10000,
+      "method": "tll",
+      "iae": 0.1349298557405096
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 10000,
+      "method": "v1",
+      "iae": 0.02436422045830143
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 10000,
+      "method": "v1_shim",
+      "iae": 0.9578996804241134
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 10000,
+      "method": "v2_m64",
+      "iae": 0.016496735345384705
+    },
+    {
+      "seed": 43,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 10000,
+      "method": "v2_m128",
+      "iae": 0.010883764340126811
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 500,
+      "method": "tll",
+      "iae": 0.1068836684209276
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 500,
+      "method": "v1",
+      "iae": 0.056454250393066285
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 500,
+      "method": "v1_shim",
+      "iae": 0.6518064278787881
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 500,
+      "method": "v2_m64",
+      "iae": 0.0412033748374153
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 500,
+      "method": "v2_m128",
+      "iae": 0.05270435008530027
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 2000,
+      "method": "tll",
+      "iae": 0.045217445763925786
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 2000,
+      "method": "v1",
+      "iae": 0.015799239727993387
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 2000,
+      "method": "v1_shim",
+      "iae": 0.6993954245944491
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 2000,
+      "method": "v2_m64",
+      "iae": 0.018245749184198114
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 2000,
+      "method": "v2_m128",
+      "iae": 0.014984546361599859
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 10000,
+      "method": "tll",
+      "iae": 0.028165986262733714
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 10000,
+      "method": "v1",
+      "iae": 0.006604579777547251
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 10000,
+      "method": "v1_shim",
+      "iae": 0.782214755865673
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 10000,
+      "method": "v2_m64",
+      "iae": 0.007736434047809473
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 10000,
+      "method": "v2_m128",
+      "iae": 0.009902964925805764
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 500,
+      "method": "tll",
+      "iae": 0.07161311941576078
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 500,
+      "method": "v1",
+      "iae": 0.08008505941339192
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 500,
+      "method": "v1_shim",
+      "iae": 0.6574389955056041
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 500,
+      "method": "v2_m64",
+      "iae": 0.0890359412677982
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 500,
+      "method": "v2_m128",
+      "iae": 0.07939015263171131
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 2000,
+      "method": "tll",
+      "iae": 0.059050846371589645
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 2000,
+      "method": "v1",
+      "iae": 0.009987130150245943
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 2000,
+      "method": "v1_shim",
+      "iae": 0.6977681139434512
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 2000,
+      "method": "v2_m64",
+      "iae": 0.018869935102110935
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 2000,
+      "method": "v2_m128",
+      "iae": 0.014461135053337296
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 10000,
+      "method": "tll",
+      "iae": 0.03060036458116049
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 10000,
+      "method": "v1",
+      "iae": 0.014410672069252107
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 10000,
+      "method": "v1_shim",
+      "iae": 0.7713731545112557
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 10000,
+      "method": "v2_m64",
+      "iae": 0.007552559593904938
+    },
+    {
+      "seed": 44,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 10000,
+      "method": "v2_m128",
+      "iae": 0.007392764983911971
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 500,
+      "method": "tll",
+      "iae": 0.13445203002753808
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 500,
+      "method": "v1",
+      "iae": 0.01735506607547741
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 500,
+      "method": "v1_shim",
+      "iae": 0.719297015461238
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 500,
+      "method": "v2_m64",
+      "iae": 0.019770632319930235
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 500,
+      "method": "v2_m128",
+      "iae": 0.029745729722409686
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 2000,
+      "method": "tll",
+      "iae": 0.08026806838338271
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 2000,
+      "method": "v1",
+      "iae": 0.020131851892795004
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 2000,
+      "method": "v1_shim",
+      "iae": 0.785475841788047
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 2000,
+      "method": "v2_m64",
+      "iae": 0.01221512634438798
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 2000,
+      "method": "v2_m128",
+      "iae": 0.013358438309423718
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 10000,
+      "method": "tll",
+      "iae": 0.06771966582790839
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 10000,
+      "method": "v1",
+      "iae": 0.03450079418151517
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 10000,
+      "method": "v1_shim",
+      "iae": 0.7760137250806393
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 10000,
+      "method": "v2_m64",
+      "iae": 0.011272700715995457
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 10000,
+      "method": "v2_m128",
+      "iae": 0.012328356959795441
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 500,
+      "method": "tll",
+      "iae": 0.22400380764268293
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 500,
+      "method": "v1",
+      "iae": 0.03439536755967859
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 500,
+      "method": "v1_shim",
+      "iae": 0.9732884084456327
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 500,
+      "method": "v2_m64",
+      "iae": 0.054164299674567734
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 500,
+      "method": "v2_m128",
+      "iae": 0.03797003420016448
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 2000,
+      "method": "tll",
+      "iae": 0.16938742391123662
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 2000,
+      "method": "v1",
+      "iae": 0.024721185871874756
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 2000,
+      "method": "v1_shim",
+      "iae": 0.9380308644280513
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 2000,
+      "method": "v2_m64",
+      "iae": 0.015833539115352183
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 2000,
+      "method": "v2_m128",
+      "iae": 0.016927163206158485
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 10000,
+      "method": "tll",
+      "iae": 0.12676356400065902
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 10000,
+      "method": "v1",
+      "iae": 0.01484097973189697
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 10000,
+      "method": "v1_shim",
+      "iae": 0.9626641454855865
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 10000,
+      "method": "v2_m64",
+      "iae": 0.011232795315902912
+    },
+    {
+      "seed": 44,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 10000,
+      "method": "v2_m128",
+      "iae": 0.01022059622440141
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 500,
+      "method": "tll",
+      "iae": 0.06760538817270806
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 500,
+      "method": "v1",
+      "iae": 0.02147155073193533
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 500,
+      "method": "v1_shim",
+      "iae": 0.6412187160200017
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 500,
+      "method": "v2_m64",
+      "iae": 0.022477242869783386
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 500,
+      "method": "v2_m128",
+      "iae": 0.028542893333333944
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 2000,
+      "method": "tll",
+      "iae": 0.052315401845050645
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 2000,
+      "method": "v1",
+      "iae": 0.013219530352391222
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 2000,
+      "method": "v1_shim",
+      "iae": 0.6909848314796732
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 2000,
+      "method": "v2_m64",
+      "iae": 0.006062365765907129
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 2000,
+      "method": "v2_m128",
+      "iae": 0.010755299872497067
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 10000,
+      "method": "tll",
+      "iae": 0.032077653173303494
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 10000,
+      "method": "v1",
+      "iae": 0.007075003782266382
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 10000,
+      "method": "v1_shim",
+      "iae": 0.7742226268129869
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 10000,
+      "method": "v2_m64",
+      "iae": 0.009887208401131343
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 10000,
+      "method": "v2_m128",
+      "iae": 0.012939698909848852
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 500,
+      "method": "tll",
+      "iae": 0.07046939918035248
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 500,
+      "method": "v1",
+      "iae": 0.018411051830935315
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 500,
+      "method": "v1_shim",
+      "iae": 0.6502884213562895
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 500,
+      "method": "v2_m64",
+      "iae": 0.014717029967206188
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 500,
+      "method": "v2_m128",
+      "iae": 0.019322630147062377
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 2000,
+      "method": "tll",
+      "iae": 0.05582749458019955
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 2000,
+      "method": "v1",
+      "iae": 0.02774547002844052
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 2000,
+      "method": "v1_shim",
+      "iae": 0.7225547730667813
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 2000,
+      "method": "v2_m64",
+      "iae": 0.03357716004755996
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 2000,
+      "method": "v2_m128",
+      "iae": 0.03295823400336361
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 10000,
+      "method": "tll",
+      "iae": 0.027047717382223908
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 10000,
+      "method": "v1",
+      "iae": 0.009660948121489888
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 10000,
+      "method": "v1_shim",
+      "iae": 0.737944756352651
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 10000,
+      "method": "v2_m64",
+      "iae": 0.013794023283434388
+    },
+    {
+      "seed": 45,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 10000,
+      "method": "v2_m128",
+      "iae": 0.01170990248183355
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 500,
+      "method": "tll",
+      "iae": 0.11519577985451687
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 500,
+      "method": "v1",
+      "iae": 0.02102656552606695
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 500,
+      "method": "v1_shim",
+      "iae": 0.7199185816998154
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 500,
+      "method": "v2_m64",
+      "iae": 0.03620812092762992
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 500,
+      "method": "v2_m128",
+      "iae": 0.035703175477342024
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 2000,
+      "method": "tll",
+      "iae": 0.07758121759537061
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 2000,
+      "method": "v1",
+      "iae": 0.01288009480572172
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 2000,
+      "method": "v1_shim",
+      "iae": 0.7682538532470132
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 2000,
+      "method": "v2_m64",
+      "iae": 0.014603750376652999
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 2000,
+      "method": "v2_m128",
+      "iae": 0.02057574958795878
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 10000,
+      "method": "tll",
+      "iae": 0.05690659731819727
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 10000,
+      "method": "v1",
+      "iae": 0.017092463053450663
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 10000,
+      "method": "v1_shim",
+      "iae": 0.7800035269163472
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 10000,
+      "method": "v2_m64",
+      "iae": 0.01537287215581543
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 10000,
+      "method": "v2_m128",
+      "iae": 0.01516878278557843
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 500,
+      "method": "tll",
+      "iae": 0.2158285563960258
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 500,
+      "method": "v1",
+      "iae": 0.05995253037156428
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 500,
+      "method": "v1_shim",
+      "iae": 0.9485633877869605
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 500,
+      "method": "v2_m64",
+      "iae": 0.08741444025126607
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 500,
+      "method": "v2_m128",
+      "iae": 0.07056203276982996
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 2000,
+      "method": "tll",
+      "iae": 0.15764114552481773
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 2000,
+      "method": "v1",
+      "iae": 0.021751897245709473
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 2000,
+      "method": "v1_shim",
+      "iae": 0.983435179624778
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 2000,
+      "method": "v2_m64",
+      "iae": 0.022636558712734626
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 2000,
+      "method": "v2_m128",
+      "iae": 0.02594822852236787
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 10000,
+      "method": "tll",
+      "iae": 0.1368763597104207
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 10000,
+      "method": "v1",
+      "iae": 0.016659019627478285
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 10000,
+      "method": "v1_shim",
+      "iae": 0.9353610349367185
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 10000,
+      "method": "v2_m64",
+      "iae": 0.014272602978608129
+    },
+    {
+      "seed": 45,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 10000,
+      "method": "v2_m128",
+      "iae": 0.014473721729729085
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 500,
+      "method": "tll",
+      "iae": 0.07421060592265703
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 500,
+      "method": "v1",
+      "iae": 0.03212616337000309
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 500,
+      "method": "v1_shim",
+      "iae": 0.6537257424482147
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 500,
+      "method": "v2_m64",
+      "iae": 0.05156533031719451
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 500,
+      "method": "v2_m128",
+      "iae": 0.04602728364009149
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 2000,
+      "method": "tll",
+      "iae": 0.04926023450415934
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 2000,
+      "method": "v1",
+      "iae": 0.01194892361522842
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 2000,
+      "method": "v1_shim",
+      "iae": 0.6887094253600075
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 2000,
+      "method": "v2_m64",
+      "iae": 0.01493247427630268
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 2000,
+      "method": "v2_m128",
+      "iae": 0.015432976306885001
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 10000,
+      "method": "tll",
+      "iae": 0.028579934491260423
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 10000,
+      "method": "v1",
+      "iae": 0.009590654773090089
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 10000,
+      "method": "v1_shim",
+      "iae": 0.7877270022716957
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 10000,
+      "method": "v2_m64",
+      "iae": 0.009602657388193034
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.3,
+      "n": 10000,
+      "method": "v2_m128",
+      "iae": 0.013687314688913883
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 500,
+      "method": "tll",
+      "iae": 0.06717948299295187
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 500,
+      "method": "v1",
+      "iae": 0.020623706123505645
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 500,
+      "method": "v1_shim",
+      "iae": 0.6713478325949381
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 500,
+      "method": "v2_m64",
+      "iae": 0.021485251686998476
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 500,
+      "method": "v2_m128",
+      "iae": 0.02238152856005039
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 2000,
+      "method": "tll",
+      "iae": 0.05680089435093865
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 2000,
+      "method": "v1",
+      "iae": 0.010220089322335929
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 2000,
+      "method": "v1_shim",
+      "iae": 0.7002028878445752
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 2000,
+      "method": "v2_m64",
+      "iae": 0.011927034497142193
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 2000,
+      "method": "v2_m128",
+      "iae": 0.010484642169412218
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 10000,
+      "method": "tll",
+      "iae": 0.031658613335257366
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 10000,
+      "method": "v1",
+      "iae": 0.008805021450591421
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 10000,
+      "method": "v1_shim",
+      "iae": 0.7525739008841409
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 10000,
+      "method": "v2_m64",
+      "iae": 0.015677668166579513
+    },
+    {
+      "seed": 46,
+      "family": "gaussian",
+      "param": 0.7,
+      "n": 10000,
+      "method": "v2_m128",
+      "iae": 0.013847225765364539
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 500,
+      "method": "tll",
+      "iae": 0.10273218408695911
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 500,
+      "method": "v1",
+      "iae": 0.03928708185184882
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 500,
+      "method": "v1_shim",
+      "iae": 0.7519484868772701
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 500,
+      "method": "v2_m64",
+      "iae": 0.012046229822495777
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 500,
+      "method": "v2_m128",
+      "iae": 0.030553779077838607
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 2000,
+      "method": "tll",
+      "iae": 0.0901213679036327
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 2000,
+      "method": "v1",
+      "iae": 0.04166201346418928
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 2000,
+      "method": "v1_shim",
+      "iae": 0.7600092615442542
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 2000,
+      "method": "v2_m64",
+      "iae": 0.01827443329121096
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 2000,
+      "method": "v2_m128",
+      "iae": 0.0205279259657789
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 10000,
+      "method": "tll",
+      "iae": 0.05459264651618328
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 10000,
+      "method": "v1",
+      "iae": 0.028223791983709508
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 10000,
+      "method": "v1_shim",
+      "iae": 0.7677220782811836
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 10000,
+      "method": "v2_m64",
+      "iae": 0.013215995162111463
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 2.0,
+      "n": 10000,
+      "method": "v2_m128",
+      "iae": 0.010651729832947158
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 500,
+      "method": "tll",
+      "iae": 0.2629162790633237
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 500,
+      "method": "v1",
+      "iae": 0.03481018717041465
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 500,
+      "method": "v1_shim",
+      "iae": 0.9345030554552077
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 500,
+      "method": "v2_m64",
+      "iae": 0.043776844240430664
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 500,
+      "method": "v2_m128",
+      "iae": 0.02004186005748264
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 2000,
+      "method": "tll",
+      "iae": 0.14994196352220063
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 2000,
+      "method": "v1",
+      "iae": 0.02324479528789085
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 2000,
+      "method": "v1_shim",
+      "iae": 0.9538104746594376
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 2000,
+      "method": "v2_m64",
+      "iae": 0.027446516531357316
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 2000,
+      "method": "v2_m128",
+      "iae": 0.024143802563740168
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 10000,
+      "method": "tll",
+      "iae": 0.13074049721381106
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 10000,
+      "method": "v1",
+      "iae": 0.017918578947264195
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 10000,
+      "method": "v1_shim",
+      "iae": 0.9423093036543554
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 10000,
+      "method": "v2_m64",
+      "iae": 0.019294253189930576
+    },
+    {
+      "seed": 46,
+      "family": "clayton",
+      "param": 5.0,
+      "n": 10000,
+      "method": "v2_m128",
+      "iae": 0.013034105983234196
+    }
+  ],
+  "independence": [
+    {
+      "seed": 42,
+      "n": 2000,
+      "method": "tll",
+      "iae": 0.06491964498512233,
+      "max_eval": 1.3747056360549355
+    },
+    {
+      "seed": 42,
+      "n": 2000,
+      "method": "v1",
+      "iae": 0.007257193704470941,
+      "max_eval": 1.0351436173012203,
+      "grid_max": 1.145850419998169,
+      "grid_min": 0.889700174331665,
+      "corner_0_1": 0.889700174331665,
+      "corner_1_0": 0.945838451385498,
+      "corner_0_0": 1.145850419998169,
+      "corner_1_1": 1.0474473237991333
+    },
+    {
+      "seed": 42,
+      "n": 2000,
+      "method": "v1_shim",
+      "iae": 0.7071169527975316,
+      "max_eval": 40.12572026044931,
+      "grid_max": 51.18586349487305,
+      "grid_min": 0.004298942629247904,
+      "corner_0_1": 51.18586349487305,
+      "corner_1_0": 46.74554443359375,
+      "corner_0_0": 0.6829180121421814,
+      "corner_1_1": 11.908307075500488
+    },
+    {
+      "seed": 42,
+      "n": 2000,
+      "method": "v2_m64",
+      "iae": 0.004185541560309759,
+      "max_eval": 1.035937923434668
+    },
+    {
+      "seed": 42,
+      "n": 2000,
+      "method": "v2_m128",
+      "iae": 0.007697662559570355,
+      "max_eval": 1.0313583898270493
+    },
+    {
+      "seed": 42,
+      "n": 10000,
+      "method": "tll",
+      "iae": 0.02844401235110389,
+      "max_eval": 1.5152789251249414
+    },
+    {
+      "seed": 42,
+      "n": 10000,
+      "method": "v1",
+      "iae": 0.010375764242328634,
+      "max_eval": 1.0964682718125836,
+      "grid_max": 1.1987533569335938,
+      "grid_min": 0.8903374671936035,
+      "corner_0_1": 0.8990259766578674,
+      "corner_1_0": 0.8932280540466309,
+      "corner_0_0": 1.1987533569335938,
+      "corner_1_1": 1.1756004095077515
+    },
+    {
+      "seed": 42,
+      "n": 10000,
+      "method": "v1_shim",
+      "iae": 0.767716374428369,
+      "max_eval": 45.343098232051176,
+      "grid_max": 56.422969818115234,
+      "grid_min": 0.000836348335724324,
+      "corner_0_1": 56.422969818115234,
+      "corner_1_0": 52.48432540893555,
+      "corner_0_0": 0.6895557641983032,
+      "corner_1_1": 6.831750869750977
+    },
+    {
+      "seed": 42,
+      "n": 10000,
+      "method": "v2_m64",
+      "iae": 0.008322590344265557,
+      "max_eval": 1.0598472154369591
+    },
+    {
+      "seed": 42,
+      "n": 10000,
+      "method": "v2_m128",
+      "iae": 0.011084672696689531,
+      "max_eval": 1.0603219140886684
+    },
+    {
+      "seed": 43,
+      "n": 2000,
+      "method": "tll",
+      "iae": 0.06280533643446898,
+      "max_eval": 2.016027318535761
+    },
+    {
+      "seed": 43,
+      "n": 2000,
+      "method": "v1",
+      "iae": 0.018655439057293194,
+      "max_eval": 1.2878120587206103,
+      "grid_max": 1.9441778659820557,
+      "grid_min": 0.8796054124832153,
+      "corner_0_1": 1.1292511224746704,
+      "corner_1_0": 1.0501413345336914,
+      "corner_0_0": 1.9441778659820557,
+      "corner_1_1": 1.517385482788086
+    },
+    {
+      "seed": 43,
+      "n": 2000,
+      "method": "v1_shim",
+      "iae": 0.7198636898417641,
+      "max_eval": 28.616686497191257,
+      "grid_max": 51.197296142578125,
+      "grid_min": 0.004518347792327404,
+      "corner_0_1": 51.197296142578125,
+      "corner_1_0": 46.70171356201172,
+      "corner_0_0": 0.6787208318710327,
+      "corner_1_1": 11.867146492004395
+    },
+    {
+      "seed": 43,
+      "n": 2000,
+      "method": "v2_m64",
+      "iae": 0.013539849629639451,
+      "max_eval": 1.3374704328671367
+    },
+    {
+      "seed": 43,
+      "n": 2000,
+      "method": "v2_m128",
+      "iae": 0.015012098752525196,
+      "max_eval": 1.3332562368795513
+    },
+    {
+      "seed": 43,
+      "n": 10000,
+      "method": "tll",
+      "iae": 0.026008752679262954,
+      "max_eval": 1.3257259109390995
+    },
+    {
+      "seed": 43,
+      "n": 10000,
+      "method": "v1",
+      "iae": 0.006851668469242837,
+      "max_eval": 1.0327721744801739,
+      "grid_max": 1.0856066942214966,
+      "grid_min": 0.9344058632850647,
+      "corner_0_1": 1.0501174926757812,
+      "corner_1_0": 0.971113383769989,
+      "corner_0_0": 1.0598526000976562,
+      "corner_1_1": 1.0856066942214966
+    },
+    {
+      "seed": 43,
+      "n": 10000,
+      "method": "v1_shim",
+      "iae": 0.7841101861070422,
+      "max_eval": 32.476136747450646,
+      "grid_max": 56.44514465332031,
+      "grid_min": 0.0008175303810276091,
+      "corner_0_1": 56.44514465332031,
+      "corner_1_0": 52.5162467956543,
+      "corner_0_0": 0.6849278807640076,
+      "corner_1_1": 6.811483383178711
+    },
+    {
+      "seed": 43,
+      "n": 10000,
+      "method": "v2_m64",
+      "iae": 0.0034877778942723303,
+      "max_eval": 1.0276000882249268
+    },
+    {
+      "seed": 43,
+      "n": 10000,
+      "method": "v2_m128",
+      "iae": 0.0049250977676099485,
+      "max_eval": 1.0301522832466188
+    },
+    {
+      "seed": 44,
+      "n": 2000,
+      "method": "tll",
+      "iae": 0.051887085559460686,
+      "max_eval": 1.4363875096004137
+    },
+    {
+      "seed": 44,
+      "n": 2000,
+      "method": "v1",
+      "iae": 0.009772273735276992,
+      "max_eval": 1.1606793285993333,
+      "grid_max": 1.5342693328857422,
+      "grid_min": 0.9230590462684631,
+      "corner_0_1": 1.1768053770065308,
+      "corner_1_0": 1.1587023735046387,
+      "corner_0_0": 1.109607458114624,
+      "corner_1_1": 1.5342693328857422
+    },
+    {
+      "seed": 44,
+      "n": 2000,
+      "method": "v1_shim",
+      "iae": 0.7104307947662972,
+      "max_eval": 36.01562445872984,
+      "grid_max": 51.19408416748047,
+      "grid_min": 0.004342803731560707,
+      "corner_0_1": 51.19408416748047,
+      "corner_1_0": 46.78268051147461,
+      "corner_0_0": 0.6809417009353638,
+      "corner_1_1": 11.897623062133789
+    },
+    {
+      "seed": 44,
+      "n": 2000,
+      "method": "v2_m64",
+      "iae": 0.004677045232173633,
+      "max_eval": 1.031204844660248
+    },
+    {
+      "seed": 44,
+      "n": 2000,
+      "method": "v2_m128",
+      "iae": 0.005115554713346417,
+      "max_eval": 1.0357176167467235
+    },
+    {
+      "seed": 44,
+      "n": 10000,
+      "method": "tll",
+      "iae": 0.029162735057723682,
+      "max_eval": 1.4279268754685783
+    },
+    {
+      "seed": 44,
+      "n": 10000,
+      "method": "v1",
+      "iae": 0.006884543385745113,
+      "max_eval": 1.085001824494714,
+      "grid_max": 1.3201067447662354,
+      "grid_min": 0.9311090707778931,
+      "corner_0_1": 1.1584694385528564,
+      "corner_1_0": 1.153486967086792,
+      "corner_0_0": 1.3201067447662354,
+      "corner_1_1": 1.2888864278793335
+    },
+    {
+      "seed": 44,
+      "n": 10000,
+      "method": "v1_shim",
+      "iae": 0.7714364582716209,
+      "max_eval": 40.80078817300741,
+      "grid_max": 56.42766189575195,
+      "grid_min": 0.0008130671922117472,
+      "corner_0_1": 56.42766189575195,
+      "corner_1_0": 52.49239730834961,
+      "corner_0_0": 0.6983194947242737,
+      "corner_1_1": 6.831172943115234
+    },
+    {
+      "seed": 44,
+      "n": 10000,
+      "method": "v2_m64",
+      "iae": 0.004557553548639792,
+      "max_eval": 1.054249352275781
+    },
+    {
+      "seed": 44,
+      "n": 10000,
+      "method": "v2_m128",
+      "iae": 0.004922679280247002,
+      "max_eval": 1.0860789189648827
+    },
+    {
+      "seed": 45,
+      "n": 2000,
+      "method": "tll",
+      "iae": 0.04325350895048134,
+      "max_eval": 1.3335057897322822
+    },
+    {
+      "seed": 45,
+      "n": 2000,
+      "method": "v1",
+      "iae": 0.012960676315720402,
+      "max_eval": 1.389113476516132,
+      "grid_max": 2.6664745807647705,
+      "grid_min": 0.9030067920684814,
+      "corner_0_1": 0.9721397161483765,
+      "corner_1_0": 0.9830025434494019,
+      "corner_0_0": 2.6664745807647705,
+      "corner_1_1": 1.235365629196167
+    },
+    {
+      "seed": 45,
+      "n": 2000,
+      "method": "v1_shim",
+      "iae": 0.6969440221693958,
+      "max_eval": 29.542862078556116,
+      "grid_max": 51.21820831298828,
+      "grid_min": 0.004357689060270786,
+      "corner_0_1": 51.21820831298828,
+      "corner_1_0": 46.747276306152344,
+      "corner_0_0": 0.6721910238265991,
+      "corner_1_1": 11.867740631103516
+    },
+    {
+      "seed": 45,
+      "n": 2000,
+      "method": "v2_m64",
+      "iae": 0.0032372121264148753,
+      "max_eval": 1.0390853525598367
+    },
+    {
+      "seed": 45,
+      "n": 2000,
+      "method": "v2_m128",
+      "iae": 0.006275633683453765,
+      "max_eval": 1.055255083618913
+    },
+    {
+      "seed": 45,
+      "n": 10000,
+      "method": "tll",
+      "iae": 0.030868661247550767,
+      "max_eval": 1.2439161714222986
+    },
+    {
+      "seed": 45,
+      "n": 10000,
+      "method": "v1",
+      "iae": 0.007498918354032543,
+      "max_eval": 1.0821468233775329,
+      "grid_max": 1.2947241067886353,
+      "grid_min": 0.9489786624908447,
+      "corner_0_1": 1.0483101606369019,
+      "corner_1_0": 1.0387859344482422,
+      "corner_0_0": 1.2947241067886353,
+      "corner_1_1": 1.2155168056488037
+    },
+    {
+      "seed": 45,
+      "n": 10000,
+      "method": "v1_shim",
+      "iae": 0.7662557377431208,
+      "max_eval": 32.36001743676845,
+      "grid_max": 56.42729187011719,
+      "grid_min": 0.0008290450205095112,
+      "corner_0_1": 56.42729187011719,
+      "corner_1_0": 52.47911834716797,
+      "corner_0_0": 0.6891186833381653,
+      "corner_1_1": 6.827824592590332
+    },
+    {
+      "seed": 45,
+      "n": 10000,
+      "method": "v2_m64",
+      "iae": 0.005829998278669219,
+      "max_eval": 1.0491853835615366
+    },
+    {
+      "seed": 45,
+      "n": 10000,
+      "method": "v2_m128",
+      "iae": 0.006727928250606493,
+      "max_eval": 1.03237104623284
+    },
+    {
+      "seed": 46,
+      "n": 2000,
+      "method": "tll",
+      "iae": 0.053150602680981124,
+      "max_eval": 1.4078375329176678
+    },
+    {
+      "seed": 46,
+      "n": 2000,
+      "method": "v1",
+      "iae": 0.012942995419019604,
+      "max_eval": 1.0440900760809702,
+      "grid_max": 1.1610853672027588,
+      "grid_min": 0.8522400259971619,
+      "corner_0_1": 1.110358476638794,
+      "corner_1_0": 1.0057263374328613,
+      "corner_0_0": 0.8522400259971619,
+      "corner_1_1": 1.1610853672027588
+    },
+    {
+      "seed": 46,
+      "n": 2000,
+      "method": "v1_shim",
+      "iae": 0.6913918052356053,
+      "max_eval": 33.14971032995372,
+      "grid_max": 51.20634841918945,
+      "grid_min": 0.0043400730937719345,
+      "corner_0_1": 51.20634841918945,
+      "corner_1_0": 46.75782012939453,
+      "corner_0_0": 0.6775725483894348,
+      "corner_1_1": 11.875699996948242
+    },
+    {
+      "seed": 46,
+      "n": 2000,
+      "method": "v2_m64",
+      "iae": 0.005479626195208857,
+      "max_eval": 1.0651580743462556
+    },
+    {
+      "seed": 46,
+      "n": 2000,
+      "method": "v2_m128",
+      "iae": 0.007642014261871778,
+      "max_eval": 1.0919300350103571
+    },
+    {
+      "seed": 46,
+      "n": 10000,
+      "method": "tll",
+      "iae": 0.03183997916420689,
+      "max_eval": 1.2529901614054402
+    },
+    {
+      "seed": 46,
+      "n": 10000,
+      "method": "v1",
+      "iae": 0.010579178347886208,
+      "max_eval": 1.0521820605827952,
+      "grid_max": 1.2317973375320435,
+      "grid_min": 0.9454952478408813,
+      "corner_0_1": 1.0797531604766846,
+      "corner_1_0": 1.0799726247787476,
+      "corner_0_0": 1.066403865814209,
+      "corner_1_1": 1.2317973375320435
+    },
+    {
+      "seed": 46,
+      "n": 10000,
+      "method": "v1_shim",
+      "iae": 0.7586031692027329,
+      "max_eval": 37.47037722685962,
+      "grid_max": 56.441009521484375,
+      "grid_min": 0.0008226591162383556,
+      "corner_0_1": 56.441009521484375,
+      "corner_1_0": 52.49948501586914,
+      "corner_0_0": 0.6874558925628662,
+      "corner_1_1": 6.815614223480225
+    },
+    {
+      "seed": 46,
+      "n": 10000,
+      "method": "v2_m64",
+      "iae": 0.003983581311124997,
+      "max_eval": 1.0335996245039967
+    },
+    {
+      "seed": 46,
+      "n": 10000,
+      "method": "v2_m128",
+      "iae": 0.005199395459982742,
+      "max_eval": 1.0399329057514028
+    }
+  ],
+  "errors": [],
+  "provenance": {
+    "library_commit": "ee4162b",
+    "library_version": "0.3.0",
+    "upstream_benchmark_commit": "d363f97ecb5f1b6cf08d78648df515b9bf9315c8",
+    "source_results_sha256": "fd91924db9a4f2b36be82e75659cadabd2699fe66b8435a2cf10932e51f46f41",
+    "note": "Original CPU diagnosis, 2026-11-13. Import path and CPU timings omitted; every accuracy value unchanged. No GPU TLL comparison."
+  },
+  "models": {
+    "v1": {
+      "model_id": "vdc-denoiser-m64-v1",
+      "sha256": "8a1b71ad6d2012ed344b22a743a96e667d32a2ab54ade4444686e375e91f5c0f"
+    },
+    "v2_m64": {
+      "model_id": "vdc-denoiser-m64-v2",
+      "sha256": "73097772a18eb4b02fb0608b4bfa87c0205b71667d97af6a39483fd44d0df0fc"
+    },
+    "v2_m128": {
+      "model_id": "vdc-denoiser-m128-v2",
+      "sha256": "f0a753d50b3cfb089e6d7dec999cfe741c6342c188454ec83183a9b3514d4653"
+    }
+  },
+  "tll_controls": {
+    "method": "constant",
+    "grid_size": 30,
+    "multiplier": 1.0
+  }
+}

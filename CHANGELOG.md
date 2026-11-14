@@ -3,6 +3,16 @@
 Published versions are immutable. The NeurIPS 2026 paper pins v0.2.6;
 its checkpoints and reproduction archives remain available.
 
+## Unreleased
+
+- Name the probability-mass histogram `vdc.data.hist.scatter_to_mass_hist`
+  and retain `scatter_to_hist` as a compatibility alias. Document the distinct
+  density normalization required by pretrained inference, and test that
+  input contract through the public estimator. Histogram values and model
+  outputs are unchanged.
+- Add a portable reproduction and reference results for the histogram
+  normalization failure reported in issue #8.
+
 ## v0.3.0 — 2026-11-12
 
 - Rewrite the README and the documentation landing page with the method overview, results

@@ -7,7 +7,7 @@ from typing import Optional, Tuple
 from scipy import stats
 
 
-def scatter_to_hist(
+def scatter_to_mass_hist(
     points: np.ndarray,
     m: int = 64,
     reflect: bool = True,
@@ -15,7 +15,12 @@ def scatter_to_hist(
     probit_smooth: bool = True,
 ) -> np.ndarray:
     """
-    Convert 2D scatter of pseudo-observations to a normalized histogram.
+    Convert pseudo-observations to cell probabilities, summing to one.
+
+    This is not the density histogram consumed by the pretrained denoiser.
+    For that input use ``vdc.inference.density.scatter_to_hist``, whose
+    entries average one on a uniform grid. The two normalizations differ
+    by ``m ** 2`` for interior samples without smoothing.
     
     Args:
         points: Array of shape (n, 2) with values in (0, 1)
@@ -75,6 +80,11 @@ def scatter_to_hist(
         hist = hist / hist.sum()  # Re-normalize after smoothing
     
     return hist
+
+
+# Compatibility alias for existing data workflows. New callers should use the
+# explicit mass name; this function is not a substitute for the inference one.
+scatter_to_hist = scatter_to_mass_hist
 
 
 def _probit_smooth_hist(

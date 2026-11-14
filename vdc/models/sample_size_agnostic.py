@@ -338,7 +338,7 @@ def test_sample_size_invariance():
     Test that the histogram representation is sample-size invariant.
     """
     from vdc.data.generators import sample_bicop
-    from vdc.data.hist import scatter_to_hist
+    from vdc.data.hist import scatter_to_mass_hist
     
     print("Testing sample-size invariance...")
     
@@ -358,7 +358,7 @@ def test_sample_size_invariance():
         )
         
         # Create histogram
-        hist = scatter_to_hist(points, m=m, reflect=True)
+        hist = scatter_to_mass_hist(points, m=m, reflect=True)
         histograms.append(hist)
         
         print(f"n={n:5d}: hist sum={hist.sum():.4f}, "

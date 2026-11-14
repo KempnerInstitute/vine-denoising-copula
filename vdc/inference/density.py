@@ -91,7 +91,13 @@ def scatter_to_hist_batch_gpu(
 
 
 def scatter_to_hist(pts: np.ndarray, m: int, reflect: bool = True) -> np.ndarray:
-    """Create a normalized 2D histogram from points in [0,1]^2."""
+    """Create the density histogram expected by the pretrained denoiser.
+
+    Returns an ``(m, m)`` array with mean one (sum ``m ** 2``), up to
+    floating-point normalization tolerance. Each cell integrates over area
+    ``1 / m ** 2``. Do not substitute ``vdc.data.hist.scatter_to_mass_hist``:
+    that utility returns cell probabilities with sum one.
+    """
     if reflect:
         pts_reflected = []
         for dx, dy in [(0, 0), (0, -1), (0, 1), (-1, 0), (1, 0)]:

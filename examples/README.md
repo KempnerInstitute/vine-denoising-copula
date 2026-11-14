@@ -23,3 +23,8 @@ python examples/train_custom_copula.py --output results/custom.yaml
 These are software demonstrations, not reproductions of the paper's reported
 benchmarks. Fixed protocols and reference outputs live in
 [`paper/`](../paper/README.md).
+
+The [histogram-normalization diagnostic](diagnostics/histogram_normalization/README.md)
+reproduces an integration failure caused by substituting probability masses for
+the density histogram expected by a pretrained model. It includes a portable
+runner and reference results.

@@ -43,6 +43,8 @@ jobs:
             examples/use_pretrained_model.py \
             tests/test_information_metrics.py \
             tests/test_pretrained.py \
+            tests/test_histogram_normalization.py \
+            examples/diagnostics/histogram_normalization/reproduce.py \
             tests/test_ipfp_log.py \
             tests/test_probit_transform.py \
             tests/test_hfunc_independence_accuracy.py \
