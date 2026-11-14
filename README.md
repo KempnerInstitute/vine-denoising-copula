@@ -10,11 +10,11 @@
 [![Model](https://img.shields.io/badge/%F0%9F%A4%97%20model-vdc--denoiser--m64--v1-yellow)](https://huggingface.co/hsafaai/vdc-denoiser-m64-v1)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-[Paper](https://arxiv.org/abs/2604.20568) · [Documentation](https://kempnerinstitute.github.io/vine-denoising-copula/) · [Quick start](#quick-start) · [Pretrained models](#pretrained-models) · [Reproduce the paper](paper/README.md)
+[Paper](https://arxiv.org/abs/2604.20568) · [Documentation](https://kempnerinstitute.github.io/vine-denoising-copula/) · [Quick start](#quick-start) · [Pretrained models](#pretrained-models) · [Reproduce the paper](https://github.com/KempnerInstitute/vine-denoising-copula/blob/main/paper/README.md)
 
 </div>
 
-![VDC overview: one pretrained denoising network estimates every pair-copula of a vine](docs/assets/vdc_overview.png)
+![VDC overview: one pretrained denoising network estimates every pair-copula of a vine](https://raw.githubusercontent.com/KempnerInstitute/vine-denoising-copula/main/docs/assets/vdc_overview.png)
 
 Vine copulas model high-dimensional dependence through a tree of bivariate
 **pair-copulas**, but classical fitting estimates every edge separately, which
@@ -38,7 +38,7 @@ repeated per-edge fitting with reusable neural inference.
 
 ## Results at a glance
 
-![Density accuracy, vine likelihood, fitting time and S&P100 likelihood](docs/assets/vdc_results_density_speed.png)
+![Density accuracy, vine likelihood, fitting time and S&P100 likelihood](https://raw.githubusercontent.com/KempnerInstitute/vine-denoising-copula/main/docs/assets/vdc_results_density_speed.png)
 
 From the NeurIPS 2026 paper (all numbers use the released `vdc-denoiser-m64-v1`):
 
@@ -52,21 +52,39 @@ From the NeurIPS 2026 paper (all numbers use the released `vdc-denoiser-m64-v1`)
 
 Limits are reported alongside: the 64x64 grid bounds accuracy for near-deterministic
 pairs, and chained conditional prediction (VaR, imputation) is not yet competitive.
-See the paper and [the reproduction guide](paper/README.md) for every protocol.
+See the paper and [the reproduction guide](https://github.com/KempnerInstitute/vine-denoising-copula/blob/main/paper/README.md) for every protocol.
 
-![Mutual-information error, total-correlation runtime and self-consistency](docs/assets/vdc_results_information.png)
+![Mutual-information error, total-correlation runtime and self-consistency](https://raw.githubusercontent.com/KempnerInstitute/vine-denoising-copula/main/docs/assets/vdc_results_information.png)
 
 ## Installation
 
 ```bash
-git clone https://github.com/KempnerInstitute/vine-denoising-copula.git
-cd vine-denoising-copula
-pip install -e .            # library
-pip install -e '.[test]'    # + test suite
+python -m pip install vine-denoising-copula
 ```
 
-Python 3.9 or later (tested on 3.10 and 3.11) with PyTorch 2. A GPU is optional; CPU inference
-works for all examples. `environment.yml` gives a complete Conda environment.
+Python 3.10 or later with PyTorch 2 is required. A GPU is optional. The base
+install supports pretrained pair densities, vine fitting, likelihoods and
+sampling without pyvinecopulib or plotting/training packages. Optional features:
+
+```bash
+python -m pip install 'vine-denoising-copula[train]'      # synthetic data and training
+python -m pip install 'vine-denoising-copula[baselines]'  # qualified pyvinecopulib 0.7.x
+python -m pip install 'vine-denoising-copula[viz,data]'    # plotting and dataset downloads
+```
+
+Install `vine-denoising-copula`, not the unrelated PyPI project `vdc`. Both
+provide an `import vdc` namespace, so use separate virtual environments.
+Checkpoints remain on Hugging Face and are downloaded and hash-verified on first
+use. For a source installation:
+
+```bash
+git clone https://github.com/KempnerInstitute/vine-denoising-copula.git
+cd vine-denoising-copula
+python -m pip install -e '.[dev,train,data,viz]'
+```
+
+See [getting started](https://github.com/KempnerInstitute/vine-denoising-copula/blob/main/docs/GETTING_STARTED.md) for CPU/GPU PyTorch installation.
+The paper reproduction environment retains its recorded dependency versions.
 
 ## Quick start
 
@@ -89,8 +107,8 @@ samples = vine.simulate(n=1000)              # inverse-Rosenblatt sampling
 ```
 
 Pseudo-observations are ranks scaled to (0, 1). Fit marginal transforms on
-training rows and apply them to held-out rows. More: [examples/](examples/) and
-the [user guide](docs/USER_GUIDE.md).
+training rows and apply them to held-out rows. More: [examples/](https://github.com/KempnerInstitute/vine-denoising-copula/tree/main/examples/) and
+the [user guide](https://github.com/KempnerInstitute/vine-denoising-copula/blob/main/docs/USER_GUIDE.md).
 
 ## Pretrained models
 
@@ -104,7 +122,7 @@ Every checkpoint is verified by SHA-256 on load. The v2 estimators were trained 
 main experiments on corrected synthetic data; they use a continuous bilinear density with exact
 h-functions and are selected with `VineCopulaModel.from_pretrained(bundle)`. Their training
 initialization is published as [`vdc-linear-grid-pilot`](https://huggingface.co/hsafaai/vdc-linear-grid-pilot).
-See [docs/MODEL_RELEASES.md](docs/MODEL_RELEASES.md) and [docs/IMPROVED_ESTIMATORS.md](docs/IMPROVED_ESTIMATORS.md).
+See [docs/MODEL_RELEASES.md](https://github.com/KempnerInstitute/vine-denoising-copula/blob/main/docs/MODEL_RELEASES.md) and [docs/IMPROVED_ESTIMATORS.md](https://github.com/KempnerInstitute/vine-denoising-copula/blob/main/docs/IMPROVED_ESTIMATORS.md).
 
 ## Train an estimator
 
@@ -119,12 +137,12 @@ python scripts/train_linear_grid_estimator.py configs/train/linear_grid_vdc128_v
 ```
 
 Configurations and the synthetic training generators are documented in
-[docs/CONFIGURATION.md](docs/CONFIGURATION.md) and [docs/TRAINING_DATA.md](docs/TRAINING_DATA.md);
-the linear-grid recipes, their resources and verification are in [docs/IMPROVED_ESTIMATORS.md](docs/IMPROVED_ESTIMATORS.md).
+[docs/CONFIGURATION.md](https://github.com/KempnerInstitute/vine-denoising-copula/blob/main/docs/CONFIGURATION.md) and [docs/TRAINING_DATA.md](https://github.com/KempnerInstitute/vine-denoising-copula/blob/main/docs/TRAINING_DATA.md);
+the linear-grid recipes, their resources and verification are in [docs/IMPROVED_ESTIMATORS.md](https://github.com/KempnerInstitute/vine-denoising-copula/blob/main/docs/IMPROVED_ESTIMATORS.md).
 
 ## Reproduce the paper
 
-[`paper/`](paper/README.md) contains everything needed to reproduce the NeurIPS 2026
+[`paper/`](https://github.com/KempnerInstitute/vine-denoising-copula/blob/main/paper/README.md) contains everything needed to reproduce the NeurIPS 2026
 results: experiment runners with fixed protocols, the scripts and saved outputs that
 regenerate every figure and table, and reference results. Figures and tables
 rebuild from saved outputs on a laptop in minutes:
@@ -160,6 +178,6 @@ paper/      NeurIPS 2026 reproduction: runners, figure and table generators, sav
 
 ## License
 
-MIT; see [LICENSE](LICENSE). This work was supported in part by a gift from the Chan
+MIT; see [LICENSE](https://github.com/KempnerInstitute/vine-denoising-copula/blob/main/LICENSE). This work was supported in part by a gift from the Chan
 Zuckerberg Initiative Foundation to establish the Kempner Institute for the Study of
 Natural and Artificial Intelligence at Harvard University.

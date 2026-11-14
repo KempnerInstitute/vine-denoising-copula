@@ -2,21 +2,42 @@
 
 ## Install
 
-Python 3.10 or 3.11 is recommended. From a fresh environment:
+Use Python 3.10 or later and an isolated environment:
 
 ```bash
-git clone https://github.com/KempnerInstitute/vine-denoising-copula.git
-cd vine-denoising-copula
-python -m pip install -e .
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install vine-denoising-copula
 ```
 
-For a CPU-only PyTorch installation, install Torch from its CPU wheel index
-before installing VDC:
+On Windows, activate with `.venv\Scripts\activate` instead. The PyPI project
+`vdc` is a different package that uses the same import name; do not install it
+in this environment.
+
+For CPU-only PyTorch, install its wheel before VDC:
 
 ```bash
 python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
-python -m pip install -e .
+python -m pip install vine-denoising-copula
 ```
+
+The base install supports pretrained inference and vine fitting without
+pyvinecopulib. Add `[train]` for training and synthetic data, `[baselines]` for
+the qualified pyvinecopulib 0.7.x adapter, `[viz]` for plotting, or `[data]` for
+dataset downloads. For example:
+
+```bash
+python -m pip install 'vine-denoising-copula[train,viz]'
+```
+
+The training and baseline extras retain `pyvinecopulib>=0.7.5,<0.8`. They do
+not claim 1.x compatibility. The base inference install places no constraint on
+a separate application's pyvinecopulib version. Paper reproduction should use
+its recorded environment, not an unconstrained latest installation.
+
+To run source examples and training scripts, clone the repository and install
+with `python -m pip install -e '.[train,viz,data]'` from its root.
 
 GPU users should install the PyTorch build appropriate for their CUDA driver.
 The package does not require a GPU. The pretrained network is large; allow

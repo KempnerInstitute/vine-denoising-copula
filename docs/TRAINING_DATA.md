@@ -1,5 +1,7 @@
 # Synthetic training data
 
+Install the training dependencies with `python -m pip install 'vine-denoising-copula[train]'`.
+
 Training examples pair samples with a density evaluated on a uniform midpoint
 grid. The grid is normalized by its midpoint integral; this discretization is
 an approximation to the continuous copula, particularly near strong tail peaks.

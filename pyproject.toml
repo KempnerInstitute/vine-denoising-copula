@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vine-denoising-copula"
-version = "0.3.0"
+version = "0.4.0"
 description = "Vine Denoising Copula for high-dimensional vine-copula modeling and information estimation"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
     {name = "Houman Safaai", email = "houman_safaai@harvard.edu"}
@@ -18,9 +18,10 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Scientific/Engineering :: Mathematics",
 ]
@@ -30,13 +31,8 @@ dependencies = [
     "numpy>=1.24.0",
     "scipy>=1.10.0",
     "networkx>=3.0",
-    "matplotlib>=3.7.0",
-    "hydra-core>=1.3.0",
     "tqdm>=4.65.0",
-    "h5py>=3.8.0",
     "PyYAML>=6.0",
-    "scikit-learn>=1.2.0",
-    "pyvinecopulib>=0.7.5,<0.8",
 ]
 
 [project.urls]
@@ -46,6 +42,13 @@ Issues = "https://github.com/KempnerInstitute/vine-denoising-copula/issues"
 Documentation = "https://kempnerinstitute.github.io/vine-denoising-copula/"
 
 [project.optional-dependencies]
+train = [
+    "matplotlib>=3.7.0",
+    "h5py>=3.8.0",
+    "hydra-core>=1.3.0",
+    "pyvinecopulib>=0.7.5,<0.8",
+]
+baselines = ["pyvinecopulib>=0.7.5,<0.8"]
 dev = [
     "build>=1.2.0",
     "ruff>=0.0.270",
@@ -62,11 +65,13 @@ test = [
     "hypothesis>=6.75.0",
 ]
 viz = [
+    "matplotlib>=3.7.0",
     "seaborn>=0.12.0",
     "pandas>=2.0.0",
 ]
 # scripts/download_uci_datasets.py: GAS ships as a pandas pickle and CCPP as an Excel workbook.
 data = [
+    "h5py>=3.8.0",
     "pandas>=2.0.0",
     "openpyxl>=3.1.0",
 ]
@@ -83,6 +88,9 @@ r-baselines = [
 ]
 
 paper-baselines = [
+    "pyvinecopulib>=0.7.5,<0.8",
+    "scikit-learn>=1.2.0",
+    "matplotlib>=3.7.0",
     "copulas>=0.13.0",
     "ennemi>=1.4.0",
     "pytorch-lightning>=2.1.0",

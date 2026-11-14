@@ -16,7 +16,14 @@ densities, CDFs and h-functions use stable log-domain evaluations because the
 library returns NaN in some extreme tails.
 """
 import numpy as np
-import pyvinecopulib as pv
+
+try:
+    import pyvinecopulib as pv
+except ImportError as exc:
+    raise ImportError(
+        'Continuous-mixture training data requires pyvinecopulib: '
+        'pip install "vine-denoising-copula[train]"'
+    ) from exc
 
 FAMILIES = ("gaussian", "student", "clayton", "gumbel", "frank", "joe", "bb1", "bb7")
 STRENGTH_BINS = ((.005, .05), (.05, .2), (.2, .5), (.5, .7), (.7, .85))

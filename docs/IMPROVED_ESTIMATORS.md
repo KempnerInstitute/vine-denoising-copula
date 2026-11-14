@@ -179,6 +179,9 @@ released checkpoints are the first fine-tuning seed of the first pilot.
 
 ## Retraining
 
+Install the training dependencies with `python -m pip install -e '.[train]'`
+from the source checkout before running the commands below.
+
 The recipes are in `configs/train/linear_grid_*.yaml`; each stage runs with
 
 ```bash

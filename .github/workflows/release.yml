@@ -3,9 +3,14 @@ name: Publish release
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
@@ -16,63 +21,175 @@ env:
 jobs:
   verify-and-build:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Verify tag and package version
+      - name: Verify release tag and package version
+        id: version
         run: |
-          python - <<'PY'
+          python - <<'PYTHON'
           import os, pathlib, tomllib
           version = tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version']
-          assert os.environ['GITHUB_REF_NAME'] == 'v' + version
+          assert os.environ['GITHUB_REF'] == 'refs/tags/v' + version, 'Run this workflow on the version tag'
           assert pathlib.Path(f'docs/releases/RELEASE_NOTES_v{version}.md').is_file()
-          PY
-      - name: Install dependencies
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              print('version=' + version, file=output)
+          PYTHON
+          echo "SOURCE_DATE_EPOCH=$(git show -s --format=%ct HEAD)" >> "$GITHUB_ENV"
+      - name: Install development dependencies
         run: |
           python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
-          python -m pip install -e '.[test,data]' build
-      - name: Test and build
+          python -m pip install -e '.[test,train,data,viz]' build twine
+      - name: Test and build distributions
         run: |
-          python -m pytest tests
+          python -m pytest tests --junitxml=unit-tests.xml
           python -m build
-          (cd dist && sha256sum *.whl *.tar.gz > SHA256SUMS)
-      - name: Verify installed wheel outside the checkout
+          python -m twine check dist/*
+          (cd dist && sha256sum *.whl *.tar.gz) > SHA256SUMS
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/vdc
+          key: released-models-${{ hashFiles('vdc/resources/pretrained/*.json') }}
+      - name: Verify actual models in a clean inference-only installation
         run: |
-          python -m venv --system-site-packages "$RUNNER_TEMP/vdc-wheel"
+          python -m venv "$RUNNER_TEMP/vdc-wheel"
+          "$RUNNER_TEMP/vdc-wheel/bin/python" -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          "$RUNNER_TEMP/vdc-wheel/bin/python" -m pip install dist/*.whl
+          "$RUNNER_TEMP/vdc-wheel/bin/python" -m pip check
           cd "$RUNNER_TEMP"
-          "$RUNNER_TEMP/vdc-wheel/bin/python" -m pip install --ignore-installed --no-deps "$GITHUB_WORKSPACE"/dist/*.whl
-          "$RUNNER_TEMP/vdc-wheel/bin/python" -I - <<'PY'
-          import sys
-          from pathlib import Path
-          import vdc
-          from vdc import VineCopulaModel
-          from vdc.data.mixtures import MixtureCopula
-          assert Path(vdc.__file__).is_relative_to(Path(sys.prefix))
-          print("Installed wheel:", vdc.__version__, vdc.__file__)
-          PY
+          "$RUNNER_TEMP/vdc-wheel/bin/python" -I "$GITHUB_WORKSPACE/scripts/check_installation.py" \
+            --require-minimal --all-models --output "$GITHUB_WORKSPACE/installed-models.json"
           "$RUNNER_TEMP/vdc-wheel/bin/vdc" list-models
       - uses: actions/upload-artifact@v4
         with:
           name: release-packages
           path: dist/
+          retention-days: 30
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-verification
+          path: |
+            SHA256SUMS
+            unit-tests.xml
+            installed-models.json
+          retention-days: 30
 
-  publish:
+  publish-github:
     needs: verify-and-build
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/download-artifact@v4
         with:
           name: release-packages
           path: dist/
-      - name: Publish verified packages
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-verification
+          path: verification/
+      - name: Publish verified packages and checksums
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" dist/* --verify-tag \
+          gh release create "$GITHUB_REF_NAME" dist/* verification/SHA256SUMS --verify-tag \
             --title "$GITHUB_REF_NAME" \
             --notes-file "docs/releases/RELEASE_NOTES_${GITHUB_REF_NAME}.md"
+
+  publish-testpypi:
+    needs: verify-and-build
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/project/vine-denoising-copula/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-packages
+          path: dist/
+      - name: Publish identical distributions to TestPyPI
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  verify-testpypi:
+    needs: [verify-and-build, publish-testpypi]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-packages
+          path: dist/
+      - name: Verify published bytes and install the downloaded wheel
+        env:
+          RELEASE_VERSION: ${{ needs.verify-and-build.outputs.version }}
+        run: |
+          python scripts/verify_index_release.py --index testpypi --version "$RELEASE_VERSION" --output-dir downloaded
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install downloaded/*.whl
+          python -m pip check
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/vdc
+          key: released-models-${{ hashFiles('vdc/resources/pretrained/*.json') }}
+      - name: Run inference from the TestPyPI wheel outside the checkout
+        working-directory: ${{ runner.temp }}
+        run: python -I "$GITHUB_WORKSPACE/scripts/check_installation.py" --require-minimal --output "$GITHUB_WORKSPACE/testpypi-model.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: testpypi-verification
+          path: testpypi-model.json
+
+  publish-pypi:
+    needs: [verify-and-build, verify-testpypi]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/vine-denoising-copula/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-packages
+          path: dist/
+      - name: Publish verified distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # release/v1
+
+  verify-pypi:
+    needs: [verify-and-build, publish-pypi]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-packages
+          path: dist/
+      - name: Verify the PyPI distribution hashes
+        env:
+          RELEASE_VERSION: ${{ needs.verify-and-build.outputs.version }}
+        run: python scripts/verify_index_release.py --index pypi --version "$RELEASE_VERSION" --output-dir downloaded

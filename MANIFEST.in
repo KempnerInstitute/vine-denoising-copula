@@ -2,6 +2,7 @@ include LICENSE README.md CHANGELOG.md CONTRIBUTING.md CITATION.cff
 recursive-include docs *.md *.html *.css
 recursive-include configs *.yaml *.md
 recursive-include examples *.py *.md
+include examples/diagnostics/histogram_normalization/reference_results.json
 recursive-include scripts *.py
 recursive-include tests *.py
 include vdc/vine/compiled_sampler.cpp

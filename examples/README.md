@@ -1,7 +1,8 @@
 # Examples
 
 Install the package first with `python -m pip install -e .` from the repository
-root. Pretrained examples download and verify the released model, or accept
+root. Plotting requires `.[viz]`; training and the histogram-normalization
+diagnostic require `.[train]`. Pretrained examples download and verify the released model, or accept
 `--checkpoint /path/to/trusted-model.pt`. Start on a CPU with several GB of RAM.
 
 | Program | Purpose |

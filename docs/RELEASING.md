@@ -15,15 +15,71 @@
    notes, datasets and checkpoints. Update `PUBLIC_RELEASE_FILES.json` when the
    curated source contents change.
 
+## Configure PyPI once
+
+Use accounts with two-factor authentication on PyPI and TestPyPI (separate
+accounts). In each account's **Publishing** page, register a pending GitHub
+Trusted Publisher:
+
+| Field | PyPI | TestPyPI |
+|---|---|---|
+| Project | `vine-denoising-copula` | `vine-denoising-copula` |
+| Owner | `KempnerInstitute` | `KempnerInstitute` |
+| Repository | `vine-denoising-copula` | `vine-denoising-copula` |
+| Workflow filename | `release.yml` | `release.yml` |
+| Environment | `pypi` | `testpypi` |
+
+Configure the matching GitHub environments and restrict release-tag creation
+and environment access to maintainers. The workflow requests short-lived OIDC
+credentials only in the publishing jobs; no permanent PyPI upload token is
+needed. The first successful upload creates the project. A pending publisher
+does not reserve its name.
+
+- [PyPI publishing settings](https://pypi.org/manage/account/publishing/)
+- [TestPyPI publishing settings](https://test.pypi.org/manage/account/publishing/)
+- [Trusted Publishing documentation](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/)
+
 ## Publish
 
-Create a new version tag after verification. Pushing a `v*` tag runs the
-release workflow: it verifies the package version, tests the code, builds the
-wheel and source distribution, and publishes the packages and checksums to
-GitHub Releases. Never move a historical tag or replace a
-checkpoint under an existing model ID. The paper's saved outputs in `paper/`
-and the figure archives attached to releases v0.2.4 to v0.2.6 retain their
-generation pins even when later software versions are published.
+After the candidate and its GitHub CI pass, create and push a new `v*` version
+tag. The workflow verifies that the tag matches the package version, runs the
+full suite, builds and checks the wheel and source distribution, and exercises
+all three released checkpoints in a fresh base-only installation. Its record
+includes the checkpoint hashes, dependency versions and persistence/fallback
+checks. The published model defaults and weights are not changed by packaging.
+
+The workflow uploads the verified distributions to GitHub Releases and TestPyPI.
+It then downloads both distributions from TestPyPI and compares their SHA-256
+hashes against the build artifacts, installs the downloaded wheel with
+**dependencies from ordinary PyPI**, and exercises pretrained inference again.
+Only after this succeeds does it publish the same files to PyPI, whose published
+hashes are checked as the final step. Publication status must be verified on
+both indexes; a GitHub release alone does not mean the PyPI upload succeeded.
+
+If account configuration blocks publishing, fix the Trusted Publisher and
+rerun **failed jobs**, preserving the successful build's artifacts. Do not
+rebuild or replace the same version. Workflow artifacts are retained for 30
+days. Manual dispatch is supported only on a matching version tag.
+
+Never move a historical tag or replace a checkpoint under an existing model ID.
+The paper's saved outputs and the figure archives attached to v0.2.4–v0.2.6
+retain their generation pins when later software versions are published.
+
+## Installed package check
+
+Run on a machine with several GB of available RAM, outside the checkout:
+
+```bash
+python /path/to/source/scripts/check_installation.py --require-minimal --all-models --output installed-models.json
+```
+
+The base environment must not contain pyvinecopulib, Matplotlib, HDF5, Hydra or
+scikit-learn. This check loads public checkpoints, estimates pair densities,
+fits small vines, evaluates likelihoods and PITs, saves/reloads the fits, and
+checks the automatic NumPy sampler fallback. It is an installation check, not a
+new accuracy or timing benchmark. CPU and GPU users choose an appropriate
+PyTorch build before installing VDC; platform-specific compiled sampling stays
+optional.
 
 ## Publish a model
 

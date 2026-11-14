@@ -7,7 +7,7 @@ Use tagged releases and explicit checkpoint hashes for scientific reproduction.
 ## Development environment
 
 ```bash
-python -m pip install -e '.[dev,data]'
+python -m pip install -e '.[dev,train,data,viz]'
 python -m pytest tests
 ```
 

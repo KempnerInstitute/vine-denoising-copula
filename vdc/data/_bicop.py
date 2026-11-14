@@ -6,7 +6,13 @@ import numpy as np
 
 def bicop(family: str, parameters):
     """Construct a pyvinecopulib copula; invalid parameters raise an error."""
-    import pyvinecopulib as pv
+    try:
+        import pyvinecopulib as pv
+    except ImportError as exc:
+        raise ImportError(
+            'Copula data generation requires pyvinecopulib: '
+            'pip install "vine-denoising-copula[train]"'
+        ) from exc
 
     return pv.Bicop(family=getattr(pv.BicopFamily, family),
                     parameters=np.asarray(parameters, dtype=float).reshape(-1, 1))

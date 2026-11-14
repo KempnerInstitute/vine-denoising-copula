@@ -7,6 +7,7 @@ use VDC. See [getting started](GETTING_STARTED.md).
 For a small new training run from a source checkout:
 
 ```bash
+python -m pip install -e '.[train]'
 python examples/train_custom_copula.py --output results/custom_denoiser.yaml
 python scripts/train_unified.py --model-type denoiser --config results/custom_denoiser.yaml
 ```
