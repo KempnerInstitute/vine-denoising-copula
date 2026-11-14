@@ -5,4 +5,4 @@ dependencies:
   - python=3.11
   - pip
   - pip:
-      - -e .[test,data]
+      - -e .[test,train,data,viz]
