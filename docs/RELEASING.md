@@ -39,6 +39,28 @@ does not reserve its name.
 - [TestPyPI publishing settings](https://test.pypi.org/manage/account/publishing/)
 - [Trusted Publishing documentation](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/)
 
+### GitHub Enterprise issuer compatibility
+
+PyPI may reject an enterprise's customized OIDC issuer with `invalid-payload:
+unknown trusted publishing issuer`. This happens before publisher matching;
+recreating a pending publisher does not resolve it. The **Check publishing
+identity** workflow reports only the issuer, audience, repository and environment,
+never the authentication token. See
+[PyPI's issuer compatibility issue](https://github.com/pypi/warehouse/issues/17700).
+
+Where Trusted Publishing is unavailable, the release workflow also supports
+PyPI API tokens. Add an environment secret named `PYPI_API_TOKEN` in each
+GitHub environment: the TestPyPI token in `testpypi`, and the production PyPI
+token in `pypi`. Enter values directly in GitHub's environment settings.
+Never put tokens in source files, command lines, logs or issue comments.
+
+Use a token scoped to this project when it already exists. The first upload
+requires an account-scoped token because there is no project to select yet;
+after that upload, revoke it and replace the environment secret with a token
+scoped to `vine-denoising-copula`. This is done separately on the two indexes.
+When a token secret is present, the workflow uses it and disables OIDC-based
+attestations. When it is absent, the workflow uses Trusted Publishing.
+
 ## Publish
 
 After the candidate and its GitHub CI pass, create and push a new `v*` version
@@ -59,7 +81,16 @@ both indexes; a GitHub release alone does not mean the PyPI upload succeeded.
 If account configuration blocks publishing, fix the Trusted Publisher and
 rerun **failed jobs**, preserving the successful build's artifacts. Do not
 rebuild or replace the same version. Workflow artifacts are retained for 30
-days. Manual dispatch is supported only on a matching version tag.
+days. A new build dispatched manually must target its matching version tag.
+
+If the workflow itself needs an authentication fix after a GitHub release has
+already been created, select **Publish release → Run workflow**, choose the
+branch containing the fix, and enter the existing stable version (for example
+`0.4.0`) in `existing_release_version`. This mode downloads the original wheel,
+sdist and `SHA256SUMS` from GitHub Releases and verifies every checksum. It
+does not build packages or create another GitHub release. The same TestPyPI
+download/inference check and final PyPI hash verification still apply. Existing
+index files are accepted only if their hashes match the original release.
 
 Never move a historical tag or replace a checkpoint under an existing model ID.
 The paper's saved outputs and the figure archives attached to v0.2.4–v0.2.6

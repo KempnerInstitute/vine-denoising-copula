@@ -4,6 +4,11 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      existing_release_version:
+        description: 'Resume index publication from existing GitHub release files (for example 0.4.0); leave blank for a new tag build'
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -20,6 +25,7 @@ env:
 
 jobs:
   verify-and-build:
+    if: ${{ !inputs.existing_release_version }}
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -84,6 +90,62 @@ jobs:
             installed-models.json
           retention-days: 30
 
+  reuse-existing:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.existing_release_version != '' }}
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validate the existing release version
+        id: version
+        env:
+          RELEASE_VERSION: ${{ inputs.existing_release_version }}
+        run: |
+          python - <<'PYTHON'
+          import os, re
+          version = os.environ['RELEASE_VERSION']
+          assert re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', version), 'Use a stable version such as 0.4.0'
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              print('version=' + version, file=output)
+          PYTHON
+      - name: Retrieve the original packages and verify their checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh release download "v$RELEASE_VERSION" --repo "$GITHUB_REPOSITORY" --dir dist \
+            --pattern "vine_denoising_copula-$RELEASE_VERSION-py3-none-any.whl" \
+            --pattern "vine_denoising_copula-$RELEASE_VERSION.tar.gz" --pattern SHA256SUMS
+          python - <<'PYTHON'
+          import hashlib, os, pathlib, re
+          root = pathlib.Path('dist')
+          version = os.environ['RELEASE_VERSION']
+          expected = {f'vine_denoising_copula-{version}-py3-none-any.whl', f'vine_denoising_copula-{version}.tar.gz'}
+          checksums = dict(line.split()[::-1] for line in (root / 'SHA256SUMS').read_text().splitlines())
+          assert set(checksums) == expected, 'Unexpected files in the release checksum list'
+          for name, digest in checksums.items():
+              assert re.fullmatch('[0-9a-f]{64}', digest)
+              assert hashlib.sha256((root / name).read_bytes()).hexdigest() == digest, name
+              print('Verified original release:', name, digest)
+          PYTHON
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-packages
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+          retention-days: 30
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-verification
+          path: dist/SHA256SUMS
+          retention-days: 30
+          if-no-files-found: error
+
   publish-github:
     needs: verify-and-build
     runs-on: ubuntu-latest
@@ -110,7 +172,8 @@ jobs:
             --notes-file "docs/releases/RELEASE_NOTES_${GITHUB_REF_NAME}.md"
 
   publish-testpypi:
-    needs: verify-and-build
+    needs: [verify-and-build, reuse-existing]
+    if: ${{ !cancelled() && (needs.verify-and-build.result == 'success' || needs.reuse-existing.result == 'success') }}
     runs-on: ubuntu-latest
     environment:
       name: testpypi
@@ -126,9 +189,13 @@ jobs:
         uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          attestations: ${{ secrets.PYPI_API_TOKEN == '' }}
+          skip-existing: ${{ inputs.existing_release_version != '' }}
 
   verify-testpypi:
-    needs: [verify-and-build, publish-testpypi]
+    needs: [verify-and-build, reuse-existing, publish-testpypi]
+    if: ${{ !cancelled() && needs.publish-testpypi.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -143,7 +210,7 @@ jobs:
           path: dist/
       - name: Verify published bytes and install the downloaded wheel
         env:
-          RELEASE_VERSION: ${{ needs.verify-and-build.outputs.version }}
+          RELEASE_VERSION: ${{ needs.verify-and-build.outputs.version || needs.reuse-existing.outputs.version }}
         run: |
           python scripts/verify_index_release.py --index testpypi --version "$RELEASE_VERSION" --output-dir downloaded
           python -m pip install --upgrade pip
@@ -163,7 +230,8 @@ jobs:
           path: testpypi-model.json
 
   publish-pypi:
-    needs: [verify-and-build, verify-testpypi]
+    needs: [verify-and-build, reuse-existing, verify-testpypi]
+    if: ${{ !cancelled() && needs.verify-testpypi.result == 'success' }}
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -177,9 +245,14 @@ jobs:
           path: dist/
       - name: Publish verified distributions to PyPI
         uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          attestations: ${{ secrets.PYPI_API_TOKEN == '' }}
+          skip-existing: ${{ inputs.existing_release_version != '' }}
 
   verify-pypi:
-    needs: [verify-and-build, publish-pypi]
+    needs: [verify-and-build, reuse-existing, publish-pypi]
+    if: ${{ !cancelled() && needs.publish-pypi.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -194,5 +267,5 @@ jobs:
           path: dist/
       - name: Verify the PyPI distribution hashes
         env:
-          RELEASE_VERSION: ${{ needs.verify-and-build.outputs.version }}
+          RELEASE_VERSION: ${{ needs.verify-and-build.outputs.version || needs.reuse-existing.outputs.version }}
         run: python scripts/verify_index_release.py --index pypi --version "$RELEASE_VERSION" --output-dir downloaded
