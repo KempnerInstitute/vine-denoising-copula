@@ -174,7 +174,7 @@ def load_checkpoint_bundle(
     device: Optional[str | torch.device] = None,
 ) -> LoadedPretrainedModel:
     """Load a VDC checkpoint into model + optional diffusion objects."""
-    from vdc.train.unified_trainer import build_model
+    from vdc.models.factory import build_model
 
     ckpt_path = Path(checkpoint_path).expanduser().resolve()
     if not ckpt_path.exists():
